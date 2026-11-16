@@ -1,0 +1,13 @@
+# NOTE: frozen since 2026-11-16 (takes exist for it): any change is a new version
+id = "garden-en"
+language = "en"
+version = 1
+title = "The garden by the river"
+text = """
+Every evening, a warm wind moves along the river and over the old mill. \
+All year long we were in Rome, and now we are near the river again. \
+The garden is calm; three green trees lean over a blue pool, and the moon rises soon after seven. \
+Our neighbour Sam always asks the same thing: "Did you see the swans this spring?" \
+Yes! Six of them sailed past the bridge at sunrise, slow and silent. \
+So we sit on the steps, share some sweet tea, and listen to the leaves. \
+Tomorrow we may walk far along the shore, or simply stay here and sing."""

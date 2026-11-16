@@ -1,0 +1,89 @@
+id = "baseline"
+
+[titles]
+en = "Baseline"
+cs = "Výchozí stav"
+
+[[items]]
+key = "vowels"
+item = "vowels"
+seconds = 20
+
+[items.titles]
+en = "Sustained vowels"
+cs = "Držené samohlásky"
+
+[items.instructions]
+en = "Hold “a”, then “i”, then “u” (as in father, see, moon), each for about five seconds on one breath, at a comfortable pitch and loudness. Leave two seconds of silence between them."
+cs = "Podržte „á“, potom „í“, potom „ú“, každé asi pět sekund na jeden nádech, v pohodlné výšce a hlasitosti. Mezi nimi nechte dvě sekundy ticha."
+
+[[items]]
+key = "glide"
+item = "glide"
+seconds = 20
+
+[items.titles]
+en = "Pitch glide"
+cs = "Klouzání výšky"
+
+[items.instructions]
+en = "On “a”, slide slowly from the lowest note that is comfortable to the highest one and back down. Do it twice. Stop if anything feels strained."
+cs = "Na „á“ pomalu sklouzněte od nejnižšího pohodlného tónu k nejvyššímu a zpět. Udělejte to dvakrát. Přestaňte, pokud cítíte jakékoli napětí."
+
+[[items]]
+key = "passage-en"
+item = "passage"
+language = "en"
+content_ref = "passage:garden-en@1"
+seconds = 40
+
+[items.titles]
+en = "Reading, English"
+cs = "Čtení, anglicky"
+
+[items.instructions]
+en = "Read the passage aloud at your natural pace."
+cs = "Přečtěte text nahlas svým přirozeným tempem."
+
+[[items]]
+key = "passage-cs"
+item = "passage"
+language = "cs"
+content_ref = "passage:garden-cs@1"
+seconds = 40
+
+[items.titles]
+en = "Reading, Czech"
+cs = "Čtení, česky"
+
+[items.instructions]
+en = "Read the passage aloud at your natural pace."
+cs = "Přečtěte text nahlas svým přirozeným tempem."
+
+[[items]]
+key = "free-en"
+item = "free"
+language = "en"
+seconds = 45
+
+[items.titles]
+en = "Free speech, English"
+cs = "Volná řeč, anglicky"
+
+[items.instructions]
+en = "Talk freely for about 45 seconds: describe your day, or the room you are in."
+cs = "Mluvte volně asi 45 sekund anglicky: popište svůj den nebo místnost, ve které jste."
+
+[[items]]
+key = "free-cs"
+item = "free"
+language = "cs"
+seconds = 45
+
+[items.titles]
+en = "Free speech, Czech"
+cs = "Volná řeč, česky"
+
+[items.instructions]
+en = "Talk freely in Czech for about 45 seconds: describe your day, or the room you are in."
+cs = "Mluvte volně asi 45 sekund: popište svůj den nebo místnost, ve které jste."

@@ -1,0 +1,27 @@
+[duration_s]
+title = "Duration"
+description = "Length of the recording."
+
+[peak_dbfs]
+title = "Peak level"
+description = "The loudest sample, relative to full scale. Aim for −12 to −6 dBFS; 0 means the recording clipped."
+
+[speech_level_dbfs]
+title = "Speech level"
+description = "Level of the louder parts of the take (90th percentile of 20 ms frames)."
+
+[noise_floor_dbfs]
+title = "Noise floor"
+description = "Level of the quietest parts of the take (5th percentile of 20 ms frames): the room and the microphone."
+
+[clipped_samples]
+title = "Clipped samples"
+description = "Samples at full scale. Anything above zero distorts every other measure; lower the gain and record again."
+
+[voiced_fraction]
+title = "Voiced share"
+description = "Share of the take in which the vocal folds vibrate. Pauses and voiceless consonants lower it."
+
+[pitch_median_hz]
+title = "Median pitch"
+description = "The middle value of the fundamental frequency over the voiced parts. Measured in two passes so that creaky stretches are not read an octave low."

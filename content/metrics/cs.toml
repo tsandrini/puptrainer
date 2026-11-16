@@ -1,0 +1,27 @@
+[duration_s]
+title = "Délka"
+description = "Délka nahrávky."
+
+[peak_dbfs]
+title = "Špičková úroveň"
+description = "Nejhlasitější vzorek vůči plnému rozsahu. Cílem je −12 až −6 dBFS; 0 znamená, že nahrávka byla přebuzená."
+
+[speech_level_dbfs]
+title = "Úroveň řeči"
+description = "Úroveň hlasitějších částí nahrávky (90. percentil 20ms rámců)."
+
+[noise_floor_dbfs]
+title = "Šumové pozadí"
+description = "Úroveň nejtišších částí nahrávky (5. percentil 20ms rámců): místnost a mikrofon."
+
+[clipped_samples]
+title = "Přebuzené vzorky"
+description = "Vzorky na plném rozsahu. Cokoli nad nulou zkresluje všechna ostatní měření; snižte zisk a nahrajte znovu."
+
+[voiced_fraction]
+title = "Podíl znělých úseků"
+description = "Podíl nahrávky, ve kterém kmitají hlasivky. Pauzy a neznělé souhlásky ho snižují."
+
+[pitch_median_hz]
+title = "Medián výšky hlasu"
+description = "Prostřední hodnota základní frekvence ve znělých úsecích. Měří se ve dvou průchodech, aby se skřípavé úseky nečetly o oktávu níž."
