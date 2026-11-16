@@ -1,0 +1,45 @@
+// The API's endpoints, one typed function each. The types are generated
+// from the backend's models (`python -m puptrainer.api.tstypes`).
+
+import { api, getJson, patchJson, postJson, putJson, query } from './client.js';
+import type {
+	Content,
+	DeviceIn,
+	DeviceOut,
+	Health,
+	MetricDef,
+	TakeMeta,
+	TakeOut,
+	TakePatch
+} from './types.js';
+
+export type * from './types.js';
+
+export const fetchHealth = () => getJson<Health>('health');
+export const fetchContent = () => getJson<Content>('content');
+export const fetchMetrics = () => getJson<MetricDef[]>('metrics');
+
+export const fetchDevices = () => getJson<DeviceOut[]>('devices');
+export const createDevice = (body: DeviceIn) => postJson<DeviceOut>('devices', body);
+export const updateDevice = (id: number, body: DeviceIn) =>
+	putJson<DeviceOut>(`devices/${id}`, body);
+
+export type TakeFilter = { item?: string; intent?: string; language?: string; device_id?: number };
+
+export const fetchTakes = (filter: TakeFilter = {}) => getJson<TakeOut[]>(`takes${query(filter)}`);
+export const fetchTake = (id: string) => getJson<TakeOut>(`takes/${encodeURIComponent(id)}`);
+export const updateTake = (id: string, body: TakePatch) =>
+	patchJson<TakeOut>(`takes/${encodeURIComponent(id)}`, body);
+export const deleteTake = (id: string) =>
+	api(`takes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const analyseTake = (id: string) =>
+	postJson<TakeOut>(`takes/${encodeURIComponent(id)}/analysis`, {});
+export const takeAudioUrl = (id: string) => `/api/v1/takes/${encodeURIComponent(id)}/audio`;
+
+/** Uploads a recording (WAV or FLAC) with its labels. */
+export async function createTake(file: Blob, meta: TakeMeta, name: string): Promise<TakeOut> {
+	const form = new FormData();
+	form.append('file', file, name);
+	form.append('meta', JSON.stringify(meta));
+	return (await api('takes', { method: 'POST', body: form })).json();
+}
