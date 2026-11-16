@@ -15,7 +15,7 @@ from types import FrameType
 import httpx
 
 from puptrainer.analysis.pipeline import PIPELINE_VERSION, analyse
-from puptrainer.core.schemas import JobClaim, JobFailure, JobResult
+from puptrainer.core.schemas import JobClaim, JobFailure, JobResult, WorkerHello
 from puptrainer.core.settings import Settings
 
 log = logging.getLogger("puptrainer.worker")
@@ -33,7 +33,8 @@ def run_once(client: httpx.Client) -> bool:
     Raises:
         httpx.HTTPError: The API could not be reached or answered with an error.
     """
-    response = client.post("/api/v1/worker/jobs/claim")
+    hello = WorkerHello(pipeline_version=PIPELINE_VERSION)
+    response = client.post("/api/v1/worker/jobs/claim", json=hello.model_dump())
     response.raise_for_status()
     if response.status_code == 204:
         return False
@@ -44,7 +45,7 @@ def run_once(client: httpx.Client) -> bool:
         with tempfile.TemporaryDirectory(prefix="puptrainer-") as tmp:
             path = Path(tmp) / "take.flac"
             path.write_bytes(audio.content)
-            metrics = analyse(path, job.item)
+            analysis = analyse(path, job.item)
     except Exception as exc:  # noqa: BLE001  NOTE: any failure is reported, the loop goes on
         log.exception("job %s (take %s) failed", job.job_id, job.take_id)
         failure = JobFailure(
@@ -54,7 +55,12 @@ def run_once(client: httpx.Client) -> bool:
             f"/api/v1/worker/jobs/{job.job_id}/fail", json=failure.model_dump()
         ).raise_for_status()
         return True
-    result = JobResult(pipeline_version=PIPELINE_VERSION, metrics=metrics)
+    result = JobResult(
+        pipeline_version=PIPELINE_VERSION,
+        metrics=analysis.metrics,
+        details=analysis.details,
+        series=analysis.series,
+    )
     client.post(
         f"/api/v1/worker/jobs/{job.job_id}/complete", json=result.model_dump()
     ).raise_for_status()

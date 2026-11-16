@@ -163,6 +163,12 @@ def test_content_and_metrics(client: TestClient) -> None:
     metrics = client.get("/api/v1/metrics").json()
     assert {m["key"] for m in metrics} == KEYS
     assert all(m["titles"].keys() >= {"en", "cs"} for m in metrics)
+    assert all(m["descriptions"].keys() >= {"en", "cs"} for m in metrics)
+    assert all(m["notes"].keys() in (set(), {"en", "cs"}) for m in metrics)
+    by_key = {m["key"]: m for m in metrics}
+    assert by_key["vtl_cm"]["group"] == "resonance"
+    assert by_key["glide_range_st"]["items"] == ["glide"]
+    assert by_key["duration_s"]["items"] is None
 
 
 def test_passage_text_is_frozen(client: TestClient) -> None:

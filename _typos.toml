@@ -1,3 +1,7 @@
 [files]
 # NOTE: Czech text
 extend-exclude = ["content/metrics/cs.toml", "content/passages/garden-cs.toml", "content/protocols/*.toml", "web/src/lib/i18n/cs.ts"]
+
+[default.extend-words]
+# NOTE: a resonance of the vocal tract, not a misspelt "format"
+formant = "formant"

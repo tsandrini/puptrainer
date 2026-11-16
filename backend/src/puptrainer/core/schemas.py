@@ -40,6 +40,16 @@ class DeviceKind(StrEnum):
     OTHER = "other"
 
 
+class MetricGroup(StrEnum):
+    """What a metric is about."""
+
+    RECORDING = "recording"
+    PITCH = "pitch"
+    RESONANCE = "resonance"
+    QUALITY = "quality"
+    RANGE = "range"
+
+
 class JobStatus(StrEnum):
     """State of an analysis job."""
 
@@ -125,8 +135,57 @@ class AnalysisOut(Schema):
     finished_at: datetime | None = None
 
 
+class Series(Schema):
+    """Evenly spaced values over a take, e.g. its pitch contour.
+
+    Attributes:
+        start_s: Time of the first value.
+        step_s: Time between values.
+        values: One value per step; `None` where there is nothing to measure (unvoiced).
+    """
+
+    start_s: float
+    step_s: float
+    values: list[float | None]
+
+
+class VowelSegment(Schema):
+    """One sustained vowel found in a take.
+
+    Attributes:
+        start_s: Where it starts.
+        duration_s: How long it is held.
+        vowel: Which vowel it most likely is (`a`, `i` or `u`), from its formants.
+        pitch_hz: Median pitch.
+        formants_hz: F1 to F4 over the steady middle.
+        cpps_db: Smoothed cepstral peak prominence of the steady middle.
+        hnr_db: Harmonics-to-noise ratio of the steady middle.
+    """
+
+    start_s: float
+    duration_s: float
+    vowel: str
+    pitch_hz: float
+    formants_hz: list[float]
+    cpps_db: float
+    hnr_db: float
+
+
+class Details(Schema):
+    """What an analysis found besides single numbers.
+
+    Attributes:
+        vowels: The sustained vowels of a `vowels` take, in order.
+    """
+
+    vowels: list[VowelSegment] = []
+
+
 class TakeOut(Schema):
-    """A stored take with its labels, its analysis state and its metrics."""
+    """A stored take with its labels, its analysis state and its metrics.
+
+    `metrics`, `details` and `series` come from the newest finished analysis.
+    """
 
     id: str
     created_at: datetime
@@ -145,6 +204,8 @@ class TakeOut(Schema):
     duration_s: float
     analysis: AnalysisOut | None
     metrics: dict[str, float]
+    details: Details
+    series: list[str]
 
 
 class JobClaim(Schema):
@@ -163,11 +224,32 @@ class JobClaim(Schema):
     audio_path: str
 
 
+class WorkerHello(Schema):
+    """What the worker says about itself when it asks for work."""
+
+    pipeline_version: str
+
+
 class JobResult(Schema):
-    """What the worker reports for a finished job."""
+    """What the worker reports for a finished job.
+
+    Attributes:
+        pipeline_version: Version of the pipeline that ran.
+        metrics: Values by registry key.
+        details: Structured findings.
+        series: Stored series by key (`pitch_hz`).
+    """
 
     pipeline_version: str
     metrics: dict[str, float]
+    details: Details = Details()
+    series: dict[str, Series] = {}
+
+
+class Requeued(Schema):
+    """Answer to a request to analyse takes again."""
+
+    queued: int
 
 
 class JobFailure(Schema):
@@ -185,12 +267,14 @@ class Health(Schema):
         version: Version of the backend.
         pending_jobs: Jobs waiting for or held by the worker.
         worker_seen_s: Seconds since the worker last asked for work; unset if never.
+        pipeline_version: The pipeline version the worker last reported; unset if never.
     """
 
     status: str
     version: str
     pending_jobs: int
     worker_seen_s: float | None
+    pipeline_version: str | None
 
 
 class MetricDef(Schema):
@@ -198,17 +282,23 @@ class MetricDef(Schema):
 
     Attributes:
         key: Identifier used in `TakeOut.metrics`.
-        unit: Unit of the value (`Hz`, `dBFS`, `s`, …), empty for ratios and counts.
+        unit: Unit of the value (`Hz`, `dBFS`, `st` for semitones, …), empty for counts.
         decimals: Decimals worth showing.
+        group: What it is about.
+        items: The kinds of take it is measured on; unset for all.
         titles: Short name per language.
-        descriptions: What it measures and how far to trust it, per language.
+        descriptions: What it measures, per language.
+        notes: How far to trust it and how to read it, per language.
     """
 
     key: str
     unit: str
     decimals: int
+    group: MetricGroup
+    items: list[Item] | None = None
     titles: dict[str, str] = {}
     descriptions: dict[str, str] = {}
+    notes: dict[str, str] = {}
 
 
 class Passage(Schema):

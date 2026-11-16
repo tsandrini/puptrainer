@@ -64,5 +64,14 @@ def load_metrics(content_dir: Path) -> list[MetricDef]:
             for lang, t in texts.items()
             if metric.key in t
         }
-        out.append(metric.model_copy(update={"titles": titles, "descriptions": descriptions}))
+        notes = {
+            lang: t[metric.key]["note"]
+            for lang, t in texts.items()
+            if metric.key in t and "note" in t[metric.key]
+        }
+        out.append(
+            metric.model_copy(
+                update={"titles": titles, "descriptions": descriptions, "notes": notes}
+            )
+        )
     return out

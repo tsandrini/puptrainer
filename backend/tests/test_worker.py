@@ -4,7 +4,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from puptrainer.analysis.pipeline import PIPELINE_VERSION
+from puptrainer.analysis.pipeline import PIPELINE_VERSION, Analysis
 from puptrainer.analysis.worker import run_once
 from puptrainer.api.app import create_app
 from puptrainer.core.settings import Settings
@@ -28,7 +28,43 @@ def test_worker_analyses_a_take(client: TestClient, device_id: int) -> None:
     assert done["metrics"]["peak_dbfs"] == pytest.approx(-6.0, abs=0.1)
     assert done["metrics"]["duration_s"] == pytest.approx(2.0)
     assert run_once(client) is False
-    assert client.get("/api/v1/health").json()["pending_jobs"] == 0
+    health = client.get("/api/v1/health").json()
+    assert health["pending_jobs"] == 0
+    assert health["pipeline_version"] == PIPELINE_VERSION
+
+    # the contour is stored and served; a take of speech has no vowel details
+    assert done["series"] == ["pitch_hz"]
+    assert done["details"] == {"vowels": []}
+    contour = client.get(f"/api/v1/takes/{take['id']}/series/pitch_hz").json()
+    assert contour["step_s"] == pytest.approx(0.01)
+    voiced = [v for v in contour["values"] if v is not None]
+    assert len(contour["values"]) == pytest.approx(200, abs=10)
+    assert len(voiced) > 150
+    assert sorted(voiced)[len(voiced) // 2] == pytest.approx(170.0, abs=1.0)
+    assert client.get(f"/api/v1/takes/{take['id']}/series/nope").status_code == 404
+
+
+def test_requeue(client: TestClient, device_id: int) -> None:
+    first = upload(client, device_id).json()
+    second = upload(client, device_id, wav_bytes(tone(f0=200.0))).json()
+    # nothing is queued twice while jobs are waiting
+    assert client.post("/api/v1/analysis/requeue").json() == {"queued": 0}
+    run_once(client)
+    run_once(client)
+    # takes analysed by the current pipeline are skipped when a version is named
+    current = {"pipeline_version": PIPELINE_VERSION}
+    assert client.post("/api/v1/analysis/requeue", params=current).json() == {"queued": 0}
+    older = {"pipeline_version": "9.9.9"}
+    assert client.post("/api/v1/analysis/requeue", params=older).json() == {"queued": 2}
+    assert client.get("/api/v1/health").json()["pending_jobs"] == 2
+    waiting = client.get(f"/api/v1/takes/{first['id']}").json()
+    assert waiting["analysis"]["status"] == "pending"
+    assert "pitch_median_hz" in waiting["metrics"]
+    run_once(client)
+    run_once(client)
+    # without a version, everything is queued again
+    assert client.post("/api/v1/analysis/requeue").json() == {"queued": 2}
+    assert client.get(f"/api/v1/takes/{second['id']}").json()["series"] == ["pitch_hz"]
 
 
 def test_jobs_are_handed_out_once_and_in_order(client: TestClient, device_id: int) -> None:
@@ -45,7 +81,7 @@ def test_failure_is_recorded_and_can_be_retried(
 ) -> None:
     take = upload(client, device_id).json()
 
-    def broken(*_args: object) -> dict[str, float]:
+    def broken(*_args: object) -> Analysis:
         raise RuntimeError("the file is broken")
 
     monkeypatch.setattr("puptrainer.analysis.worker.analyse", broken)

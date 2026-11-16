@@ -11,7 +11,9 @@ from sqlalchemy import (
     Dialect,
     Engine,
     ForeignKey,
+    LargeBinary,
     String,
+    Text,
     TypeDecorator,
     UniqueConstraint,
     create_engine,
@@ -102,9 +104,13 @@ class AnalysisJob(Base):
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     pipeline_version: Mapped[str | None] = mapped_column(String(20))
     error: Mapped[str | None] = mapped_column(String(4000))
+    details: Mapped[str | None] = mapped_column(Text)
 
     take: Mapped[Take] = relationship(back_populates="jobs")
     metrics: Mapped[list["MetricValue"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+    series: Mapped[list["AnalysisSeries"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
 
@@ -121,6 +127,25 @@ class MetricValue(Base):
     value: Mapped[float]
 
     job: Mapped[AnalysisJob] = relationship(back_populates="metrics")
+
+
+class AnalysisSeries(Base):
+    """Evenly spaced values a job measured over a take, e.g. the pitch contour.
+
+    `data` holds little-endian 32-bit floats; NaN marks a step with nothing to measure.
+    """
+
+    __tablename__ = "analysis_series"
+    __table_args__ = (UniqueConstraint("job_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("analysis_job.id", ondelete="CASCADE"))
+    key: Mapped[str] = mapped_column(String(60))
+    start_s: Mapped[float]
+    step_s: Mapped[float]
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
+
+    job: Mapped[AnalysisJob] = relationship(back_populates="series")
 
 
 def make_engine(path: Path) -> Engine:

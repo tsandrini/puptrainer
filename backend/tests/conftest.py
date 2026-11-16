@@ -78,3 +78,40 @@ def upload(client: TestClient, device_id: int, data: bytes | None = None, **labe
         files={"file": ("take.wav", data if data is not None else wav_bytes(tone()), "audio/wav")},
         data={"meta": json.dumps(meta)},
     )
+
+
+def vowel(
+    formants: tuple[float, ...],
+    f0: float = 120.0,
+    seconds: float = 2.0,
+    amplitude: float = 0.3,
+    noise: float = 0.0,
+    wobble: float = 0.05,
+    sample_rate: int = SAMPLE_RATE,
+) -> np.ndarray:
+    """A synthetic vowel: harmonics of a slowly moving `f0` shaped by resonances.
+
+    The given formants are continued upwards at the spacing of the last two, as a tube's
+    are; without them the spectrum falls off far more steeply than a voice's. `noise`
+    adds breath.
+    """
+    t = np.arange(int(seconds * sample_rate)) / sample_rate
+    pitch = f0 * (1 + wobble * np.sin(2 * np.pi * 1.3 * t))
+    phase = 2 * np.pi * np.cumsum(pitch) / sample_rate
+    resonances = list(formants)
+    step = resonances[-1] - resonances[-2]
+    while resonances[-1] + step < 20000:
+        resonances.append(resonances[-1] + step)
+    x = np.zeros_like(t)
+    for k in range(1, int(8000 / (f0 * (1 + wobble))) + 1):
+        f = k * pitch
+        gain = 1.0 / k  # the source falls off by 6 dB per octave
+        for centre in resonances:
+            width = 80.0 + 0.02 * centre
+            gain = gain / np.sqrt((1 - (f / centre) ** 2) ** 2 + (f * width / centre**2) ** 2)
+        x += gain * np.sin(k * phase + 1.7 * k)
+    x /= np.abs(x).max()
+    if noise:
+        x = x + noise * np.random.default_rng(7).standard_normal(len(x))
+        x /= np.abs(x).max()
+    return amplitude * x

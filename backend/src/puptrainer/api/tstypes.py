@@ -25,8 +25,14 @@ REQUESTS: tuple[type[BaseModel], ...] = (
     schemas.DeviceIn,
     schemas.TakeMeta,
     schemas.TakePatch,
-    schemas.JobResult,
+)
+
+# NOTE: spoken between the worker and the API only; the web app never sees them
+WORKER_ONLY: tuple[type[BaseModel], ...] = (
+    schemas.JobClaim,
     schemas.JobFailure,
+    schemas.JobResult,
+    schemas.WorkerHello,
 )
 
 
@@ -105,6 +111,7 @@ def current() -> str:
         and issubclass(value, BaseModel)
         and value.__module__ == schemas.__name__
         and value is not schemas.Schema
+        and value not in WORKER_ONLY
     ]
     pairs: list[tuple[type[BaseModel], Literal["validation", "serialization"]]] = [
         (model, "validation" if model in REQUESTS else "serialization") for model in models

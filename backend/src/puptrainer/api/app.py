@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
+import numpy as np
 from fastapi import (
     APIRouter,
     Depends,
@@ -30,13 +31,23 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import Scope
 
 from puptrainer import __version__
-from puptrainer.api.db import AnalysisJob, Device, MetricValue, Take, make_engine, migrate, now
+from puptrainer.api.db import (
+    AnalysisJob,
+    AnalysisSeries,
+    Device,
+    MetricValue,
+    Take,
+    make_engine,
+    migrate,
+    now,
+)
 from puptrainer.api.storage import AudioStore, InvalidAudioError
 from puptrainer.core.content import load_content, load_metrics
 from puptrainer.core.metrics import KEYS
 from puptrainer.core.schemas import (
     AnalysisOut,
     Content,
+    Details,
     DeviceIn,
     DeviceOut,
     ErrorOut,
@@ -48,9 +59,12 @@ from puptrainer.core.schemas import (
     JobResult,
     JobStatus,
     MetricDef,
+    Requeued,
+    Series,
     TakeMeta,
     TakeOut,
     TakePatch,
+    WorkerHello,
 )
 from puptrainer.core.settings import Settings
 
@@ -68,6 +82,13 @@ def database(request: Request) -> Iterator[Session]:
 Db = Annotated[Session, Depends(database)]
 
 
+# NOTE: what `take_out` reads; a series' data column is deferred and stays unloaded
+TAKE_LOAD = (
+    selectinload(Take.jobs).selectinload(AnalysisJob.metrics),
+    selectinload(Take.jobs).selectinload(AnalysisJob.series),
+)
+
+
 class SpaFiles(StaticFiles):
     """The built web app: unknown paths get `index.html`, the client routes them."""
 
@@ -82,7 +103,7 @@ class SpaFiles(StaticFiles):
 
 
 def take_out(take: Take) -> TakeOut:
-    """A take as the API returns it: labels, the latest job, the latest finished metrics."""
+    """A take as the API returns it: labels, the latest job, the newest finished results."""
     latest = take.jobs[-1] if take.jobs else None
     done = next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
     return TakeOut(
@@ -110,6 +131,10 @@ def take_out(take: Take) -> TakeOut:
             finished_at=latest.finished_at,
         ),
         metrics={} if done is None else {m.key: m.value for m in done.metrics},
+        details=Details.model_validate_json(done.details)
+        if done is not None and done.details
+        else Details(),
+        series=[] if done is None else sorted(s.key for s in done.series),
     )
 
 
@@ -154,6 +179,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         separate_input_output_schemas=False,
     )
     app.state.worker_seen = None
+    app.state.pipeline_version = None
     app.state.engine = engine
     app.state.sessions = sessions
 
@@ -168,11 +194,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     router = APIRouter(prefix="/api/v1", responses=ERRORS)
 
     def get_take(db: Session, take_id: str) -> Take:
-        take = db.scalar(
-            select(Take)
-            .where(Take.id == take_id)
-            .options(selectinload(Take.jobs).selectinload(AnalysisJob.metrics))
-        )
+        take = db.scalar(select(Take).where(Take.id == take_id).options(*TAKE_LOAD))
         if take is None:
             raise HTTPException(404, "no such take")
         return take
@@ -198,6 +220,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             version=__version__,
             pending_jobs=pending or 0,
             worker_seen_s=None if seen is None else time.monotonic() - seen,
+            pipeline_version=app.state.pipeline_version,
         )
 
     @router.get("/content", operation_id="content")
@@ -295,7 +318,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         limit: Annotated[int, Query(ge=1, le=1000)] = 200,
         offset: Annotated[int, Query(ge=0)] = 0,
     ) -> list[TakeOut]:
-        query = select(Take).options(selectinload(Take.jobs).selectinload(AnalysisJob.metrics))
+        query = select(Take).options(*TAKE_LOAD)
         if item is not None:
             query = query.where(Take.item == item)
         if intent is not None:
@@ -353,6 +376,42 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             db.commit()
         return take_out(get_take(db, take_id))
 
+    @router.get("/takes/{take_id}/series/{key}", operation_id="takeSeries")
+    def take_series(take_id: str, key: str, db: Db) -> Series:
+        take = get_take(db, take_id)
+        done = next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
+        stored = next((s for s in done.series if s.key == key), None) if done else None
+        if stored is None:
+            raise HTTPException(404, "no such series for this take")
+        values = np.frombuffer(stored.data, dtype="<f4")
+        return Series(
+            start_s=stored.start_s,
+            step_s=stored.step_s,
+            values=[None if np.isnan(v) else round(float(v), 2) for v in values],
+        )
+
+    @router.post("/analysis/requeue", operation_id="requeueAnalysis")
+    def requeue(db: Db, pipeline_version: str | None = None) -> Requeued:
+        """Queue takes for analysis again.
+
+        With `pipeline_version`, only takes whose newest finished analysis ran another
+        version (or that have none) are queued; without it, every take is. A take with
+        a job already waiting or running is left alone.
+        """
+        queued = 0
+        for take in db.scalars(select(Take).options(selectinload(Take.jobs))):
+            latest = take.jobs[-1] if take.jobs else None
+            if latest is not None and latest.status in (JobStatus.PENDING, JobStatus.CLAIMED):
+                continue
+            done = next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
+            current = done is not None and done.pipeline_version == pipeline_version
+            if pipeline_version is not None and current:
+                continue
+            take.jobs.append(AnalysisJob(status=JobStatus.PENDING))
+            queued += 1
+        db.commit()
+        return Requeued(queued=queued)
+
     # --- the worker's queue ---
 
     @router.post(
@@ -361,8 +420,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response_model=JobClaim,
         responses={204: {"description": "The queue is empty"}},
     )
-    def claim_job(db: Db) -> JobClaim | Response:
+    def claim_job(db: Db, hello: WorkerHello | None = None) -> JobClaim | Response:
         app.state.worker_seen = time.monotonic()
+        if hello is not None:
+            app.state.pipeline_version = hello.pipeline_version
         stale = datetime.now(UTC) - timedelta(seconds=settings.job_timeout_s)
         for job in db.scalars(
             select(AnalysisJob).where(
@@ -407,6 +468,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job.status, job.finished_at = JobStatus.DONE, now()
         job.pipeline_version, job.error = body.pipeline_version, None
         job.metrics = [MetricValue(key=k, value=v) for k, v in body.metrics.items()]
+        job.details = body.details.model_dump_json()
+        job.series = [
+            AnalysisSeries(
+                key=key,
+                start_s=series.start_s,
+                step_s=series.step_s,
+                data=np.array(
+                    [np.nan if v is None else v for v in series.values], dtype="<f4"
+                ).tobytes(),
+            )
+            for key, series in body.series.items()
+        ]
         db.commit()
         return Response(status_code=204)
 

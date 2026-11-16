@@ -1,10 +1,13 @@
+# --- nahrávka
+
 [duration_s]
 title = "Délka"
 description = "Délka nahrávky."
 
 [peak_dbfs]
 title = "Špičková úroveň"
-description = "Nejhlasitější vzorek vůči plnému rozsahu. Cílem je −12 až −6 dBFS; 0 znamená, že nahrávka byla přebuzená."
+description = "Nejhlasitější vzorek vůči plnému rozsahu."
+note = "Cílem je −12 až −6 dBFS. Při 0 byla nahrávka přebuzená."
 
 [speech_level_dbfs]
 title = "Úroveň řeči"
@@ -13,15 +16,124 @@ description = "Úroveň hlasitějších částí nahrávky (90. percentil 20ms r
 [noise_floor_dbfs]
 title = "Šumové pozadí"
 description = "Úroveň nejtišších částí nahrávky (5. percentil 20ms rámců): místnost a mikrofon."
+note = "Čím hlouběji pod úrovní řeči, tím víc se dá věřit ostatním měřením; 40 dB a více je pohodlná rezerva."
 
 [clipped_samples]
 title = "Přebuzené vzorky"
-description = "Vzorky na plném rozsahu. Cokoli nad nulou zkresluje všechna ostatní měření; snižte zisk a nahrajte znovu."
+description = "Vzorky na plném rozsahu."
+note = "Cokoli nad nulou zkresluje všechna ostatní měření: snižte zisk a nahrajte znovu."
 
-[voiced_fraction]
+[voiced_share_pct]
 title = "Podíl znělých úseků"
-description = "Podíl nahrávky, ve kterém kmitají hlasivky. Pauzy a neznělé souhlásky ho snižují."
+description = "Podíl nahrávky, ve kterém kmitají hlasivky."
+note = "Pauzy a neznělé souhlásky ho snižují; u řeči je běžná zhruba polovina."
+
+# --- výška hlasu
 
 [pitch_median_hz]
 title = "Medián výšky hlasu"
-description = "Prostřední hodnota základní frekvence ve znělých úsecích. Měří se ve dvou průchodech, aby se skřípavé úseky nečetly o oktávu níž."
+description = "Prostřední hodnota základní frekvence ve znělých úsecích."
+note = "Spolehlivé na jakémkoli mikrofonu. Výška je nejsilnější jednotlivé vodítko pro to, jak hlas zní, a přesto vysvětluje méně než polovinu."
+
+[pitch_p05_hz]
+title = "Výška, dolní konec"
+description = "5 % znělého času je pod touto výškou."
+note = "Kam hlas klesá na koncích frází. Trénink často zvedne medián dřív než tuto hodnotu."
+
+[pitch_p95_hz]
+title = "Výška, horní konec"
+description = "5 % znělého času je nad touto výškou."
+
+[pitch_range_st]
+title = "Rozsah výšky"
+description = "Vzdálenost mezi dolním a horním koncem v půltónech."
+note = "Jak moc se pohybuje melodie řeči. Čtení bývá plošší než volná řeč."
+
+[pitch_sd_st]
+title = "Proměnlivost výšky"
+description = "Směrodatná odchylka výšky kolem mediánu v půltónech."
+
+[pitch_below_145_pct]
+title = "Čas pod 145 Hz"
+description = "Podíl znělého času pod 145 Hz."
+note = "145 a 185 Hz jsou obvyklé hranice pásma, ve kterém se posluchači o hlasu neshodnou. Jsou to konvence složené z malých studií, ne prahy."
+
+[pitch_145_185_pct]
+title = "Čas v pásmu 145–185 Hz"
+description = "Podíl znělého času mezi 145 a 185 Hz."
+note = "145 a 185 Hz jsou obvyklé hranice pásma, ve kterém se posluchači o hlasu neshodnou. Jsou to konvence složené z malých studií, ne prahy."
+
+[pitch_above_185_pct]
+title = "Čas nad 185 Hz"
+description = "Podíl znělého času nad 185 Hz."
+note = "145 a 185 Hz jsou obvyklé hranice pásma, ve kterém se posluchači o hlasu neshodnou. Jsou to konvence složené z malých studií, ne prahy."
+
+[subharmonic_share_pct]
+title = "Podíl skřípavých úseků"
+description = "Podíl znělého času, ve kterém se každý druhý kmit hlasivek liší (zdvojení periody, skřípavý hlas)."
+note = "Jednoduché měření výšky čte takové úseky o oktávu níž; tady se počítají zvlášť. Běžné v uvolněné řeči a na koncích frází."
+
+# --- rezonance
+
+[f1_median_hz]
+title = "F1, medián"
+description = "Medián první rezonance hlasového traktu ve znělých, hlasitějších částech."
+note = "Závisí na tom, které samohlásky nahrávka obsahuje: porovnávejte jen nahrávky stejného textu."
+
+[f2_median_hz]
+title = "F2, medián"
+description = "Medián druhé rezonance hlasového traktu ve znělých, hlasitějších částech."
+note = "Závisí na tom, které samohlásky nahrávka obsahuje: porovnávejte jen nahrávky stejného textu."
+
+[f3_median_hz]
+title = "F3, medián"
+description = "Medián třetí rezonance hlasového traktu ve znělých, hlasitějších částech."
+note = "Mění se se samohláskou méně než F1 a F2."
+
+[f4_median_hz]
+title = "F4, medián"
+description = "Medián čtvrté rezonance hlasového traktu ve znělých, hlasitějších částech."
+note = "Mění se se samohláskou méně než F1 a F2; na zašuměné nahrávce nejméně spolehlivá ze čtyř."
+
+[formant_spacing_hz]
+title = "Rozestup formantů"
+description = "Průměrná vzdálenost sousedních rezonancí, proložená přes F1–F4."
+note = "Větší rozestup znamená kratší, jasněji znějící hlasový trakt. Měřítko trendu: porovnávejte nahrávky stejného druhu na stejném nastavení mikrofonu."
+
+[vtl_cm]
+title = "Zdánlivá délka traktu"
+description = "Délka rovnoměrné trubice, která by rezonovala s tímto rozestupem formantů."
+note = "Odhad rezonance, ne anatomická délka. Na jednom nastavení se mezi nahrávkami opakovala s přesností asi ±0,3 cm; posunutí mikrofonu ji změnilo o 0,5 cm. Učebnicové průměry jsou asi 17 cm u mužů a 14,5–15 cm u žen."
+
+# --- kvalita hlasu
+
+[cpps_db]
+title = "CPPS"
+description = "Vyhlazená výraznost kepstrálního vrcholu ve znělých částech: jak zřetelně periodický hlas je."
+note = "Vyšší znamená čistší; dyšnost a chraplavost ji snižují. Mezi mikrofony poměrně stálá. Držené samohlásky vycházejí výš než řeč."
+
+[hnr_db]
+title = "Poměr harmonických složek k šumu"
+description = "Kolik ze znělého zvuku tvoří harmonické složky a kolik šum."
+note = "Snižuje ho dyšnost i šum v pozadí, takže potřebuje tichou nahrávku."
+
+[spectral_slope_db]
+title = "Sklon spektra"
+description = "Energie od 1 do 4 kHz vůči energii pod 1 kHz ve znělých částech."
+note = "Zápornější hodnota znamená víc energie dole. Mění se s váhou hlasu, ale také s mikrofonem, jeho vzdáleností a hlasitostí: porovnávejte jen na stejném nastavení."
+
+# --- rozsah
+
+[glide_low_hz]
+title = "Nejnižší tón"
+description = "Dolní konec klouzání (2. percentil zřetelně periodických rámců)."
+note = "Nejistý, pokud je spodek klouzání skřípavý."
+
+[glide_high_hz]
+title = "Nejvyšší tón"
+description = "Horní konec klouzání (98. percentil zřetelně periodických rámců)."
+
+[glide_range_st]
+title = "Rozsah"
+description = "Vzdálenost mezi nejnižším a nejvyšším tónem v půltónech."
+note = "Dvanáct půltónů je jedna oktáva."
