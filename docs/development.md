@@ -81,6 +81,15 @@ cd backend && alembic revision --autogenerate -m "what changed"
 
 A test compares the migrated schema with the models.
 
+## Look and charts
+
+The theme (colours for light and dark, the font, the paw motif) is in
+`web/src/routes/layout.css`; components use its tokens, never raw colours.
+Charts are built with layerchart in `web/src/lib/components/charts/`. The two
+series colours (`--series-1` for the everyday voice, `--series-2` for
+attempts) are a validated pair: a colour follows the voice it stands for,
+and a third series needs a new validated colour, not a guess.
+
 ## Translations
 
 `web/src/lib/i18n/en.ts` is the source of the message keys; `cs.ts` is typed

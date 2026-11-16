@@ -43,34 +43,59 @@ than the API and its storage.
   in `content/`, not in code. A passage's text is frozen once takes exist
   for it; a changed text is a new version.
 
-## The pipeline (version 0.1.0)
+## The pipeline (version 0.2.0)
 
-| Metric              | How                                                       |
-| ------------------- | --------------------------------------------------------- |
-| `duration_s`        | Length of the recording                                   |
-| `peak_dbfs`         | Largest sample magnitude                                  |
-| `clipped_samples`   | Samples at full scale                                     |
-| `speech_level_dbfs` | 90th percentile of the RMS of 20 ms frames                |
-| `noise_floor_dbfs`  | 5th percentile of the same                                |
-| `voiced_fraction`   | Share of 10 ms frames Praat's pitch tracker calls voiced  |
-| `pitch_median_hz`   | Median of the voiced frames' pitch, tracked in two passes |
+Which numbers a take gets depends on what it contains (`puptrainer.core.metrics`):
 
-Pitch is tracked twice. Creaky voice and period doubling put energy at half
-the pitch, and Praat's defaults then report the voice an octave low. The
-first pass (60–800 Hz, octave cost 0.1) finds the median; the second raises
-the floor to 0.7 times that median. A glide covers the whole range on
-purpose and is tracked once.
+| Group         | Metrics                                                                                                  | Measured on                  |
+| ------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Recording     | duration, peak level, speech level, noise floor, clipped samples, voiced share                           | every take                   |
+| Pitch         | median; 5th and 95th percentile, range and variability in semitones, time below, at and above 145–185 Hz | speech (median: also vowels) |
+| Pitch         | share of subharmonic (creaky) frames                                                                     | speech, vowels               |
+| Resonance     | median F1–F4 (speech only), formant spacing, apparent vocal-tract length                                 | speech, vowels               |
+| Voice quality | CPPS, harmonics-to-noise ratio, spectral slope, on the voiced parts only                                 | speech, vowels               |
+| Range         | lowest and highest note, range in semitones                                                              | glide                        |
 
-Adding a metric: add it to `puptrainer.core.metrics.REGISTRY`, give it a
-title and description in `content/metrics/<language>.toml`, compute it in
-`puptrainer.analysis.pipeline`, and raise `PIPELINE_VERSION`.
+A take also stores its pitch contour (a series, 10 ms steps) and, for a
+vowels take, each sustained vowel with its pitch, formants, CPPS and HNR.
+
+**Pitch.** Creaky voice and period doubling put energy at half the pitch,
+and an autocorrelation tracker then reports the voice an octave low. The
+track (Praat, 60–800 Hz, octave cost 0.1) is corrected frame by frame: a
+frame that reads about half (0.45–0.56) of the median pitch within 0.75 s
+around it is a subharmonic and is doubled. Where that neighbourhood is itself
+far below the take's median, the take's median is the reference. The share
+of frames a default tracker would read an octave low is a metric of its own.
+A glide covers the whole range on purpose and is left as tracked.
+
+**Resonance.** Burg's method finds five formants below a ceiling, so the
+ceiling has to follow the voice: Praat's defaults of 5000 and 5500 Hz are
+five times the formant spacing of an average man and woman. The pipeline
+runs the analysis on a grid of ceilings (4500–6500 Hz) and interpolates the
+one that equals five times the spacing it yields; runs with implausibly wide
+formants are discarded. A fixed ceiling does not fail gracefully: with 5000
+Hz a 14 cm vocal tract reads as 20 cm. The spacing is fitted to the median
+F1–F4 of the voiced, louder frames as a uniform tube's (`F_i = spacing × (2i −
+
+1. / 2`), and the tract length is the speed of sound over twice the spacing.
+   It is an estimate of resonance for following a trend on one microphone
+   setup, not an anatomical length.
+
+**Voice quality** is measured on the voiced stretches joined together, never
+over pauses. CPPS uses the settings of the Acoustic Voice Quality Index.
+
+Adding a metric: add it to `puptrainer.core.metrics.REGISTRY` with its group
+and the kinds of take it applies to, give it a title, a description and a
+note in `content/metrics/<language>.toml`, compute it in
+`puptrainer.analysis.pipeline`, and raise `PIPELINE_VERSION`. The Takes page
+then offers to analyse older takes again.
 
 ## Milestones
 
-| Milestone | Scope                                                                                                                                                                     |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0        | Walking skeleton: record, import, store, analyse (quality, median pitch), list. **Done.**                                                                                 |
-| M1        | The lab: pitch distribution, formants and resonance estimate, voice quality, history charts, A/B player, re-analysis of all takes, deployment (NixOS module, token login) |
-| M2        | Exercise catalogue as data, guided sessions, comfort ratings                                                                                                              |
-| M3        | Voice map with saved presets, ear-training game                                                                                                                           |
-| M4        | Lesson path, stars, skill map                                                                                                                                             |
+| Milestone | Scope                                                                                                                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0        | Walking skeleton: record, import, store, analyse (quality, median pitch), list. **Done.**                                                                                                 |
+| M1        | The lab: pitch distribution, resonance, voice quality, range, progress charts, comparison, re-analysis: **done**. Deployment (NixOS module, token login) and a validation write-up: open. |
+| M2        | Exercise catalogue as data, guided sessions, comfort ratings                                                                                                                              |
+| M3        | Voice map with saved presets, ear-training game                                                                                                                                           |
+| M4        | Lesson path, stars, skill map                                                                                                                                                             |

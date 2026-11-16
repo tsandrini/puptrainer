@@ -5,10 +5,11 @@ see how your voice changes over time. Built for self-guided voice
 feminization practice, self-hosted, with recordings that never leave your
 own machines.
 
-Status: **milestone 0**, the walking skeleton. Recording, import, lossless
-storage, a first analysis pipeline (recording quality and median pitch) and
-the take list work. Resonance, voice quality, history charts, exercises and
-lessons are the next milestones ([docs/architecture.md](docs/architecture.md)).
+Status: **milestone 1 in progress**. Recording, import, lossless storage and
+the lab work: every take is measured for pitch, resonance, voice quality and
+range, each number comes with what it means and how far to trust it, and
+the numbers are charted over time. Login and deployment, exercises and
+lessons are next ([docs/architecture.md](docs/architecture.md)).
 
 ## Table of contents
 
@@ -29,7 +30,11 @@ lessons are the next milestones ([docs/architecture.md](docs/architecture.md)).
   language, and whether it was your everyday voice or an attempt at the
   voice you are training.
 - **Analyses takes in the background** with [Praat](https://www.praat.org)
-  (through Parselmouth) and shows each number with what it means.
+  (through Parselmouth): the pitch and how it moves, an estimate of
+  resonance (formants, apparent vocal-tract length), voice quality, the range
+  of a glide. Every number comes with what it means and how far to trust it.
+- **Shows progress**: each measurement over time, per microphone setup and
+  kind of take, and any two takes side by side.
 - **Never loses a recording.** A take is kept in the browser until the
   server has confirmed it, also across reloads and while the server is away.
 - **English and Czech**, including reading passages written for both.
@@ -79,8 +84,9 @@ There is no login yet: keep the API on `127.0.0.1`.
    each language.
 3. Watch the level: the loudest parts should land in the marked zone
    (−12 to −6 dBFS). Listen back, then save.
-4. **Takes** lists everything; a take's page has the player, its numbers and
-   its labels.
+4. **Takes** lists everything; a take's page has the player, its pitch over
+   time, its numbers and its labels. Tick two takes to compare them.
+5. **Progress** charts each measurement over time.
 
 Record a baseline in your everyday voice before you start training: it
 cannot be recreated later.
