@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+# NOTE: prettier aligns a list item's continuation with its marker ("1. " is 3 wide)
+[*.md]
+indent_size = unset
+
+[LICENSE]
+indent_style = unset
+indent_size = unset
+
+[{.envrc,*.sh}]
+indent_style = tab
+
+# the web app: prettier's tabs
+[web/**]
+indent_style = tab
+indent_size = unset

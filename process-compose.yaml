@@ -1,0 +1,21 @@
+# `process-compose up` in the dev shell: the API, the analysis worker and the
+# web app's dev server (http://localhost:5173, proxying /api to the API).
+# Recordings and the database go to ./data.
+version: "0.5"
+
+processes:
+  api:
+    command: python -m puptrainer.api
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 8437
+        path: /api/v1/health
+  worker:
+    command: python -m puptrainer.analysis.worker
+    depends_on:
+      api:
+        condition: process_healthy
+  web:
+    command: npm run dev
+    working_dir: web

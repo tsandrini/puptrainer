@@ -1,0 +1,3 @@
+[files]
+# NOTE: Czech text
+extend-exclude = ["content/metrics/cs.toml", "content/passages/garden-cs.toml", "content/protocols/*.toml", "web/src/lib/i18n/cs.ts"]
