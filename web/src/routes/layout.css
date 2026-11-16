@@ -1,56 +1,70 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '@fontsource-variable/nunito';
 
 @custom-variant dark (&:is(.dark *));
 
+/* The puptrainer theme: warm rose on blush paper by day, on aubergine by night. */
 :root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
+	--radius: 0.9rem;
+	--background: oklch(0.984 0.009 15);
+	--foreground: oklch(0.27 0.035 335);
 	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
+	--card-foreground: oklch(0.27 0.035 335);
 	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	--primary: oklch(0.205 0 0);
-	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.97 0 0);
-	--secondary-foreground: oklch(0.205 0 0);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
-	--accent-foreground: oklch(0.205 0 0);
+	--popover-foreground: oklch(0.27 0.035 335);
+	--primary: oklch(0.56 0.2 355);
+	--primary-foreground: oklch(0.99 0.005 350);
+	--secondary: oklch(0.955 0.024 350);
+	--secondary-foreground: oklch(0.34 0.07 345);
+	--muted: oklch(0.963 0.013 350);
+	--muted-foreground: oklch(0.5 0.035 335);
+	--accent: oklch(0.945 0.036 330);
+	--accent-foreground: oklch(0.32 0.075 335);
 	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.922 0 0);
-	--input: oklch(0.922 0 0);
-	--ring: oklch(0.708 0 0);
+	--border: oklch(0.915 0.02 345);
+	--input: oklch(0.89 0.024 345);
+	--ring: oklch(0.72 0.13 355);
 	/* states: a level in its target zone, a warning, a failure */
-	--good: #0ca30c;
-	--warning: #c98a00;
+	--good: #0a8f3c;
+	--warning: #b87a00;
 	--critical: #d03b3b;
+	/* charts: two validated series colours (habitual, attempt), grid and reference band */
+	--series-1: #2a78d6;
+	--series-2: #eb6834;
+	--chart-grid: oklch(0.93 0.012 345);
+	--chart-band: oklch(0.56 0.2 355 / 9%);
+	/* the paw prints on the page */
+	--paw-ink: oklch(0.56 0.2 355 / 5.5%);
 }
 
 .dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.269 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
+	--background: oklch(0.195 0.024 325);
+	--foreground: oklch(0.955 0.012 345);
+	--card: oklch(0.245 0.03 325);
+	--card-foreground: oklch(0.955 0.012 345);
+	--popover: oklch(0.245 0.03 325);
+	--popover-foreground: oklch(0.955 0.012 345);
+	--primary: oklch(0.75 0.14 355);
+	--primary-foreground: oklch(0.22 0.045 340);
+	--secondary: oklch(0.31 0.04 325);
+	--secondary-foreground: oklch(0.95 0.014 345);
+	--muted: oklch(0.29 0.032 325);
+	--muted-foreground: oklch(0.74 0.03 335);
+	--accent: oklch(0.34 0.06 328);
+	--accent-foreground: oklch(0.96 0.016 345);
 	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.556 0 0);
-	--good: #35c235;
-	--warning: #fab219;
-	--critical: #f06a6a;
+	--border: oklch(1 0 0 / 11%);
+	--input: oklch(1 0 0 / 17%);
+	--ring: oklch(0.6 0.12 355);
+	--good: #3ccb6c;
+	--warning: #f0b23a;
+	--critical: #f27474;
+	--series-1: #3987e5;
+	--series-2: #d95926;
+	--chart-grid: oklch(1 0 0 / 9%);
+	--chart-band: oklch(0.75 0.14 355 / 12%);
+	--paw-ink: oklch(1 0 0 / 3.5%);
 }
 
 @theme inline {
@@ -79,6 +93,11 @@
 	--color-good: var(--good);
 	--color-warning: var(--warning);
 	--color-critical: var(--critical);
+	--color-series-1: var(--series-1);
+	--color-series-2: var(--series-2);
+	--color-chart-grid: var(--chart-grid);
+	--color-chart-band: var(--chart-band);
+	--font-sans: 'Nunito Variable', ui-rounded, 'Segoe UI', system-ui, sans-serif;
 	--font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
@@ -90,17 +109,37 @@
 		height: 100%;
 	}
 	body {
-		@apply min-h-full bg-background text-foreground;
+		@apply min-h-full bg-background font-sans text-foreground antialiased;
 	}
 	main {
 		overflow-wrap: anywhere;
 	}
+	h1,
+	h2 {
+		@apply font-extrabold tracking-tight;
+	}
+}
+
+/* Paw prints walking across the page, behind everything. */
+.paw-trail {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-color: var(--paw-ink);
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg transform='translate(34 40) rotate(-18) scale(.34)'%3E%3Cellipse cx='60' cy='86' rx='34' ry='27'/%3E%3Cellipse cx='14' cy='50' rx='13' ry='17'/%3E%3Cellipse cx='42' cy='22' rx='13' ry='18'/%3E%3Cellipse cx='78' cy='22' rx='13' ry='18'/%3E%3Cellipse cx='106' cy='50' rx='13' ry='17'/%3E%3C/g%3E%3Cg transform='translate(164 150) rotate(14) scale(.34)'%3E%3Cellipse cx='60' cy='86' rx='34' ry='27'/%3E%3Cellipse cx='14' cy='50' rx='13' ry='17'/%3E%3Cellipse cx='42' cy='22' rx='13' ry='18'/%3E%3Cellipse cx='78' cy='22' rx='13' ry='18'/%3E%3Cellipse cx='106' cy='50' rx='13' ry='17'/%3E%3C/g%3E%3C/svg%3E");
+	mask-size: 260px 260px;
 }
 
 /* A native select in the look of the inputs. */
 .select {
-	@apply h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50;
+	@apply h-9 rounded-md border border-input bg-card px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50;
 }
 .select option {
-	@apply bg-background text-foreground;
+	@apply bg-card text-foreground;
+}
+
+/* A section of a page. */
+.panel {
+	@apply rounded-xl border bg-card p-4 shadow-xs;
 }

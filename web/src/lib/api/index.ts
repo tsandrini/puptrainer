@@ -8,6 +8,8 @@ import type {
 	DeviceOut,
 	Health,
 	MetricDef,
+	Requeued,
+	Series,
 	TakeMeta,
 	TakeOut,
 	TakePatch
@@ -35,6 +37,12 @@ export const deleteTake = (id: string) =>
 export const analyseTake = (id: string) =>
 	postJson<TakeOut>(`takes/${encodeURIComponent(id)}/analysis`, {});
 export const takeAudioUrl = (id: string) => `/api/v1/takes/${encodeURIComponent(id)}/audio`;
+export const fetchSeries = (id: string, key: string) =>
+	getJson<Series>(`takes/${encodeURIComponent(id)}/series/${encodeURIComponent(key)}`);
+
+/** Queues takes for analysis again: those not analysed by `pipelineVersion`, or all of them. */
+export const requeueAnalysis = (pipelineVersion?: string | null) =>
+	postJson<Requeued>(`analysis/requeue${query({ pipeline_version: pipelineVersion })}`, {});
 
 /** Uploads a recording (WAV or FLAC) with its labels. */
 export async function createTake(file: Blob, meta: TakeMeta, name: string): Promise<TakeOut> {

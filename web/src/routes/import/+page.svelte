@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import type { Intent, Item } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
+	import Empty from '#lib/components/app/Empty.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
@@ -78,18 +79,17 @@
 	}
 </script>
 
-<h1 class="mb-2 text-xl font-semibold">{i18n.t.import.title}</h1>
+<h1 class="mb-2 text-2xl">{i18n.t.import.title}</h1>
 <p class="mb-4 text-sm text-muted-foreground">{i18n.t.import.intro}</p>
 
 {#if !app.loaded}
 	<p class="text-muted-foreground">{i18n.t.common.loading}</p>
 {:else if app.devices.length === 0}
-	<div class="rounded-lg border border-dashed p-8 text-center">
-		<p class="text-muted-foreground">{i18n.t.record.needDevice}</p>
-		<Button class="mt-4" href="/devices">{i18n.t.record.addDevice}</Button>
-	</div>
+	<Empty text={i18n.t.record.needDevice}>
+		<Button href="/devices">{i18n.t.record.addDevice}</Button>
+	</Empty>
 {:else}
-	<div class="flex flex-wrap items-end gap-3">
+	<div class="panel flex flex-wrap items-end gap-3">
 		<label class="text-sm">
 			<span class="mb-1 block text-muted-foreground">{i18n.t.record.setup}</span>
 			<select
@@ -120,43 +120,45 @@
 	{/if}
 
 	{#if rows.length}
-		<Table.Root class="mt-4" data-testid="import-rows">
-			<Table.Header>
-				<Table.Row>
-					<Table.Head>{i18n.t.import.file}</Table.Head>
-					<Table.Head>{i18n.t.take.labels}</Table.Head>
-					<Table.Head>{i18n.t.import.date}</Table.Head>
-					<Table.Head></Table.Head>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each rows as row, index (row.file)}
+		<div class="panel mt-4 p-0">
+			<Table.Root data-testid="import-rows">
+				<Table.Header>
 					<Table.Row>
-						<Table.Cell class="font-mono text-xs">{row.file.name}</Table.Cell>
-						<Table.Cell>
-							<LabelFields
-								bind:item={row.item}
-								bind:language={row.language}
-								bind:intent={row.intent}
-								idPrefix="row-{index}"
-							/>
-						</Table.Cell>
-						<Table.Cell>
-							<Input type="datetime-local" class="w-auto" bind:value={row.recordedAt} />
-						</Table.Cell>
-						<Table.Cell>
-							<Button
-								variant="ghost"
-								size="sm"
-								onclick={() => (rows = rows.filter((r) => r !== row))}
-							>
-								{i18n.t.import.remove}
-							</Button>
-						</Table.Cell>
+						<Table.Head>{i18n.t.import.file}</Table.Head>
+						<Table.Head>{i18n.t.take.labels}</Table.Head>
+						<Table.Head>{i18n.t.import.date}</Table.Head>
+						<Table.Head></Table.Head>
 					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
+				</Table.Header>
+				<Table.Body>
+					{#each rows as row, index (row.file)}
+						<Table.Row>
+							<Table.Cell class="font-mono text-xs">{row.file.name}</Table.Cell>
+							<Table.Cell>
+								<LabelFields
+									bind:item={row.item}
+									bind:language={row.language}
+									bind:intent={row.intent}
+									idPrefix="row-{index}"
+								/>
+							</Table.Cell>
+							<Table.Cell>
+								<Input type="datetime-local" class="w-auto" bind:value={row.recordedAt} />
+							</Table.Cell>
+							<Table.Cell>
+								<Button
+									variant="ghost"
+									size="sm"
+									onclick={() => (rows = rows.filter((r) => r !== row))}
+								>
+									{i18n.t.import.remove}
+								</Button>
+							</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</div>
 		<Button class="mt-4" disabled={busy} onclick={importAll} data-testid="import-all">
 			{i18n.t.import.importAll(rows.length)}
 		</Button>

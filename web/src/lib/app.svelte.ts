@@ -4,7 +4,15 @@
 
 import { Offline } from './api/client.js';
 import { fetchContent, fetchDevices, fetchHealth, fetchMetrics } from './api/index.js';
-import type { Content, DeviceOut, Health, MetricDef, Passage } from './api/types.js';
+import type {
+	Content,
+	DeviceOut,
+	Health,
+	Item,
+	MetricDef,
+	MetricGroup,
+	Passage
+} from './api/types.js';
 import { passageRef } from './labels.js';
 
 const POLL_MS = 5_000;
@@ -62,6 +70,22 @@ class AppData {
 		const health = this.health;
 		if (!this.reachable || !health || health.pending_jobs === 0) return false;
 		return health.worker_seen_s === null || health.worker_seen_s > WORKER_QUIET_S;
+	}
+
+	metric(key: string): MetricDef | undefined {
+		return this.metrics.find((m) => m.key === key);
+	}
+
+	/** The registry's metrics that apply to a kind of take, by group, in registry order. */
+	groups(item: Item): { group: MetricGroup; metrics: MetricDef[] }[] {
+		const out: { group: MetricGroup; metrics: MetricDef[] }[] = [];
+		for (const metric of this.metrics) {
+			if (metric.items && !metric.items.includes(item)) continue;
+			const last = out.at(-1);
+			if (last?.group === metric.group) last.metrics.push(metric);
+			else out.push({ group: metric.group, metrics: [metric] });
+		}
+		return out;
 	}
 
 	passage(ref: string | null | undefined): Passage | null {

@@ -1,83 +1,113 @@
 <script lang="ts">
-	// The shell: navigation, the language switch, and the banners that say
-	// when the API or its worker is away or takes are waiting to upload.
-	// The shared state (content, devices, queue, service worker) starts here.
+	// The shell: the paw and the navigation, the language and theme
+	// switches, and the banners that say when the API or its worker is away
+	// or takes are waiting to upload. The shared state (content, devices,
+	// queue, service worker, theme) starts here.
 	import './layout.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import AudioLinesIcon from '@lucide/svelte/icons/audio-lines';
+	import MicIcon from '@lucide/svelte/icons/mic';
+	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { app } from '#lib/app.svelte.js';
+	import Paw from '#lib/components/app/Paw.svelte';
+	import ThemeToggle from '#lib/components/app/ThemeToggle.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { i18n, locales, type Locale } from '#lib/i18n/index.svelte.js';
 	import { pwa } from '#lib/pwa.svelte.js';
 	import { queue } from '#lib/queue.svelte.js';
+	import { theme } from '#lib/theme.svelte.js';
 	import { cn } from '#lib/utils.js';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
 
+	const starts = (prefix: string) => (path: string) => path.startsWith(prefix);
 	const links = $derived([
 		{
 			href: '/',
 			label: i18n.t.nav.takes,
-			active: (p: string) => p === '/' || p.startsWith('/takes')
+			Icon: AudioLinesIcon,
+			active: (p: string) => p === '/' || p.startsWith('/takes') || p.startsWith('/compare')
 		},
-		{ href: '/record', label: i18n.t.nav.record, active: (p: string) => p.startsWith('/record') },
-		{ href: '/import', label: i18n.t.nav.import, active: (p: string) => p.startsWith('/import') },
-		{ href: '/devices', label: i18n.t.nav.devices, active: (p: string) => p.startsWith('/devices') }
+		{ href: '/record', label: i18n.t.nav.record, Icon: MicIcon, active: starts('/record') },
+		{
+			href: '/progress',
+			label: i18n.t.nav.progress,
+			Icon: TrendingUpIcon,
+			active: starts('/progress')
+		},
+		{ href: '/import', label: i18n.t.nav.import, Icon: UploadIcon, active: starts('/import') },
+		{ href: '/devices', label: i18n.t.nav.devices, Icon: SlidersIcon, active: starts('/devices') }
 	]);
 
 	onMount(() => {
 		document.documentElement.lang = i18n.locale;
-		// NOTE: the theme follows the system
-		const dark = matchMedia('(prefers-color-scheme: dark)');
-		const apply = () => document.documentElement.classList.toggle('dark', dark.matches);
-		apply();
-		dark.addEventListener('change', apply);
+		const stopTheme = theme.start();
 		app.start();
 		void queue.start();
 		void pwa.start();
-		return () => dark.removeEventListener('change', apply);
+		return stopTheme;
 	});
 </script>
 
+<div class="paw-trail"></div>
+
 <div class="mx-auto flex min-h-full max-w-5xl flex-col px-4">
-	<header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b py-3">
-		<a href="/" class="font-semibold tracking-tight">puptrainer</a>
-		<nav class="flex flex-1 flex-wrap gap-1" aria-label="Main">
+	<header class="flex flex-wrap items-center gap-x-3 gap-y-2 py-4">
+		<a href="/" class="flex items-center gap-2 text-lg font-black tracking-tight">
+			<span
+				class="grid size-9 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm"
+			>
+				<Paw class="size-5" />
+			</span>
+			puptrainer
+		</a>
+		<nav
+			class="order-last flex w-full gap-1 overflow-x-auto rounded-full border bg-card p-1 shadow-xs sm:order-none sm:ml-3 sm:w-auto"
+			aria-label="Main"
+		>
 			{#each links as link (link.href)}
 				<a
 					href={link.href}
 					aria-current={link.active(page.url.pathname) ? 'page' : undefined}
 					class={cn(
-						'rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:text-foreground',
-						link.active(page.url.pathname) && 'bg-accent text-foreground'
+						'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground',
+						link.active(page.url.pathname) &&
+							'bg-primary text-primary-foreground hover:text-primary-foreground'
 					)}
 				>
+					<link.Icon class="size-4" />
 					{link.label}
 				</a>
 			{/each}
 		</nav>
-		{#if pwa.installPrompt}
-			<Button variant="outline" size="sm" onclick={() => pwa.install()}>
-				{i18n.t.common.install}
-			</Button>
-		{/if}
-		<select
-			class="select h-8"
-			aria-label={i18n.t.common.language}
-			value={i18n.locale}
-			onchange={(event) => i18n.set(event.currentTarget.value as Locale)}
-			data-testid="locale"
-		>
-			{#each Object.keys(locales) as code (code)}
-				<option value={code}>{code.toUpperCase()}</option>
-			{/each}
-		</select>
+		<div class="ml-auto flex items-center gap-2">
+			{#if pwa.installPrompt}
+				<Button variant="outline" size="sm" onclick={() => pwa.install()}>
+					{i18n.t.common.install}
+				</Button>
+			{/if}
+			<ThemeToggle />
+			<select
+				class="select h-8 rounded-full"
+				aria-label={i18n.t.common.language}
+				value={i18n.locale}
+				onchange={(event) => i18n.set(event.currentTarget.value as Locale)}
+				data-testid="locale"
+			>
+				{#each Object.keys(locales) as code (code)}
+					<option value={code}>{code.toUpperCase()}</option>
+				{/each}
+			</select>
+		</div>
 	</header>
 
 	{#if !app.reachable}
 		<p
-			class="mt-3 rounded-md border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
+			class="mb-3 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
 			role="status"
 			data-testid="api-down"
 		>
@@ -85,7 +115,7 @@
 		</p>
 	{:else if app.workerDown}
 		<p
-			class="mt-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
+			class="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
 			role="status"
 			data-testid="worker-down"
 		>
@@ -94,7 +124,7 @@
 	{/if}
 	{#if app.error}
 		<p
-			class="mt-3 rounded-md border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
+			class="mb-3 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
 			role="alert"
 		>
 			{app.error}
@@ -102,8 +132,8 @@
 	{/if}
 
 	{#if queue.items.length}
-		<section class="mt-3 rounded-md border px-3 py-2 text-sm" data-testid="queue">
-			<p class="font-medium">{i18n.t.status.queued(queue.items.length)}</p>
+		<section class="panel mb-3 text-sm" data-testid="queue">
+			<p class="font-bold">{i18n.t.status.queued(queue.items.length)}</p>
 			<ul class="mt-1 space-y-1">
 				{#each queue.items as item (item.id)}
 					<li class="flex flex-wrap items-center gap-2">
@@ -125,7 +155,7 @@
 		</section>
 	{/if}
 
-	<main class="flex-1 py-6">
+	<main class="flex-1 pt-2 pb-10">
 		{@render children()}
 	</main>
 </div>

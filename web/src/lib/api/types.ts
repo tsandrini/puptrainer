@@ -15,6 +15,11 @@ export type Content = {
 	protocols: Protocol[];
 };
 
+/** What an analysis found besides single numbers. */
+export type Details = {
+	vowels: VowelSegment[];
+};
+
 /** A microphone setup to create or update. */
 export type DeviceIn = {
 	name: string;
@@ -45,6 +50,7 @@ export type Health = {
 	version: string;
 	pending_jobs: number;
 	worker_seen_s: number | null;
+	pipeline_version: string | null;
 };
 
 /** Which voice a take was spoken in. */
@@ -52,26 +58,6 @@ export type Intent = 'habitual' | 'attempt';
 
 /** What a take contains. */
 export type Item = 'vowels' | 'glide' | 'passage' | 'free' | 'other';
-
-/** A job handed to the worker. */
-export type JobClaim = {
-	job_id: number;
-	take_id: string;
-	item: Item;
-	audio_path: string;
-};
-
-/** What the worker reports for a failed job. */
-export type JobFailure = {
-	pipeline_version: string;
-	error: string;
-};
-
-/** What the worker reports for a finished job. */
-export type JobResult = {
-	pipeline_version: string;
-	metrics: Record<string, number>;
-};
 
 /** State of an analysis job. */
 export type JobStatus = 'pending' | 'claimed' | 'done' | 'failed';
@@ -81,9 +67,15 @@ export type MetricDef = {
 	key: string;
 	unit: string;
 	decimals: number;
+	group: MetricGroup;
+	items: Item[] | null;
 	titles: Record<string, string>;
 	descriptions: Record<string, string>;
+	notes: Record<string, string>;
 };
+
+/** What a metric is about. */
+export type MetricGroup = 'recording' | 'pitch' | 'resonance' | 'quality' | 'range';
 
 /** A reading passage. Its text is frozen once takes exist for a version. */
 export type Passage = {
@@ -110,6 +102,18 @@ export type ProtocolItem = {
 	titles: Record<string, string>;
 	instructions: Record<string, string>;
 	seconds: number;
+};
+
+/** Answer to a request to analyse takes again. */
+export type Requeued = {
+	queued: number;
+};
+
+/** Evenly spaced values over a take, e.g. its pitch contour. */
+export type Series = {
+	start_s: number;
+	step_s: number;
+	values: (number | null)[];
 };
 
 /** The labels of a take being uploaded. */
@@ -143,6 +147,8 @@ export type TakeOut = {
 	duration_s: number;
 	analysis: AnalysisOut | null;
 	metrics: Record<string, number>;
+	details: Details;
+	series: string[];
 };
 
 /** Labels of a take to change; unset fields stay as they are. */
@@ -154,4 +160,15 @@ export type TakePatch = {
 	content_ref?: string | null;
 	recorded_at?: string | null;
 	note?: string | null;
+};
+
+/** One sustained vowel found in a take. */
+export type VowelSegment = {
+	start_s: number;
+	duration_s: number;
+	vowel: string;
+	pitch_hz: number;
+	formants_hz: number[];
+	cpps_db: number;
+	hnr_db: number;
 };

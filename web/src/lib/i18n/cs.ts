@@ -8,7 +8,21 @@ const plural = (n: number, one: string, few: string, many: string) =>
 	n === 1 ? one : n >= 2 && n <= 4 ? few : many;
 
 export const cs: Messages = {
-	nav: { takes: 'Nahrávky', record: 'Nahrát', import: 'Import', devices: 'Mikrofony' },
+	nav: {
+		takes: 'Nahrávky',
+		record: 'Nahrát',
+		progress: 'Pokrok',
+		import: 'Import',
+		devices: 'Mikrofony'
+	},
+	theme: { label: 'Vzhled', system: 'Podle systému', light: 'Světlý', dark: 'Tmavý' },
+	groups: {
+		recording: 'Nahrávka',
+		pitch: 'Výška hlasu',
+		resonance: 'Rezonance',
+		quality: 'Kvalita hlasu',
+		range: 'Rozsah'
+	},
 	common: {
 		save: 'Uložit',
 		cancel: 'Zrušit',
@@ -20,7 +34,9 @@ export const cs: Messages = {
 		none: '—',
 		language: 'Jazyk',
 		anyLanguage: 'bez jazyka',
-		install: 'Nainstalovat aplikaci'
+		install: 'Nainstalovat aplikaci',
+		showValues: 'Zobrazit hodnoty',
+		hideValues: 'Skrýt hodnoty'
 	},
 	status: {
 		apiDown: 'API není dostupné. Nahrávky zůstávají v tomto zařízení, dokud se nevrátí.',
@@ -59,11 +75,17 @@ export const cs: Messages = {
 		what: 'Co',
 		device: 'Mikrofon',
 		duration: 'Délka',
-		pitch: 'Medián výšky',
+		pitch: 'Výška',
 		status: 'Analýza',
 		allItems: 'Všechno',
 		allIntents: 'Jakýkoli hlas',
-		allLanguages: 'Jakýkoli jazyk'
+		allLanguages: 'Jakýkoli jazyk',
+		select: 'Vybrat k porovnání',
+		compare: 'Porovnat',
+		compareHint: 'Zaškrtněte dvě nahrávky, které chcete porovnat.',
+		outdated: (n) =>
+			`${n} ${plural(n, 'nahrávka byla analyzována', 'nahrávky byly analyzovány', 'nahrávek bylo analyzováno')} starší verzí analýzy.`,
+		reanalyse: 'Analyzovat znovu'
 	},
 	take: {
 		notFound: 'Tato nahrávka neexistuje.',
@@ -78,7 +100,33 @@ export const cs: Messages = {
 		pipeline: (version) => `verze analýzy ${version}`,
 		passage: 'Čtený text',
 		confirmDelete: 'Smazat tuto nahrávku i s jejím záznamem? Nelze to vrátit.',
-		saved: 'Uloženo'
+		saved: 'Uloženo',
+		contour: 'Výška hlasu v průběhu nahrávky',
+		contourBand: 'Vybarvené pásmo je 145–185 Hz.',
+		time: 'Čas',
+		vowels: 'Samohlásky jednotlivě',
+		vowel: 'Samohláska',
+		pitch: 'Výška',
+		heldFor: 'Délka'
+	},
+	progress: {
+		title: 'Pokrok',
+		intro:
+			'Jeden bod za každou nahrávku. Porovnávejte srovnatelné: vždy jedno nastavení mikrofonu a jeden druh nahrávky.',
+		empty: 'Těmto filtrům zatím neodpovídá žádná analyzovaná nahrávka.',
+		kind: 'Druh nahrávky',
+		latest: 'poslední',
+		taken: 'Nahráno'
+	},
+	compare: {
+		title: 'Porovnání dvou nahrávek',
+		pick: 'Zaškrtněte v seznamu dvě nahrávky a zvolte Porovnat.',
+		back: 'Zpět na nahrávky',
+		metric: 'Měření',
+		difference: 'B − A',
+		setups:
+			'Nahrávky pocházejí z různých nastavení mikrofonu: rozdíly v rezonanci, sklonu a úrovni mohou být dané nastavením, ne hlasem.',
+		kinds: 'Nahrávky jsou různého druhu: porovnat lze jen některá měření.'
 	},
 	record: {
 		title: 'Nahrát',
@@ -107,7 +155,10 @@ export const cs: Messages = {
 		denied: 'Prohlížeč odmítl přístup k mikrofonu. Povolte ho pro tuto stránku a zkuste to znovu.',
 		noMic: 'Nenašel se žádný mikrofon.',
 		insecure: 'Nahrávání vyžaduje zabezpečenou stránku (https nebo localhost).',
-		failed: (why) => `Nahrávání selhalo: ${why}`
+		failed: (why) => `Nahrávání selhalo: ${why}`,
+		baseline: 'Výchozí stav',
+		baselineToday: (done, total) => `dnes nahráno ${done} z ${total}`,
+		recordedToday: 'dnes nahráno'
 	},
 	import: {
 		title: 'Import nahrávek',

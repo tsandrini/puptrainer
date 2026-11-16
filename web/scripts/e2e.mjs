@@ -117,7 +117,13 @@ try {
 	const context = await browser.newContext({ baseURL: args.base, locale: 'en-GB' });
 	const page = await context.newPage();
 	const errors = [];
-	page.on('pageerror', (e) => errors.push(String(e)));
+	page.on('pageerror', (e) => {
+		errors.push(String(e));
+		console.log('page error:', String(e));
+	});
+	page.on('console', (message) => {
+		if (message.type() === 'error') console.log('console error:', message.text());
+	});
 
 	// --- an empty app
 	await page.goto('/');
@@ -172,6 +178,15 @@ try {
 	await page.waitForSelector('[data-testid=outcome]');
 	check('take is saved', (await text(page, '[data-testid=outcome]')).startsWith('Saved'));
 
+	// --- the baseline strip ticks the step off
+	await page.goto('/record');
+	await page.waitForSelector('[data-step=passage-en][data-done=true]');
+	check('baseline step is ticked off after recording', true);
+	check(
+		'other baseline steps stay open',
+		(await page.getAttribute('[data-step=passage-cs]', 'data-done')) === 'false'
+	);
+
 	// --- no worker yet: the take waits, the app says so
 	await page.goto('/');
 	await page.waitForSelector('[data-testid=takes] [data-status=pending]');
@@ -203,6 +218,22 @@ try {
 	check('stored pitch matches the tone', Math.abs(stored - TONE_HZ) <= 2, `${stored} Hz`);
 	const peak = Number.parseFloat((await text(page, '[data-metric=peak_dbfs]')).replace('−', '-'));
 	check('stored peak is the tone’s level', Math.abs(peak - -10.5) < 3, `${peak} dBFS`);
+	const groups = await page
+		.locator('[data-testid=metrics] section')
+		.evaluateAll((sections) => sections.map((section) => section.dataset.group));
+	check(
+		'measurements are grouped',
+		groups.includes('recording') && groups.includes('pitch'),
+		groups.join(', ')
+	);
+	check(
+		'speech takes carry the pitch distribution',
+		(await count(page, '[data-metric=pitch_range_st]')) === 1 &&
+			(await count(page, '[data-metric=pitch_145_185_pct]')) === 1
+	);
+	// NOTE: attached, not visible: a steady tone draws a flat line, which has no height
+	await page.waitForSelector('[data-testid=contour] svg path.lc-path', { state: 'attached' });
+	check('the pitch contour is drawn', true);
 	const src = await page.locator('audio').getAttribute('src');
 	const audio = await context.request.get(src);
 	check(
@@ -248,6 +279,32 @@ try {
 		await page.getByRole('button', { name: 'Retry' }).isVisible()
 	);
 	await page.unroute(takeApi);
+
+	// --- progress: one chart per measurement of the kind of take
+	await page.goto('/progress');
+	await page.waitForSelector('[data-testid=trends] [data-testid=trend] svg circle');
+	const trends = await text(page, '[data-testid=trends]');
+	check('progress charts the pitch of the take', trends.includes('Median pitch'));
+	check('progress leaves recording quality out', !trends.includes('Noise floor'));
+
+	// --- the theme
+	await page.goto('/');
+	await page.click('[data-testid=theme] [data-mode=dark]');
+	check(
+		'dark theme applies',
+		await page.evaluate(() => document.documentElement.classList.contains('dark'))
+	);
+	await page.reload();
+	await page.waitForSelector('[data-testid=theme]');
+	check(
+		'theme choice persists across a reload',
+		await page.evaluate(() => document.documentElement.classList.contains('dark'))
+	);
+	await page.click('[data-testid=theme] [data-mode=light]');
+	check(
+		'light theme applies',
+		await page.evaluate(() => !document.documentElement.classList.contains('dark'))
+	);
 
 	// --- Czech
 	await page.goto('/');
@@ -362,6 +419,52 @@ try {
 		imported.replace(/\s+/g, ' ')
 	);
 
+	// --- two takes side by side
+	await page.selectOption('select[aria-label=Language]:not([data-testid=locale])', '');
+	await until(
+		() => count(page, '[data-testid=takes] tbody tr'),
+		(n) => n === 4,
+		5_000
+	);
+	check('compare needs two takes', await page.locator('[data-testid=compare]').isDisabled());
+	const boxes = page.locator('[data-testid=takes] tbody input[type=checkbox]');
+	await boxes.nth(0).check();
+	await boxes.nth(1).check();
+	await page.click('[data-testid=compare]');
+	await page.waitForSelector('[data-testid=comparison] [data-metric=duration_s]');
+	const difference = await text(page, '[data-testid=comparison] [data-metric=duration_s]');
+	check(
+		'comparison shows both values and the difference',
+		/\d s .*\d s .*[+−±]\d/.test(difference.replace(/\s+/g, ' ')),
+		difference.replace(/\s+/g, ' ')
+	);
+	check('comparison has both players', (await count(page, 'audio')) === 2);
+
+	// --- an older pipeline's takes can be analysed again in one go
+	await page.route('**/api/v1/health', async (route) => {
+		const response = await route.fetch();
+		await route.fulfill({
+			response,
+			json: { ...(await response.json()), pipeline_version: '9.9.9' }
+		});
+	});
+	await page.goto('/');
+	await page.waitForSelector('[data-testid=outdated]', { timeout: 15_000 });
+	check(
+		'takes of another pipeline version are announced',
+		(await text(page, '[data-testid=outdated]')).includes('4 takes')
+	);
+	const requeue = page.waitForResponse((r) => r.url().includes('/analysis/requeue'));
+	await page.locator('[data-testid=outdated]').getByRole('button').click();
+	check('they are queued again', (await (await requeue).json()).queued === 4);
+	await page.unroute('**/api/v1/health');
+	const again = await until(
+		() => count(page, '[data-testid=takes] [data-status=done]'),
+		(n) => n === 4,
+		60_000
+	);
+	check('and analysed again', again === 4, `${again} done`);
+
 	// --- the installed app
 	check(
 		'service worker is registered',
@@ -405,6 +508,19 @@ try {
 	check('clipping is flagged before saving', await loud.getByText('clipped samples').isVisible());
 } catch (e) {
 	check('the run completes', false, e instanceof Error ? e.message.split('\n')[0] : String(e));
+	// what the page looked like when the run stopped
+	for (const context of browser.contexts()) {
+		for (const open of context.pages()) {
+			const state = await open
+				.evaluate(() => ({
+					url: location.pathname + location.search,
+					size: [innerWidth, innerHeight],
+					text: document.querySelector('main')?.innerText.replace(/\s+/g, ' ').slice(0, 400)
+				}))
+				.catch((error) => ({ error: String(error) }));
+			console.log('page:', JSON.stringify(state));
+		}
+	}
 } finally {
 	await browser.close();
 	stopWorker();

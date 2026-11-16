@@ -4,12 +4,21 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="color-scheme" content="light dark" />
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-		<meta name="theme-color" content="#1c1c1c" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#fbf6f6" />
 		<title>puptrainer</title>
 		<link rel="icon" href="/icon.svg" type="image/svg+xml" />
 		<link rel="apple-touch-icon" href="/icon-192.png" />
 		<link rel="manifest" href="/manifest.webmanifest" />
+		<script>
+			// NOTE: before the first paint, so a dark theme never flashes light
+			(() => {
+				const mode = localStorage.getItem('puptrainer.theme') || 'system';
+				const dark =
+					mode === 'dark' ||
+					(mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.classList.toggle('dark', dark);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body class="h-full">

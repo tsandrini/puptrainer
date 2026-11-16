@@ -5,16 +5,22 @@
 	// lost when the API is away.
 	import { onDestroy, onMount } from 'svelte';
 	import { browser } from '$app/env';
-	import type { Intent, Item, ProtocolItem } from '#lib/api/types.js';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import MicIcon from '@lucide/svelte/icons/mic';
+	import SquareIcon from '@lucide/svelte/icons/square';
+	import { fetchTakes } from '#lib/api/index.js';
+	import type { Intent, Item, ProtocolItem, TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, listInputs, type Recording } from '#lib/audio/capture.js';
 	import { TARGET_DB } from '#lib/audio/meter.js';
+	import Empty from '#lib/components/app/Empty.svelte';
 	import Meter from '#lib/components/app/Meter.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { fmtDuration, fmtNumber } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { queue, type Outcome } from '#lib/queue.svelte.js';
+	import { cn } from '#lib/utils.js';
 
 	const DEVICE_KEY = 'puptrainer.device';
 	const INPUT_KEY = 'puptrainer.input';
@@ -34,6 +40,7 @@
 	let choiceKey = $state('');
 	let note = $state('');
 	let inputs = $state.raw<MediaDeviceInfo[]>([]);
+	let today = $state.raw<TakeOut[]>([]);
 
 	let phase = $state<'idle' | 'recording' | 'review'>('idle');
 	let peakDb = $state(-120);
@@ -68,14 +75,46 @@
 	const passage = $derived(app.passage(choice?.step?.content_ref));
 	const device = $derived(app.devices.find((d) => d.id === deviceId) ?? app.devices[0] ?? null);
 
+	/** The baseline steps already recorded today in this voice on this setup. */
+	const doneToday = $derived(
+		new Set(
+			(baseline?.items ?? [])
+				.filter((step) =>
+					today.some(
+						(t) =>
+							t.device_id === device?.id &&
+							t.intent === intent &&
+							t.item === step.item &&
+							(t.language ?? null) === (step.language ?? null)
+					)
+				)
+				.map((step) => step.key)
+		)
+	);
+
 	async function refreshInputs() {
 		inputs = await listInputs();
 	}
 
+	async function refreshToday() {
+		const now = new Date();
+		const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+		try {
+			today = (await fetchTakes()).filter((t) => Date.parse(t.recorded_at) >= midnight);
+		} catch {
+			// NOTE: without the API the strip simply shows nothing as done
+		}
+	}
+
 	onMount(() => {
 		void refreshInputs();
+		void refreshToday();
+		const stop = queue.onUploaded(() => void refreshToday());
 		navigator.mediaDevices?.addEventListener('devicechange', refreshInputs);
-		return () => navigator.mediaDevices?.removeEventListener('devicechange', refreshInputs);
+		return () => {
+			stop();
+			navigator.mediaDevices?.removeEventListener('devicechange', refreshInputs);
+		};
 	});
 
 	onDestroy(() => {
@@ -157,17 +196,50 @@
 	});
 </script>
 
-<h1 class="mb-4 text-xl font-semibold">{i18n.t.record.title}</h1>
+<h1 class="mb-4 text-2xl">{i18n.t.record.title}</h1>
 
 {#if !app.loaded}
 	<p class="text-muted-foreground">{i18n.t.common.loading}</p>
 {:else if app.devices.length === 0}
-	<div class="rounded-lg border border-dashed p-8 text-center">
-		<p class="text-muted-foreground">{i18n.t.record.needDevice}</p>
-		<Button class="mt-4" href="/devices">{i18n.t.record.addDevice}</Button>
-	</div>
+	<Empty text={i18n.t.record.needDevice}>
+		<Button href="/devices">{i18n.t.record.addDevice}</Button>
+	</Empty>
 {:else}
-	<div class="grid gap-3 sm:grid-cols-2">
+	{#if baseline}
+		<section class="panel mb-4" data-testid="baseline">
+			<div class="mb-2 flex items-baseline justify-between gap-2">
+				<h2 class="text-base">{i18n.t.record.baseline}</h2>
+				<span class="text-xs text-muted-foreground">
+					{i18n.t.record.baselineToday(doneToday.size, baseline.items.length)}
+				</span>
+			</div>
+			<div class="flex flex-wrap gap-1.5">
+				{#each baseline.items as step (step.key)}
+					{@const done = doneToday.has(step.key)}
+					<button
+						type="button"
+						disabled={phase !== 'idle'}
+						class={cn(
+							'flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold transition-colors',
+							choice?.key === `baseline:${step.key}`
+								? 'border-primary bg-primary text-primary-foreground'
+								: 'bg-card hover:bg-accent',
+							done && choice?.key !== `baseline:${step.key}` && 'text-muted-foreground'
+						)}
+						title={done ? i18n.t.record.recordedToday : undefined}
+						data-step={step.key}
+						data-done={done}
+						onclick={() => (choiceKey = `baseline:${step.key}`)}
+					>
+						{#if done}<CheckIcon class="size-3.5" />{/if}
+						{i18n.pick(step.titles)}
+					</button>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	<div class="panel grid gap-3 sm:grid-cols-2">
 		<label class="text-sm">
 			<span class="mb-1 block text-muted-foreground">{i18n.t.record.setup}</span>
 			<select
@@ -227,7 +299,7 @@
 	{/if}
 	{#if passage}
 		<blockquote
-			class="mt-3 rounded-lg border bg-card p-4 text-lg leading-relaxed"
+			class="panel mt-3 border-primary/25 text-lg leading-relaxed"
 			lang={passage.language}
 			data-testid="passage"
 		>
@@ -244,9 +316,12 @@
 		</p>
 	{/if}
 
-	<div class="mt-6 rounded-lg border p-4">
+	<div class="panel mt-4">
 		{#if phase === 'idle'}
-			<Button size="lg" onclick={start} data-testid="start">{i18n.t.record.start}</Button>
+			<Button size="lg" class="rounded-full px-6" onclick={start} data-testid="start">
+				<MicIcon class="size-5" />
+				{i18n.t.record.start}
+			</Button>
 			{#if outcome}
 				<p class="mt-3 text-sm text-muted-foreground" role="status" data-testid="outcome">
 					{outcome === 'uploaded'
@@ -258,7 +333,14 @@
 			{/if}
 		{:else if phase === 'recording'}
 			<div class="flex flex-wrap items-center gap-4">
-				<Button size="lg" variant="destructive" onclick={stop} data-testid="stop">
+				<Button
+					size="lg"
+					variant="destructive"
+					class="rounded-full px-6"
+					onclick={stop}
+					data-testid="stop"
+				>
+					<SquareIcon class="size-4 fill-current" />
 					{i18n.t.record.stop}
 				</Button>
 				<span class="flex items-center gap-2 text-sm">

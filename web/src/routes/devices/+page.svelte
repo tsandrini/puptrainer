@@ -5,6 +5,7 @@
 	import { createDevice, updateDevice } from '#lib/api/index.js';
 	import type { DeviceKind, DeviceOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
+	import Empty from '#lib/components/app/Empty.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
@@ -42,7 +43,7 @@
 </script>
 
 <div class="mb-2 flex items-center gap-2">
-	<h1 class="mr-auto text-xl font-semibold">{i18n.t.devices.title}</h1>
+	<h1 class="mr-auto text-2xl">{i18n.t.devices.title}</h1>
 	{#if editing === null}
 		<Button onclick={() => edit(null)}>{i18n.t.devices.add}</Button>
 	{/if}
@@ -50,7 +51,7 @@
 <p class="mb-4 text-sm text-muted-foreground">{i18n.t.devices.intro}</p>
 
 {#snippet form()}
-	<form class="space-y-3 rounded-lg border p-4" onsubmit={save}>
+	<form class="panel space-y-3" onsubmit={save}>
 		<div class="flex flex-wrap gap-2">
 			<Input
 				class="max-w-xs"
@@ -89,9 +90,7 @@
 {/if}
 
 {#if app.loaded && app.devices.length === 0 && editing === null}
-	<p class="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-		{i18n.t.devices.empty}
-	</p>
+	<Empty text={i18n.t.devices.empty} />
 {/if}
 
 <ul class="space-y-2" data-testid="devices">
@@ -100,9 +99,9 @@
 			{#if editing === device.id}
 				{@render form()}
 			{:else}
-				<div class="flex items-start gap-3 rounded-lg border p-4">
+				<div class="panel flex items-start gap-3">
 					<div class="flex-1">
-						<p class="font-medium">
+						<p class="font-bold">
 							{device.name}
 							<span class="font-normal text-muted-foreground">
 								· {i18n.t.devices.kinds[device.kind]}

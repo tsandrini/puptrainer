@@ -2,7 +2,21 @@
 // is typed against this object.
 
 export const en = {
-	nav: { takes: 'Takes', record: 'Record', import: 'Import', devices: 'Microphones' },
+	nav: {
+		takes: 'Takes',
+		record: 'Record',
+		progress: 'Progress',
+		import: 'Import',
+		devices: 'Microphones'
+	},
+	theme: { label: 'Theme', system: 'Follow the system', light: 'Light', dark: 'Dark' },
+	groups: {
+		recording: 'Recording',
+		pitch: 'Pitch',
+		resonance: 'Resonance',
+		quality: 'Voice quality',
+		range: 'Range'
+	},
 	common: {
 		save: 'Save',
 		cancel: 'Cancel',
@@ -14,7 +28,9 @@ export const en = {
 		none: '—',
 		language: 'Language',
 		anyLanguage: 'no language',
-		install: 'Install app'
+		install: 'Install app',
+		showValues: 'Show the values',
+		hideValues: 'Hide the values'
 	},
 	status: {
 		apiDown: 'The API is not reachable. Recordings are kept on this device until it is back.',
@@ -52,11 +68,19 @@ export const en = {
 		what: 'What',
 		device: 'Microphone',
 		duration: 'Length',
-		pitch: 'Median pitch',
+		pitch: 'Pitch',
 		status: 'Analysis',
 		allItems: 'Everything',
 		allIntents: 'Any voice',
-		allLanguages: 'Any language'
+		allLanguages: 'Any language',
+		select: 'Select to compare',
+		compare: 'Compare',
+		compareHint: 'Tick two takes to compare them.',
+		outdated: (n: number) =>
+			n === 1
+				? '1 take was analysed by an older version of the analysis.'
+				: `${n} takes were analysed by an older version of the analysis.`,
+		reanalyse: 'Analyse again'
 	},
 	take: {
 		notFound: 'This take does not exist.',
@@ -71,7 +95,33 @@ export const en = {
 		pipeline: (version: string) => `pipeline ${version}`,
 		passage: 'Text read',
 		confirmDelete: 'Delete this take and its recording? This cannot be undone.',
-		saved: 'Saved'
+		saved: 'Saved',
+		contour: 'Pitch over the take',
+		contourBand: 'The shaded band is 145–185 Hz.',
+		time: 'Time',
+		vowels: 'The vowels, one by one',
+		vowel: 'Vowel',
+		pitch: 'Pitch',
+		heldFor: 'Held'
+	},
+	progress: {
+		title: 'Progress',
+		intro:
+			'One point per take. Compare like with like: one microphone setup and one kind of take at a time.',
+		empty: 'No analysed take matches these filters yet.',
+		kind: 'Kind of take',
+		latest: 'latest',
+		taken: 'Recorded'
+	},
+	compare: {
+		title: 'Compare two takes',
+		pick: 'Tick two takes in the list, then choose Compare.',
+		back: 'Back to the takes',
+		metric: 'Measurement',
+		difference: 'B − A',
+		setups:
+			'These takes come from different microphone setups: differences in resonance, slope and level may be the setup, not the voice.',
+		kinds: 'These takes are of different kinds: only some measurements can be compared.'
 	},
 	record: {
 		title: 'Record',
@@ -99,7 +149,10 @@ export const en = {
 		denied: 'The browser refused the microphone. Allow it for this site and try again.',
 		noMic: 'No microphone was found.',
 		insecure: 'Recording needs a secure page (https or localhost).',
-		failed: (why: string) => `Recording failed: ${why}`
+		failed: (why: string) => `Recording failed: ${why}`,
+		baseline: 'Baseline',
+		baselineToday: (done: number, total: number) => `${done} of ${total} recorded today`,
+		recordedToday: 'recorded today'
 	},
 	import: {
 		title: 'Import recordings',
