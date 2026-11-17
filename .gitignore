@@ -267,7 +267,11 @@ web/test-results/
 # Local data: recordings and the database
 # ---------------------------------------
 
+# NOTE: the default is the user's data directory; this is for PUPTRAINER_DATA_DIR=data
 /data/
+
+# Local settings of `process-compose up` (ports, data directory)
+.env
 
 # -------------------------------
 # Scratch files of Claude Code sessions

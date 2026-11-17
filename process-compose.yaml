@@ -1,16 +1,22 @@
 # `process-compose up` in the dev shell: the API, the analysis worker and the
-# web app's dev server (http://localhost:5173, proxying /api to the API).
-# Recordings and the database go to ./data.
+# web app's dev server (http://localhost:8436, proxying /api to the API on
+# 127.0.0.1:8437). `process-compose up -D` keeps them running in the
+# background, `process-compose attach` shows them, `process-compose down`
+# stops them.
+#
+# Recordings and the database live in the user's data directory
+# (~/.local/share/puptrainer), not in this checkout. Other ports or another
+# data directory: set PUPTRAINER_BIND, PUPTRAINER_API_URL,
+# PUPTRAINER_WEB_PORT or PUPTRAINER_DATA_DIR, in the shell or in a `.env`
+# file here (read by process-compose, ignored by git).
 version: "0.5"
 
 processes:
   api:
     command: python -m puptrainer.api
     readiness_probe:
-      http_get:
-        host: 127.0.0.1
-        port: 8437
-        path: /api/v1/health
+      exec:
+        command: curl --silent --fail "http://${PUPTRAINER_BIND:-127.0.0.1:8437}/api/v1/health"
   worker:
     command: python -m puptrainer.analysis.worker
     depends_on:

@@ -18,6 +18,7 @@
   nodejs,
   prefetch-npm-deps,
   process-compose,
+  curl,
   pre-commit ? null,
 }:
 let
@@ -51,6 +52,7 @@ mkShell {
     nodejs # the web app: `npm ci` and `npm run dev` in web/
     prefetch-npm-deps # `npmDepsHash` after a lock file change
     process-compose # `process-compose up`: API, worker and web dev server together
+    curl # NOTE: process-compose's readiness probe of the API
   ];
 
   shellHook = ''

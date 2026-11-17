@@ -1,5 +1,10 @@
 # --- flake-parts/checks/default.nix
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  self,
+  ...
+}:
 let
   inherit (config) flake-root;
 in
@@ -17,6 +22,8 @@ in
           inherit flake-root;
           inherit (config.packages) puptrainer;
         };
+        # NOTE: the NixOS module on a machine like a user's
+        vm = pkgs.testers.runNixOSTest (import ./vm.nix { inherit self; });
       };
     };
 }
