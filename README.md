@@ -5,10 +5,12 @@ see how your voice changes over time. Built for self-guided voice
 feminization practice, self-hosted, with recordings that never leave your
 own machines.
 
-Status: **milestone 1 in progress**. Recording, import, lossless storage and
-the lab work: every take is measured for pitch, resonance, voice quality and
-range, each number comes with what it means and how far to trust it, and the
-numbers are charted over time. Exercises and lessons are next
+Status: **milestone 2**. The lab works: every take is measured for pitch,
+resonance, voice quality and range, each number comes with what it means
+and how far to trust it, and the numbers are charted over time. Guided
+practice is new: a catalogue of exercises with their sources, short
+sessions that judge each rep against your own band, a comfort rating for
+every rep, and a practice log. Voice exploration and lessons come next
 ([docs/architecture.md](docs/architecture.md)).
 
 ## Table of contents
@@ -17,10 +19,11 @@ numbers are charted over time. Exercises and lessons are next
 2. [Run it](#2-run-it)
 3. [Run it as a service on NixOS](#3-run-it-as-a-service-on-nixos)
 4. [Record your first takes](#4-record-your-first-takes)
-5. [Import existing recordings](#5-import-existing-recordings)
-6. [Where your data lives](#6-where-your-data-lives)
-7. [Development](#7-development)
-8. [Licence](#8-licence)
+5. [Practise](#5-practise)
+6. [Import existing recordings](#6-import-existing-recordings)
+7. [Where your data lives](#7-where-your-data-lives)
+8. [Development](#8-development)
+9. [Licence](#9-licence)
 
 ## 1. What it does
 
@@ -36,6 +39,10 @@ numbers are charted over time. Exercises and lessons are next
   of a glide. Every number comes with what it means and how far to trust it.
 - **Shows progress**: each measurement over time, per microphone setup and
   kind of take, and any two takes side by side.
+- **Guides practice**: short sessions of drills that end in speech, after
+  the teachers of the trans voice community, each rep judged on the one or
+  two numbers it is about, against a pitch band you choose. Comfort comes
+  first: it is asked before any number, and a strained rep never counts.
 - **Never loses a recording.** A take is kept in the browser until the
   server has confirmed it, also across reloads and while the server is away.
 - **English and Czech**, including reading passages written for both.
@@ -128,7 +135,24 @@ listening does not. `services.puptrainer.api.enable` and
 Record a baseline in your everyday voice before you start training: it
 cannot be recreated later.
 
-## 5. Import existing recordings
+## 5. Practise
+
+1. **Practice → Your band**: set the pitch range you practise in, or take
+   the common starting band (F3–A3). It is a tool you can move at any time,
+   not a goal.
+2. **Start a session**: "Quick one" (about 2 minutes, a few times a day) or
+   "Light and in band" (about 7 minutes). Say how your voice feels; a
+   hoarse voice is told to rest.
+3. Each step explains what to do, why, when to stop, and links to the
+   teacher's own material. Record a rep, stop, then rate how it felt. The
+   result follows a few seconds later: met or not yet, with the numbers.
+4. At the end, rate the session and note whether any tension lasted. The
+   **practice log** keeps every session with its takes.
+
+Every exercise can also be practised on its own from the catalogue. How
+exercises are written and judged: [docs/exercises.md](docs/exercises.md).
+
+## 6. Import existing recordings
 
 **Import** takes WAV and FLAC files. Names in this form fill in the labels:
 
@@ -137,9 +161,10 @@ cannot be recreated later.
 <date>_<item>[-<language>]_<habitual|attempt>.wav
 ```
 
-Items are `vowels`, `glide`, `passage`, `free` and `other`.
+Items are `vowels`, `glide`, `sustain`, `phrase`, `passage`, `free` and
+`other`; the voice is `habitual`, `attempt` or `drill`.
 
-## 6. Where your data lives
+## 7. Where your data lives
 
 Everything is under one directory: `~/.local/share/puptrainer` by default
 (`$XDG_DATA_HOME/puptrainer`), `/var/lib/puptrainer` with the NixOS module,
@@ -148,7 +173,7 @@ purpose, so it does not depend on where the app is started from.
 
 | In it                | What                                               |
 | -------------------- | -------------------------------------------------- |
-| `puptrainer.sqlite3` | Takes, labels, microphones, measurements           |
+| `puptrainer.sqlite3` | Takes, labels, microphones, measurements, sessions |
 | `audio/`             | The recordings as FLAC files, never rewritten      |
 | `backups/`           | Snapshots of the database (the newest 14 are kept) |
 
@@ -157,7 +182,7 @@ every change of the database's layout by a new version. Recordings are not
 duplicated: nothing is sent anywhere else, and the repository contains no
 recordings. **Back the directory up**; a recording cannot be recreated.
 
-## 7. Development
+## 8. Development
 
 ```sh
 direnv allow            # or: nix develop
@@ -174,7 +199,8 @@ app on your own machine.
 More in [docs/development.md](docs/development.md); how the pieces fit in
 [docs/architecture.md](docs/architecture.md).
 
-## 8. Licence
+## 9. Licence
 
 [EUPL-1.2](LICENSE). The reading passages and protocol texts under
-`content/` were written for this project.
+`content/` were written for this project. The exercises paraphrase the
+material of the teachers they name, in our own words, and link to it.

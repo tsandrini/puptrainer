@@ -5,12 +5,15 @@
 ```text
 Browser (web/, SvelteKit single-page app)
   record: AudioWorklet -> 24-bit WAV    live level and pitch (a guide only)
-  upload queue in IndexedDB             takes, labels, numbers
+  practice: session runner, reference tones
+  upload queue in IndexedDB             takes and practice sessions, in order
         |  HTTP, /api/v1
         v
 API (backend/src/puptrainer/api, FastAPI)
-  SQLite: devices, takes, analysis jobs, metric values
+  SQLite: devices, takes, analysis jobs, metric values,
+          practice sessions, the pitch band's history
   recordings as FLAC, addressed by content
+  judges practice takes when serving them (puptrainer.core.evaluation)
   serves the built web app and content/
         ^  HTTP: claim a job, fetch the audio, report the numbers
         |
@@ -34,19 +37,31 @@ than the API and its storage.
   browser as a guide and are never stored.
 - **Every take carries its context**: the microphone setup, what was spoken,
   the language, the text that was read (with its version), and the intent
-  (`habitual` or `attempt`). Numbers are only compared within a setup.
+  (`habitual`, `attempt`, or `drill` for a sound made for an exercise).
+  A practice take also carries its exercise, its session, the band it was
+  recorded against and its comfort rating. Numbers are only compared within
+  a setup.
+- **The pipeline measures sounds; exercises judge them.** The worker knows
+  the kind of take, never the exercise or the band. The API judges a
+  practice take by its exercise's rule whenever it serves it, from the
+  stored measurements and the take's own band; the judgement is never
+  stored, so a changed rule needs no migration and a re-analysed take is
+  judged anew. A rep rated strained never counts as met.
 - **A take is never lost.** The browser writes a recording to IndexedDB
   before uploading and deletes it only when the API has confirmed it. The
   upload carries the queue item's id; the API answers a repeated id with the
-  take it stored the first time.
+  take it stored the first time. Practice sessions travel through the same
+  queue, in the same order, so a session reaches the API before its takes;
+  its id is made by the browser and writing it again changes nothing.
 - **The database is snapshotted.** Labels and microphone setups cannot be
   recomputed, so the API copies the database into `backups/` once on each
   day it starts and before any migration changes its layout (SQLite's online
   backup; the newest 14 copies are kept). The data directory defaults to the
   user's data directory, outside any checkout.
-- **Content is data.** Passages, protocols and the texts of the metrics live
-  in `content/`, not in code. A passage's text is frozen once takes exist
-  for it; a changed text is a new version.
+- **Content is data.** Passages, protocols, the texts of the metrics, the
+  skills, exercises and routines live in `content/`, not in code
+  ([exercises.md](exercises.md)). A passage's text is frozen once takes
+  exist for it; a changed text is a new version.
 
 ## Access
 
@@ -67,22 +82,25 @@ Uploads are written to a file before they are decoded: libsndfile's
 in-memory reader needs write+execute memory, which the hardened service is
 denied (`MemoryDenyWriteExecute`).
 
-## The pipeline (version 0.2.0)
+## The pipeline (version 0.3.0)
 
 Which numbers a take gets depends on what it contains
 (`puptrainer.core.metrics`):
 
-| Group         | Metrics                                                                                                  | Measured on                  |
-| ------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Recording     | duration, peak level, speech level, noise floor, clipped samples, voiced share                           | every take                   |
-| Pitch         | median; 5th and 95th percentile, range and variability in semitones, time below, at and above 145–185 Hz | speech (median: also vowels) |
-| Pitch         | share of subharmonic (creaky) frames                                                                     | speech, vowels               |
-| Resonance     | median F1–F4 (speech only), formant spacing, apparent vocal-tract length                                 | speech, vowels               |
-| Voice quality | CPPS, harmonics-to-noise ratio, spectral slope, on the voiced parts only                                 | speech, vowels               |
-| Range         | lowest and highest note, range in semitones                                                              | glide                        |
+| Group         | Metrics                                                                                                  | Measured on                |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Recording     | duration, peak level, speech level, noise floor, clipped samples, voiced share                           | every take                 |
+| Pitch         | median; 5th and 95th percentile, range and variability in semitones, time below, at and above 145–185 Hz | speech (median: also held) |
+| Pitch         | share of subharmonic (creaky) frames                                                                     | speech, held               |
+| Resonance     | median F1–F4 (speech only), formant spacing, apparent vocal-tract length                                 | speech, held               |
+| Voice quality | CPPS, harmonics-to-noise ratio, spectral slope, on the voiced parts only                                 | speech, held               |
+| Range         | lowest and highest note, range in semitones, breaks (jumps of 3 semitones or more)                       | glide                      |
 
-A take also stores its pitch contour (a series, 10 ms steps) and, for a
-vowels take, each sustained vowel with its pitch, formants, CPPS and HNR.
+Speech is a passage, free speech, a short phrase or another take; held is a
+vowels take or a sustain take (held sounds for an exercise). A take also
+stores its pitch contour (a series, 10 ms steps) and, for a vowels or
+sustain take, each held sound of 1.5 s or more with its pitch, formants,
+CPPS and HNR.
 
 **Pitch.** Creaky voice and period doubling put energy at half the pitch,
 and an autocorrelation tracker then reports the voice an octave low. The
@@ -121,6 +139,6 @@ then offers to analyse older takes again.
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | M0        | Walking skeleton: record, import, store, analyse (quality, median pitch), list. **Done.**                                                                                      |
 | M1        | The lab: pitch distribution, resonance, voice quality, range, progress charts, comparison, re-analysis, token login and a NixOS module: **done**. A validation write-up: open. |
-| M2        | Exercise catalogue as data, guided sessions, comfort ratings                                                                                                                   |
+| M2        | Exercise catalogue as data, guided sessions judged against the learner's band, comfort ratings, the practice log: **done**                                                     |
 | M3        | Voice map with saved presets, ear-training game                                                                                                                                |
 | M4        | Lesson path, stars, skill map                                                                                                                                                  |

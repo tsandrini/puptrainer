@@ -6,7 +6,7 @@
 | -------------- | ----------------------------------------------------------------------------------------------- |
 | `backend/`     | The Python package `puptrainer`: `core` (settings, schemas, metric registry), `api`, `analysis` |
 | `web/`         | The SvelteKit app (static single-page build)                                                    |
-| `content/`     | Passages, protocols, metric texts (TOML)                                                        |
+| `content/`     | Passages, protocols, metric texts, skills, exercises, routines (TOML)                           |
 | `flake-parts/` | Nix: packages, checks, dev shell, pre-commit hooks                                              |
 
 ## The dev shell
@@ -54,8 +54,10 @@ by any check.
 ## The end-to-end run
 
 `web/scripts/e2e.mjs` drives the built app in a headless Chromium whose
-microphone is a synthetic tone. `nix flake check` runs it against the built
-packages. By hand, against an API with an **empty** data directory:
+microphone is a synthetic tone: the lab, and guided practice sessions with
+their failure paths (worker stopped, API away mid-session, a strained rep,
+a hoarse check-in). `nix flake check` runs it against the built packages.
+By hand, against an API with an **empty** data directory:
 
 ```sh
 export PLAYWRIGHT_CORE=$(nix build nixpkgs#playwright-driver --no-link --print-out-paths)
