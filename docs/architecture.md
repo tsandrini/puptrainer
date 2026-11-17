@@ -39,13 +39,38 @@ than the API and its storage.
   before uploading and deletes it only when the API has confirmed it. The
   upload carries the queue item's id; the API answers a repeated id with the
   take it stored the first time.
+- **The database is snapshotted.** Labels and microphone setups cannot be
+  recomputed, so the API copies the database into `backups/` once on each
+  day it starts and before any migration changes its layout (SQLite's online
+  backup; the newest 14 copies are kept). The data directory defaults to the
+  user's data directory, outside any checkout.
 - **Content is data.** Passages, protocols and the texts of the metrics live
   in `content/`, not in code. A passage's text is frozen once takes exist
   for it; a changed text is a new version.
 
+## Access
+
+Without a token the API is open and meant for `127.0.0.1` only. With
+`PUPTRAINER_TOKEN_FILE` set, everything under `/api/v1` except `health`,
+`session`, `login` and `logout` needs the token:
+
+- the **worker** sends it as `Authorization: Bearer …`;
+- the **web app** signs in once (`POST /login`) and gets a session cookie
+  (HttpOnly, SameSite=Strict, Secure behind HTTPS), because the audio player
+  cannot send a header. The cookie holds a value derived from the token, not
+  the token.
+
+The NixOS module passes the token file as a systemd credential and refuses a
+non-loopback `bind` without one.
+
+Uploads are written to a file before they are decoded: libsndfile's
+in-memory reader needs write+execute memory, which the hardened service is
+denied (`MemoryDenyWriteExecute`).
+
 ## The pipeline (version 0.2.0)
 
-Which numbers a take gets depends on what it contains (`puptrainer.core.metrics`):
+Which numbers a take gets depends on what it contains
+(`puptrainer.core.metrics`):
 
 | Group         | Metrics                                                                                                  | Measured on                  |
 | ------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------- |
@@ -92,10 +117,10 @@ then offers to analyse older takes again.
 
 ## Milestones
 
-| Milestone | Scope                                                                                                                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0        | Walking skeleton: record, import, store, analyse (quality, median pitch), list. **Done.**                                                                                                 |
-| M1        | The lab: pitch distribution, resonance, voice quality, range, progress charts, comparison, re-analysis: **done**. Deployment (NixOS module, token login) and a validation write-up: open. |
-| M2        | Exercise catalogue as data, guided sessions, comfort ratings                                                                                                                              |
-| M3        | Voice map with saved presets, ear-training game                                                                                                                                           |
-| M4        | Lesson path, stars, skill map                                                                                                                                                             |
+| Milestone | Scope                                                                                                                                                                          |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M0        | Walking skeleton: record, import, store, analyse (quality, median pitch), list. **Done.**                                                                                      |
+| M1        | The lab: pitch distribution, resonance, voice quality, range, progress charts, comparison, re-analysis, token login and a NixOS module: **done**. A validation write-up: open. |
+| M2        | Exercise catalogue as data, guided sessions, comfort ratings                                                                                                                   |
+| M3        | Voice map with saved presets, ear-training game                                                                                                                                |
+| M4        | Lesson path, stars, skill map                                                                                                                                                  |

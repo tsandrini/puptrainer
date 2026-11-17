@@ -17,12 +17,26 @@ backend runs from the source tree (`PYTHONPATH=backend/src`).
 
 ```sh
 (cd web && npm ci)
-process-compose up
+process-compose up        # or: process-compose up -D, then attach / down
 ```
 
 That starts the API on `127.0.0.1:8437`, the worker, and Vite on
-<http://localhost:5173> (which proxies `/api` to the API). Data goes to
-`./data`.
+<http://localhost:8436> (which proxies `/api` to the API). The data is the
+same as in normal use: `~/.local/share/puptrainer`, snapshotted on start and
+before a migration.
+
+Other ports or a scratch data directory go in the shell's environment or in
+a `.env` file at the repository root (process-compose reads it, git ignores
+it):
+
+```sh
+PUPTRAINER_BIND=127.0.0.1:9437
+PUPTRAINER_API_URL=http://127.0.0.1:9437
+PUPTRAINER_WEB_PORT=9436
+PUPTRAINER_DATA_DIR=data   # a throwaway database in the checkout
+```
+
+The dev server fails on a taken port instead of moving to the next one.
 
 ## Checks
 
@@ -50,6 +64,16 @@ export PLAYWRIGHT_BROWSERS_PATH=$(nix build nixpkgs#playwright-driver.browsers -
 PUPTRAINER_DATA_DIR=$(mktemp -d) PUPTRAINER_WEB_DIR=web/build PUPTRAINER_BIND=127.0.0.1:8438 \
   python -m puptrainer.api &
 node web/scripts/e2e.mjs --base http://127.0.0.1:8438 --worker "python -m puptrainer.analysis.worker"
+```
+
+## The NixOS module
+
+`flake-parts/modules/nixos/puptrainer.nix`; `checks.vm` boots a machine with
+it (API behind a token, worker beside it), uploads a synthetic take and
+waits for its analysis:
+
+```sh
+nix build .#checks.x86_64-linux.vm -L
 ```
 
 ## Generated files
