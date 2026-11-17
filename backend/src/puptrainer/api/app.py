@@ -17,6 +17,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Path,
     Query,
     Request,
     Response,
@@ -38,22 +39,29 @@ from puptrainer.api.db import (
     AnalysisSeries,
     Device,
     MetricValue,
+    PracticeSession,
     Take,
+    TargetBand,
     make_engine,
     migrate,
     now,
     snapshot_if_stale,
 )
 from puptrainer.api.storage import AudioStore, InvalidAudioError
-from puptrainer.core.content import load_content, load_metrics
+from puptrainer.core.content import load_content, load_measures, load_metrics, parse_ref
+from puptrainer.core.evaluation import TakeFacts, evaluate, needs_pitch
 from puptrainer.core.metrics import KEYS
 from puptrainer.core.schemas import (
     AnalysisOut,
+    BandIn,
+    BandOut,
     Content,
     Details,
     DeviceIn,
     DeviceOut,
     ErrorOut,
+    Exercise,
+    Feel,
     Health,
     Intent,
     Item,
@@ -62,13 +70,17 @@ from puptrainer.core.schemas import (
     JobResult,
     JobStatus,
     Login,
+    MeasureDef,
     MetricDef,
+    PracticeIn,
+    PracticeOut,
     Requeued,
     Series,
     SessionOut,
     TakeMeta,
     TakeOut,
     TakePatch,
+    Target,
     WorkerHello,
 )
 from puptrainer.core.settings import Settings
@@ -77,6 +89,7 @@ ERRORS: dict[int | str, dict[str, object]] = {
     code: {"model": ErrorOut} for code in (400, 401, 404, 409, 422)
 }
 
+PRACTICE_ID = r"^[A-Za-z0-9-]{8,64}$"
 SESSION_COOKIE = "puptrainer_session"
 SESSION_SECONDS = 365 * 24 * 3600
 
@@ -88,6 +101,7 @@ def database(request: Request) -> Iterator[Session]:
 
 
 Db = Annotated[Session, Depends(database)]
+PracticeId = Annotated[str, Path(pattern=PRACTICE_ID)]
 
 
 # NOTE: what `take_out` reads; a series' data column is deferred and stays unloaded
@@ -110,10 +124,43 @@ class SpaFiles(StaticFiles):
             return await super().get_response("index.html", scope)
 
 
-def take_out(take: Take) -> TakeOut:
-    """A take as the API returns it: labels, the latest job, the newest finished results."""
+def decode_series(stored: AnalysisSeries) -> list[float | None]:
+    """A stored series' values, `None` where nothing was measured."""
+    values = np.frombuffer(stored.data, dtype="<f4")
+    return [None if np.isnan(v) else round(float(v), 2) for v in values]
+
+
+def take_out(take: Take, exercises: dict[str, Exercise] | None = None) -> TakeOut:
+    """A take as the API returns it: labels, the latest job, the newest finished results.
+
+    Args:
+        take: The take, with its jobs, their metrics and series loaded.
+        exercises: The catalogue by id, to judge a practice take; without it, or for a
+            take of no exercise, there is no evaluation.
+    """
     latest = take.jobs[-1] if take.jobs else None
     done = next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
+    details = (
+        Details.model_validate_json(done.details)
+        if done is not None and done.details
+        else Details()
+    )
+    target = Target.model_validate_json(take.target) if take.target else None
+    evaluation = None
+    if take.exercise_ref is not None and exercises is not None:
+        parsed = parse_ref(take.exercise_ref, "exercise")
+        exercise = exercises.get(parsed[0]) if parsed else None
+        facts = TakeFacts(
+            analysed=done is not None,
+            metrics={} if done is None else {m.key: m.value for m in done.metrics},
+            segments=details.segments,
+            target=target,
+            comfort=take.comfort,
+        )
+        contour = next((s for s in done.series if s.key == "pitch_hz"), None) if done else None
+        if contour is not None and needs_pitch(exercise):
+            facts.pitch, facts.step_s = decode_series(contour), contour.step_s
+        evaluation = evaluate(take.exercise_ref, exercise, facts)
     return TakeOut(
         id=take.id,
         created_at=take.created_at,
@@ -139,10 +186,14 @@ def take_out(take: Take) -> TakeOut:
             finished_at=latest.finished_at,
         ),
         metrics={} if done is None else {m.key: m.value for m in done.metrics},
-        details=Details.model_validate_json(done.details)
-        if done is not None and done.details
-        else Details(),
+        details=details,
         series=[] if done is None else sorted(s.key for s in done.series),
+        client_id=take.client_id,
+        session_id=take.session_id,
+        exercise_ref=take.exercise_ref,
+        target=target,
+        comfort=take.comfort,
+        evaluation=evaluation,
     )
 
 
@@ -171,7 +222,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     store = AudioStore(settings.audio_dir)
     content = load_content(settings.content_dir)
     metric_defs = load_metrics(settings.content_dir)
+    measure_defs = load_measures(settings.content_dir)
     content_refs = {f"passage:{p.id}@{p.version}" for p in content.passages}
+    exercises = {e.id: e for e in content.exercises}
+    routines = {r.id: r for r in content.routines}
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -259,11 +313,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "no such take")
         return take
 
-    def check_labels(db: Session, device_id: int | None, content_ref: str | None) -> None:
+    def out(take: Take) -> TakeOut:
+        return take_out(take, exercises)
+
+    def known(ref: str, kind: str, catalogue: dict[str, Any]) -> None:
+        # NOTE: the id must exist; an older version is fine (a take queued offline before
+        # the catalogue was updated), a newer one is not
+        parsed = parse_ref(ref, kind)
+        if parsed is None or parsed[0] not in catalogue or parsed[1] > catalogue[parsed[0]].version:
+            raise HTTPException(422, f"unknown {kind} reference: {ref}")
+
+    def check_labels(
+        db: Session,
+        device_id: int | None,
+        content_ref: str | None,
+        session_id: str | None = None,
+        exercise_ref: str | None = None,
+    ) -> None:
         if device_id is not None and db.get(Device, device_id) is None:
             raise HTTPException(422, "no such device")
         if content_ref is not None and content_ref not in content_refs:
             raise HTTPException(422, f"unknown content reference: {content_ref}")
+        if session_id is not None and db.get(PracticeSession, session_id) is None:
+            raise HTTPException(422, "no such practice session")
+        if exercise_ref is not None:
+            known(exercise_ref, "exercise", exercises)
 
     # --- health, content ---
 
@@ -290,6 +364,96 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @router.get("/metrics", operation_id="metrics")
     def get_metrics() -> list[MetricDef]:
         return metric_defs
+
+    @router.get("/measures", operation_id="measures")
+    def get_measures() -> list[MeasureDef]:
+        return measure_defs
+
+    # --- the pitch band ---
+
+    @router.get("/bands", operation_id="listBands")
+    def list_bands(db: Db) -> list[BandOut]:
+        """Every band set so far, newest (the current one) first."""
+        query = select(TargetBand).order_by(TargetBand.id.desc())
+        return [BandOut.model_validate(b) for b in db.scalars(query)]
+
+    @router.post("/bands", status_code=201, operation_id="createBand")
+    def create_band(body: BandIn, db: Db) -> BandOut:
+        band = TargetBand(low_hz=body.low_hz, high_hz=body.high_hz)
+        db.add(band)
+        db.commit()
+        return BandOut.model_validate(band)
+
+    # --- practice sessions ---
+
+    def practice_out(db: Session, practice: PracticeSession) -> PracticeOut:
+        count, last = db.execute(
+            select(func.count(Take.id), func.max(Take.recorded_at)).where(
+                Take.session_id == practice.id
+            )
+        ).one()
+        return PracticeOut(
+            id=practice.id,
+            routine_ref=practice.routine_ref,
+            language=practice.language,
+            started_at=practice.started_at,
+            ended_at=practice.ended_at,
+            feel_start=None if practice.feel_start is None else Feel(practice.feel_start),
+            comfort_end=practice.comfort_end,
+            lasting_tension=practice.lasting_tension,
+            note=practice.note,
+            take_count=count,
+            last_take_at=None if last is None else as_utc(last),
+        )
+
+    def get_practice(db: Session, practice_id: str) -> PracticeSession:
+        practice = db.get(PracticeSession, practice_id)
+        if practice is None:
+            raise HTTPException(404, "no such practice session")
+        return practice
+
+    @router.get("/practice", operation_id="listPractice")
+    def list_practice(
+        db: Db, limit: Annotated[int, Query(ge=1, le=1000)] = 100
+    ) -> list[PracticeOut]:
+        """Practice sessions, the newest first."""
+        query = select(PracticeSession).order_by(PracticeSession.started_at.desc()).limit(limit)
+        return [practice_out(db, p) for p in db.scalars(query)]
+
+    @router.get("/practice/{practice_id}", operation_id="getPractice")
+    def read_practice(practice_id: PracticeId, db: Db) -> PracticeOut:
+        return practice_out(db, get_practice(db, practice_id))
+
+    @router.put("/practice/{practice_id}", operation_id="putPractice")
+    def put_practice(practice_id: PracticeId, body: PracticeIn, db: Db) -> PracticeOut:
+        """Create or replace a practice session; writing the same one again changes nothing."""
+        if body.routine_ref is not None:
+            known(body.routine_ref, "routine", routines)
+        practice = db.get(PracticeSession, practice_id)
+        if practice is None:
+            practice = PracticeSession(id=practice_id)
+            db.add(practice)
+        practice.routine_ref = body.routine_ref
+        practice.language = body.language
+        practice.started_at = as_utc(body.started_at)
+        practice.ended_at = None if body.ended_at is None else as_utc(body.ended_at)
+        practice.feel_start = body.feel_start
+        practice.comfort_end = body.comfort_end
+        practice.lasting_tension = body.lasting_tension
+        practice.note = body.note
+        db.commit()
+        return practice_out(db, practice)
+
+    @router.delete("/practice/{practice_id}", status_code=204, operation_id="deletePractice")
+    def delete_practice(practice_id: PracticeId, db: Db) -> Response:
+        """Delete a practice session; its takes stay, no longer part of a session."""
+        practice = get_practice(db, practice_id)
+        for take in db.scalars(select(Take).where(Take.session_id == practice_id)):
+            take.session_id = None
+        db.flush()
+        db.delete(practice)
+        db.commit()
+        return Response(status_code=204)
 
     # --- devices ---
 
@@ -339,11 +503,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(422, describe(exc.errors())) from None
         if labels.client_id is not None:
             # NOTE: a retry of an upload whose answer never arrived (reload, lost network)
-            known = db.scalar(select(Take.id).where(Take.client_id == labels.client_id))
-            if known is not None:
+            stored = db.scalar(select(Take.id).where(Take.client_id == labels.client_id))
+            if stored is not None:
                 response.status_code = 200
-                return take_out(get_take(db, known))
-        check_labels(db, labels.device_id, labels.content_ref)
+                return out(get_take(db, stored))
+        check_labels(
+            db, labels.device_id, labels.content_ref, labels.session_id, labels.exercise_ref
+        )
         try:
             info = store.ingest(file.file.read())
         except InvalidAudioError as exc:
@@ -362,11 +528,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sample_rate=info.sample_rate,
             channels=info.channels,
             duration_s=info.duration_s,
+            session_id=labels.session_id,
+            exercise_ref=labels.exercise_ref,
+            target=None if labels.target is None else labels.target.model_dump_json(),
+            comfort=labels.comfort,
         )
         take.jobs.append(AnalysisJob(status=JobStatus.PENDING))
         db.add(take)
         db.commit()
-        return take_out(get_take(db, take.id))
+        return out(get_take(db, take.id))
 
     @router.get("/takes", operation_id="listTakes")
     def list_takes(
@@ -375,6 +545,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         intent: Intent | None = None,
         language: str | None = None,
         device_id: int | None = None,
+        session_id: str | None = None,
         limit: Annotated[int, Query(ge=1, le=1000)] = 200,
         offset: Annotated[int, Query(ge=0)] = 0,
     ) -> list[TakeOut]:
@@ -387,12 +558,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             query = query.where(Take.language == language)
         if device_id is not None:
             query = query.where(Take.device_id == device_id)
+        if session_id is not None:
+            query = query.where(Take.session_id == session_id)
         query = query.order_by(Take.recorded_at.desc(), Take.id).limit(limit).offset(offset)
-        return [take_out(t) for t in db.scalars(query)]
+        return [out(t) for t in db.scalars(query)]
 
     @router.get("/takes/{take_id}", operation_id="getTake")
     def read_take(take_id: str, db: Db) -> TakeOut:
-        return take_out(get_take(db, take_id))
+        return out(get_take(db, take_id))
 
     @router.patch("/takes/{take_id}", operation_id="updateTake")
     def update_take(take_id: str, body: TakePatch, db: Db) -> TakeOut:
@@ -408,7 +581,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             setattr(take, field, value)
         db.commit()
         db.expire(take)
-        return take_out(get_take(db, take_id))
+        return out(get_take(db, take_id))
 
     @router.delete("/takes/{take_id}", status_code=204, operation_id="deleteTake")
     def delete_take(take_id: str, db: Db) -> Response:
@@ -434,7 +607,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not take.jobs or take.jobs[-1].status in (JobStatus.DONE, JobStatus.FAILED):
             take.jobs.append(AnalysisJob(status=JobStatus.PENDING))
             db.commit()
-        return take_out(get_take(db, take_id))
+        return out(get_take(db, take_id))
 
     @router.get("/takes/{take_id}/series/{key}", operation_id="takeSeries")
     def take_series(take_id: str, key: str, db: Db) -> Series:
@@ -443,12 +616,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         stored = next((s for s in done.series if s.key == key), None) if done else None
         if stored is None:
             raise HTTPException(404, "no such series for this take")
-        values = np.frombuffer(stored.data, dtype="<f4")
-        return Series(
-            start_s=stored.start_s,
-            step_s=stored.step_s,
-            values=[None if np.isnan(v) else round(float(v), 2) for v in values],
-        )
+        return Series(start_s=stored.start_s, step_s=stored.step_s, values=decode_series(stored))
 
     @router.post("/analysis/requeue", operation_id="requeueAnalysis")
     def requeue(db: Db, pipeline_version: str | None = None) -> Requeued:

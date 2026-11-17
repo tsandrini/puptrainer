@@ -1,0 +1,43 @@
+id = "starter"
+version = 1
+minutes = 7
+
+[titles]
+en = "Light and in band"
+cs = "Lehce a v pásmu"
+
+[summaries]
+en = "Warm up, find a lighter voice from above, match notes, and carry it into speech."
+cs = "Rozcvičit se, najít lehčí hlas shora, trefovat tóny a přenést to do řeči."
+
+[[steps]]
+exercise = "trill-glide"
+
+[[steps]]
+exercise = "light-hum"
+
+[[steps]]
+exercise = "slide-down-hold"
+
+[[steps]]
+exercise = "note-match"
+
+[[steps]]
+exercise = "awww-phrase"
+reps = 1
+
+[[steps]]
+exercise = "count-in-band"
+
+[[steps]]
+exercise = "anchor-phrases"
+
+[[sources]]
+author = "Sumian Voice wiki (TransVoice Wiki mirror)"
+title = "Getting started: lighter weight and higher pitch first, then resonance, then clean-up"
+url = "https://totalchaos05.github.io/TransVoice-Wiki/wiki/pages/getting-started"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "How to practice: 5 to 10 minutes of exercises"
+url = "https://wiki.sumianvoice.com/wiki/pages/getting-started/how-to-practice.html"

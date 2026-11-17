@@ -22,7 +22,9 @@ HEADER = """\
 # NOTE: what the web app sends: fields with a default are optional. Everything else is
 # what it receives, where every field is present.
 REQUESTS: tuple[type[BaseModel], ...] = (
+    schemas.BandIn,
     schemas.DeviceIn,
+    schemas.PracticeIn,
     schemas.TakeMeta,
     schemas.TakePatch,
 )
@@ -40,8 +42,9 @@ def ts_type(schema: dict[str, Any]) -> str:
     """The TypeScript type of one JSON-schema node.
 
     Args:
-        schema: A schema as pydantic emits it: a `$ref`, an `anyOf`, an enum, an array, an
-            object with `additionalProperties`, or a primitive.
+        schema: A schema as pydantic emits it: a `$ref`, an `anyOf` or `oneOf` (a
+            discriminated union), a `const`, an enum, an array, an object with
+            `additionalProperties`, or a primitive.
 
     Returns:
         A TypeScript type expression.
@@ -51,8 +54,11 @@ def ts_type(schema: dict[str, Any]) -> str:
     """
     if "$ref" in schema:
         return schema["$ref"].rsplit("/", 1)[1]
-    if "anyOf" in schema:
-        return " | ".join(ts_type(option) for option in schema["anyOf"])
+    options = schema.get("anyOf") or schema.get("oneOf")
+    if options is not None:
+        return " | ".join(ts_type(option) for option in options)
+    if "const" in schema:
+        return f"'{schema['const']}'"
     if "enum" in schema:
         return " | ".join(f"'{value}'" for value in schema["enum"])
     kind = schema.get("type")

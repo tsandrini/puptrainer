@@ -2,8 +2,9 @@
 
 from datetime import datetime
 from enum import StrEnum
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Schema(BaseModel):
@@ -13,10 +14,14 @@ class Schema(BaseModel):
 
 
 class Intent(StrEnum):
-    """Which voice a take was spoken in."""
+    """Which voice a take was spoken in.
+
+    `drill` is a sound made for an exercise (a slide, a hold, a hum), not a voice.
+    """
 
     HABITUAL = "habitual"
     ATTEMPT = "attempt"
+    DRILL = "drill"
 
 
 class Item(StrEnum):
@@ -24,6 +29,8 @@ class Item(StrEnum):
 
     VOWELS = "vowels"
     GLIDE = "glide"
+    SUSTAIN = "sustain"
+    PHRASE = "phrase"
     PASSAGE = "passage"
     FREE = "free"
     OTHER = "other"
@@ -82,6 +89,174 @@ class DeviceOut(DeviceIn):
     created_at: datetime
 
 
+class Target(Schema):
+    """What a practice take was recorded against.
+
+    Attributes:
+        band_low_hz: Lower edge of the learner's pitch band at the time.
+        band_high_hz: Upper edge.
+        note_hz: The note the app played for the take (note matching), `null` for none.
+    """
+
+    # NOTE: no defaults: the model travels both ways, and a default would make its request
+    # and response schemas differ (two TypeScript types)
+    band_low_hz: float = Field(ge=50, le=1000)
+    band_high_hz: float = Field(ge=50, le=1000)
+    note_hz: float | None = Field(ge=50, le=1000)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> Self:
+        if self.band_low_hz >= self.band_high_hz:
+            raise ValueError("the band's lower edge must lie below its upper edge")
+        return self
+
+
+class BandIn(Schema):
+    """A pitch band to work in.
+
+    Attributes:
+        low_hz: Lower edge.
+        high_hz: Upper edge; at least a semitone above the lower one.
+    """
+
+    low_hz: float = Field(ge=50, le=1000)
+    high_hz: float = Field(ge=50, le=1000)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> Self:
+        if self.high_hz < self.low_hz * 2 ** (1 / 12):
+            raise ValueError("the band must span at least a semitone")
+        return self
+
+
+class BandOut(BandIn):
+    """A stored band; the newest one is the current band."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+
+
+class Feel(StrEnum):
+    """How the voice feels at the start of a session."""
+
+    FRESH = "fresh"
+    NORMAL = "normal"
+    TIRED = "tired"
+    HOARSE = "hoarse"
+
+
+class PracticeIn(Schema):
+    """A practice session as the web app writes it (whole, idempotently).
+
+    Attributes:
+        routine_ref: The routine followed (`routine:starter@1`); unset for one exercise.
+        language: Language of the session's spoken steps.
+        started_at: When it started.
+        ended_at: When it ended; unset while it runs or when it was abandoned.
+        feel_start: How the voice felt at the start.
+        comfort_end: How comfortable the session was overall, 1 (strained) to 5.
+        lasting_tension: Whether tension lasted after stopping (a reason to rest).
+        note: Free text.
+    """
+
+    routine_ref: str | None = Field(default=None, max_length=120)
+    language: str | None = Field(default=None, min_length=2, max_length=8)
+    started_at: datetime
+    ended_at: datetime | None = None
+    feel_start: Feel | None = None
+    comfort_end: int | None = Field(default=None, ge=1, le=5)
+    lasting_tension: bool | None = None
+    note: str = Field(default="", max_length=2000)
+
+
+class PracticeOut(PracticeIn):
+    """A stored practice session with a summary of its takes.
+
+    Attributes:
+        id: The id the web app gave it.
+        take_count: Takes recorded in it.
+        last_take_at: When its last take was recorded.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    take_count: int
+    last_take_at: datetime | None
+
+
+class EvaluationProblem(StrEnum):
+    """Why a take of an exercise could not be judged."""
+
+    NOT_ANALYSED = "not-analysed"
+    NO_BAND = "no-band"
+    NO_NOTE = "no-note"
+    TOO_LITTLE_VOICE = "too-little-voice"
+    NOT_MEASURED = "not-measured"
+    UNKNOWN_EXERCISE = "unknown-exercise"
+
+
+class Measure(Schema):
+    """One number a judgement rests on, with what it was held against.
+
+    Attributes:
+        key: A measure (`band_share_pct`, `hold_s`, …) or a metric of the registry.
+        value: The value.
+        low: Lowest value that meets it; unset for no lower limit.
+        high: Highest value that meets it; unset for no upper limit.
+        met: Whether it is within limits; unset for a number given as context.
+    """
+
+    key: str
+    value: float
+    low: float | None = None
+    high: float | None = None
+    met: bool | None = None
+
+
+class Evaluation(Schema):
+    """How a take of an exercise went, by the exercise's rule. Computed, never stored.
+
+    Attributes:
+        exercise_ref: The exercise the take was recorded for.
+        rule: The kind of rule (`pitch_hold`, …).
+        met: Whether the take met the rule; unset when there is no rule or no judgement.
+        measures: The one or two numbers the judgement rests on.
+        hints: Registry metrics the exercise shows beside them, as hints.
+        problem: Why there is no judgement.
+        strained: The numbers met the rule but the rep was rated strained (comfort 1), so
+            it is not met: comfort is a gate, a strained rep never counts.
+    """
+
+    exercise_ref: str
+    rule: str
+    met: bool | None = None
+    measures: list[Measure] = []
+    hints: list[Measure] = []
+    problem: EvaluationProblem | None = None
+    strained: bool = False
+
+
+class MeasureDef(Schema):
+    """A measure of the evaluation, with its texts.
+
+    Attributes:
+        key: Identifier used in `Measure.key`.
+        unit: Unit of the value.
+        decimals: Decimals worth showing.
+        titles: Short name per language.
+        descriptions: What it is, per language.
+    """
+
+    key: str
+    unit: str
+    decimals: int
+    titles: dict[str, str] = {}
+    descriptions: dict[str, str] = {}
+
+
 class TakeMeta(Schema):
     """The labels of a take being uploaded.
 
@@ -95,6 +270,10 @@ class TakeMeta(Schema):
         note: Free text.
         client_id: The uploader's own id for this take. Uploading again with the same id
             returns the take stored the first time, so a retry never duplicates it.
+        session_id: The practice session it belongs to (written before its takes).
+        exercise_ref: The exercise it is a rep of (`exercise:note-match@1`).
+        target: The band, and the note played, it was recorded against.
+        comfort: How comfortable it was, 1 (strained) to 5 (effortless).
     """
 
     device_id: int
@@ -105,6 +284,10 @@ class TakeMeta(Schema):
     recorded_at: datetime | None = None
     note: str = Field(default="", max_length=2000)
     client_id: str | None = Field(default=None, min_length=8, max_length=64)
+    session_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9-]{8,64}$")
+    exercise_ref: str | None = Field(default=None, max_length=120)
+    target: Target | None = None
+    comfort: int | None = Field(default=None, ge=1, le=5)
 
 
 class TakePatch(Schema):
@@ -117,6 +300,7 @@ class TakePatch(Schema):
     content_ref: str | None = Field(default=None, max_length=120)
     recorded_at: datetime | None = None
     note: str | None = Field(default=None, max_length=2000)
+    comfort: int | None = Field(default=None, ge=1, le=5)
 
 
 class AnalysisOut(Schema):
@@ -150,12 +334,13 @@ class Series(Schema):
 
 
 class VowelSegment(Schema):
-    """One sustained vowel found in a take.
+    """One sustained vowel, or held sound, found in a take.
 
     Attributes:
         start_s: Where it starts.
         duration_s: How long it is held.
-        vowel: Which vowel it most likely is (`a`, `i` or `u`), from its formants.
+        vowel: Which vowel it most likely is (`a`, `i` or `u`), from its formants; unset
+            for the held sounds of a `sustain` take, which need not be those vowels.
         pitch_hz: Median pitch.
         formants_hz: F1 to F4 over the steady middle.
         cpps_db: Smoothed cepstral peak prominence of the steady middle.
@@ -164,7 +349,7 @@ class VowelSegment(Schema):
 
     start_s: float
     duration_s: float
-    vowel: str
+    vowel: str | None = None
     pitch_hz: float
     formants_hz: list[float]
     cpps_db: float
@@ -176,15 +361,18 @@ class Details(Schema):
 
     Attributes:
         vowels: The sustained vowels of a `vowels` take, in order.
+        segments: The held sounds of a `sustain` take, in order.
     """
 
     vowels: list[VowelSegment] = []
+    segments: list[VowelSegment] = []
 
 
 class TakeOut(Schema):
     """A stored take with its labels, its analysis state and its metrics.
 
-    `metrics`, `details` and `series` come from the newest finished analysis.
+    `metrics`, `details` and `series` come from the newest finished analysis; the
+    `evaluation` of a practice take is computed from them when the take is read.
     """
 
     id: str
@@ -206,6 +394,12 @@ class TakeOut(Schema):
     metrics: dict[str, float]
     details: Details
     series: list[str]
+    client_id: str | None
+    session_id: str | None
+    exercise_ref: str | None
+    target: Target | None
+    comfort: int | None
+    evaluation: Evaluation | None
 
 
 class JobClaim(Schema):
@@ -341,11 +535,219 @@ class Protocol(Schema):
     items: list[ProtocolItem]
 
 
+class Skill(StrEnum):
+    """What an exercise trains, on the curriculum's spine."""
+
+    WARM_UP = "warm-up"
+    PITCH_WEIGHT = "pitch-weight"
+    SIZE = "size"
+    CLARITY = "clarity"
+    CARRY_OVER = "carry-over"
+
+
+class Live(StrEnum):
+    """What the recording screen shows while an exercise is recorded."""
+
+    NONE = "none"
+    PITCH = "pitch"
+
+
+class SkillDef(Schema):
+    """A skill as the app explains it.
+
+    Attributes:
+        key: The skill.
+        titles: Short name per language.
+        descriptions: What it is, in plain words, per language.
+        aliases: Other names for it in the teachers' material (mostly English terms).
+    """
+
+    key: Skill
+    titles: dict[str, str]
+    descriptions: dict[str, str]
+    aliases: list[str] = []
+
+
+class Source(Schema):
+    """Where an exercise or a routine comes from.
+
+    Attributes:
+        author: The teacher or resource.
+        title: The page, video or document.
+        url: A link to it.
+    """
+
+    author: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    url: str = Field(pattern=r"^https://")
+
+
+class NoRule(Schema):
+    """Takes are not judged; the exercise shows its hints only."""
+
+    kind: Literal["none"]
+
+
+class PitchBandRule(Schema):
+    """Speech judged by how much of its voiced time lies inside the target band.
+
+    Attributes:
+        min_share_pct: The share that counts as met.
+    """
+
+    kind: Literal["pitch_band"]
+    min_share_pct: float = Field(gt=0, le=100)
+
+
+class PitchHoldRule(Schema):
+    """A held note judged by how long it stays steady inside the band, or on a note.
+
+    The hold is the longest stretch whose pitch stays inside the band (or within
+    `tolerance_cents` of the note) and within a window of `spread_cents` either side of
+    its middle; dropouts up to 50 ms do not end it.
+
+    Attributes:
+        at: Inside the target band, or on the note the app played.
+        min_hold_s: The hold that counts as met.
+        tolerance_cents: How far from the note the pitch may be (`at = "note"`).
+        spread_cents: How far the held pitch may wander either side of its middle.
+    """
+
+    kind: Literal["pitch_hold"]
+    at: Literal["band", "note"]
+    min_hold_s: float = Field(gt=0, le=30)
+    tolerance_cents: float = Field(default=50, gt=0, le=200)
+    spread_cents: float = Field(default=50, gt=0, le=200)
+
+
+class MetricRule(Schema):
+    """A take judged by one metric of the registry against a fixed limit.
+
+    Attributes:
+        key: The metric.
+        below: Met when the value is at most this.
+        above: Met when the value is at least this.
+    """
+
+    kind: Literal["metric"]
+    key: str
+    below: float | None = None
+    above: float | None = None
+
+    @model_validator(mode="after")
+    def _one_limit(self) -> Self:
+        if (self.below is None) == (self.above is None):
+            raise ValueError("a metric rule takes exactly one of `below` and `above`")
+        return self
+
+
+class StepsRule(Schema):
+    """Held sounds that should change step by step while the pitch stays put.
+
+    Met when the take has `count` held sounds, their formant spacing rises from each to
+    the next (smaller, brighter), and their pitches lie within `max_drift_st`.
+
+    Attributes:
+        count: Held sounds expected.
+        max_drift_st: How far apart their pitches may be, in semitones.
+    """
+
+    kind: Literal["steps"]
+    count: int = Field(ge=2, le=6)
+    max_drift_st: float = Field(gt=0, le=12)
+
+
+Rule = Annotated[
+    NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule,
+    Field(discriminator="kind"),
+]
+
+
+class Exercise(Schema):
+    """A drill, as data: what to do and why, how a take of it is judged, its sources.
+
+    Attributes:
+        id: Identifier; takes refer to `exercise:<id>@<version>`.
+        version: Raised when what the learner is asked to do changes.
+        skill: What it trains.
+        item: The kind of take a rep is; it decides what the pipeline measures.
+        intent: `drill` for a sound made for the exercise, `attempt` for speech in the
+            voice being trained.
+        seconds: Rough length of one rep.
+        reps: How many reps a session asks for, unless a routine says otherwise.
+        live: What the recording screen shows while recording.
+        texts: The text to read, by language, as a passage reference.
+        hints: Registry metrics shown beside the result, labelled as hints.
+        titles: Short name per language.
+        summaries: One line per language.
+        instructions: What to do, per language.
+        why: What it is for, per language.
+        safety: When to stop or back off, per language.
+        rule: How a take is judged.
+        sources: Where it comes from; the instructions paraphrase these.
+    """
+
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$")
+    version: int = Field(ge=1)
+    skill: Skill
+    item: Item
+    intent: Intent
+    seconds: int = Field(ge=1, le=600)
+    reps: int = Field(ge=1, le=20)
+    live: Live = Live.NONE
+    texts: dict[str, str] = {}
+    hints: list[str] = []
+    titles: dict[str, str]
+    summaries: dict[str, str]
+    instructions: dict[str, str]
+    why: dict[str, str]
+    safety: dict[str, str] = {}
+    rule: Rule
+    sources: list[Source] = Field(min_length=1)
+
+
+class RoutineStep(Schema):
+    """One step of a routine.
+
+    Attributes:
+        exercise: The exercise's id.
+        reps: Reps for this step; unset for the exercise's own number.
+    """
+
+    exercise: str
+    reps: int | None = Field(default=None, ge=1, le=20)
+
+
+class Routine(Schema):
+    """A guided session: exercises in order.
+
+    Attributes:
+        id: Identifier; sessions refer to `routine:<id>@<version>`.
+        version: Raised when the steps change.
+        minutes: Rough length.
+        titles: Short name per language.
+        summaries: One line per language.
+        steps: The exercises in order.
+        sources: Where the shape of the routine comes from.
+    """
+
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$")
+    version: int = Field(ge=1)
+    minutes: int = Field(ge=1, le=120)
+    titles: dict[str, str]
+    summaries: dict[str, str]
+    steps: list[RoutineStep] = Field(min_length=1)
+    sources: list[Source] = []
+
+
 class Content(Schema):
     """Everything under `content/` the web app needs."""
 
     passages: list[Passage]
     protocols: list[Protocol]
+    skills: list[SkillDef] = []
+    exercises: list[Exercise] = []
+    routines: list[Routine] = []
 
 
 class Login(Schema):

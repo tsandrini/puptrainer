@@ -1,4 +1,4 @@
-"""Pipeline 0.2: recording quality, pitch, resonance, voice quality, range.
+"""Pipeline 0.3: recording quality, pitch, resonance, voice quality, range, held sounds.
 
 Every key returned here is in `puptrainer.core.metrics.REGISTRY`. A metric that cannot
 be measured (pitch of a silent take) is left out, never reported as a placeholder.
@@ -11,9 +11,10 @@ import numpy as np
 import parselmouth
 from parselmouth.praat import call
 
+from puptrainer.core.acoustics import semitones, spacing
 from puptrainer.core.schemas import Details, Item, Series, VowelSegment
 
-PIPELINE_VERSION = "0.2.0"
+PIPELINE_VERSION = "0.3.0"
 
 TIME_STEP_S = 0.01
 FRAME_S = 0.02
@@ -39,9 +40,15 @@ CEILING_STEP_HZ = 250.0
 FORMANT_CEILINGS_HZ = tuple(float(c) for c in range(4500, 6501, int(CEILING_STEP_HZ)))
 CEILING_PER_SPACING = 5.0
 MAX_BANDWIDTH_HZ = 500.0
-SPEED_OF_SOUND_CM_S = 35000.0
 MIN_VOWEL_S = 1.5
 GLIDE_STRENGTH = 0.8
+# NOTE: a register flip moves a few semitones within a frame or two; a jump of about an
+# octave is the tracker's octave error at a creaky bottom, not a break
+BREAK_ST = 3.0
+OCTAVE_ERROR_ST = (11.3, 12.7)
+BREAK_GAP_S = 0.05
+BREAK_MERGE_S = 0.25
+SPEECH_ITEMS = (Item.PHRASE, Item.PASSAGE, Item.FREE, Item.OTHER)
 
 
 @dataclass
@@ -62,11 +69,6 @@ class Analysis:
 def decibels(amplitude: float) -> float:
     """An amplitude relative to full scale, in dB, floored at -120."""
     return 20.0 * float(np.log10(max(amplitude, 1e-6)))
-
-
-def semitones(high: float, low: float) -> float:
-    """The interval from `low` up to `high`, in semitones."""
-    return 12.0 * float(np.log2(high / low))
 
 
 def level_metrics(samples: np.ndarray, sample_rate: float) -> dict[str, float]:
@@ -197,7 +199,7 @@ def pitch_metrics(pitch: PitchTrack, item: Item) -> dict[str, float]:
     median = float(np.median(voiced))
     out["pitch_median_hz"] = median
     out["subharmonic_share_pct"] = 100.0 * pitch.subharmonic / len(voiced)
-    if item in (Item.PASSAGE, Item.FREE, Item.OTHER):
+    if item in SPEECH_ITEMS:
         p05, p95 = (float(np.percentile(voiced, p)) for p in (5, 95))
         out |= {
             "pitch_p05_hz": p05,
@@ -213,16 +215,34 @@ def pitch_metrics(pitch: PitchTrack, item: Item) -> dict[str, float]:
 
 
 def glide_metrics(pitch: PitchTrack) -> dict[str, float]:
-    """The lowest and highest note of a glide and the range between them.
+    """The lowest and highest note of a glide, the range between them, and its breaks.
 
     Only clearly periodic frames count (Praat's strength of at least 0.8); the ends are
-    the 2nd and 98th percentile, so single stray frames do not set them.
+    the 2nd and 98th percentile, so single stray frames do not set them. A break is a
+    jump of three semitones or more between clear frames at most 50 ms apart (a register
+    flip, a yodel); jumps of about an octave are left out as octave errors of the
+    tracker, and jumps within 0.25 s of a counted one belong to it.
     """
-    clear = pitch.values[(pitch.values > 0) & (pitch.strength >= GLIDE_STRENGTH)]
+    mask = (pitch.values > 0) & (pitch.strength >= GLIDE_STRENGTH)
+    clear, times = pitch.values[mask], pitch.times[mask]
     if len(clear) < MIN_VOICED_FRAMES:
         return {}
     low, high = (float(np.percentile(clear, p)) for p in (2, 98))
-    return {"glide_low_hz": low, "glide_high_hz": high, "glide_range_st": semitones(high, low)}
+    breaks, last = 0, -np.inf
+    for index in range(1, len(clear)):
+        if times[index] - times[index - 1] > BREAK_GAP_S + 1e-9:
+            continue
+        jump = abs(semitones(float(clear[index]), float(clear[index - 1])))
+        octave = OCTAVE_ERROR_ST[0] <= jump <= OCTAVE_ERROR_ST[1]
+        if jump >= BREAK_ST and not octave and times[index] - last > BREAK_MERGE_S:
+            breaks += 1
+            last = times[index]
+    return {
+        "glide_low_hz": low,
+        "glide_high_hz": high,
+        "glide_range_st": semitones(high, low),
+        "glide_breaks": float(breaks),
+    }
 
 
 def formant_fit(
@@ -287,20 +307,6 @@ def formant_fit(
         medians = min(sound_runs, key=lambda run: abs(run[2]) / run[0])[1]
     per_group = [[float(v) for v in row] for row in medians]
     return per_group, [float(v) for v in np.mean(medians, axis=0)]
-
-
-def spacing(formants: list[float]) -> tuple[float, float]:
-    """Formant spacing and the apparent vocal-tract length it implies.
-
-    A uniform tube closed at one end resonates at odd multiples of half its spacing,
-    F_i = spacing * (2i - 1) / 2; the spacing is fitted to F1–F4 by least squares.
-
-    Returns:
-        The spacing in Hz and the tube's length in cm (speed of sound over twice the spacing).
-    """
-    x = np.array([(2 * i - 1) / 2 for i in range(1, len(formants) + 1)])
-    value = float((x @ np.array(formants)) / (x @ x))
-    return value, SPEED_OF_SOUND_CM_S / (2.0 * value)
 
 
 def resonance_metrics(sound: parselmouth.Sound, pitch: PitchTrack, item: Item) -> dict[str, float]:
@@ -375,16 +381,21 @@ def quality_metrics(voiced: parselmouth.Sound) -> dict[str, float]:
 
 
 def vowel_segments(
-    sound: parselmouth.Sound, pitch: PitchTrack
+    sound: parselmouth.Sound, pitch: PitchTrack, classify: bool = True
 ) -> tuple[list[VowelSegment], list[float] | None]:
-    """The sustained vowels of a take: voiced stretches of at least 1.5 s.
+    """The sustained vowels, or held sounds, of a take: voiced stretches of at least 1.5 s.
 
     Each is measured over its steady middle (the central 60%). One formant ceiling is
     fitted for the take, on the mean formants of its vowels. The vowel is guessed from
     the first two formants: a high F1 is "a", otherwise a high F2 is "i", otherwise "u".
 
+    Args:
+        sound: The take.
+        pitch: Its pitch track.
+        classify: Guess which vowel each is; off for held sounds that need not be a, i, u.
+
     Returns:
-        The vowels in order, and the mean of their formants (`None` without vowels).
+        The segments in order, and the mean of their formants (`None` without any).
     """
     values, times = pitch.values, pitch.times
     runs: list[tuple[int, int]] = []
@@ -416,7 +427,9 @@ def vowel_segments(
         inside = values[(times >= a) & (times <= b)]
         inside = inside[inside > 0]
         quality = quality_metrics(sound.extract_part(a, b))
-        vowel = "a" if formants[0] > 550 else ("i" if formants[1] > 1700 else "u")
+        vowel = None
+        if classify:
+            vowel = "a" if formants[0] > 550 else ("i" if formants[1] > 1700 else "u")
         segments.append(
             VowelSegment(
                 start_s=begin,
@@ -468,8 +481,12 @@ def analyse(path: Path, item: Item) -> Analysis:
         result.metrics |= glide_metrics(pitch)
         return result
 
-    if item == Item.VOWELS:
-        result.details.vowels, mean_formants = vowel_segments(sound, pitch)
+    if item in (Item.VOWELS, Item.SUSTAIN):
+        segments, mean_formants = vowel_segments(sound, pitch, classify=item == Item.VOWELS)
+        if item == Item.VOWELS:
+            result.details.vowels = segments
+        else:
+            result.details.segments = segments
         if mean_formants is not None:
             # the tract length of a set of vowels: the spacing of their mean formants
             width, length = spacing(mean_formants)

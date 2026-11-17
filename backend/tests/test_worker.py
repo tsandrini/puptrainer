@@ -32,9 +32,9 @@ def test_worker_analyses_a_take(client: TestClient, device_id: int) -> None:
     assert health["pending_jobs"] == 0
     assert health["pipeline_version"] == PIPELINE_VERSION
 
-    # the contour is stored and served; a take of speech has no vowel details
+    # the contour is stored and served; a take of speech has no vowels or held sounds
     assert done["series"] == ["pitch_hz"]
-    assert done["details"] == {"vowels": []}
+    assert done["details"] == {"vowels": [], "segments": []}
     contour = client.get(f"/api/v1/takes/{take['id']}/series/pitch_hz").json()
     assert contour["step_s"] == pytest.approx(0.01)
     voiced = [v for v in contour["values"] if v is not None]

@@ -1,0 +1,37 @@
+id = "count-in-band"
+version = 1
+skill = "carry-over"
+item = "phrase"
+intent = "attempt"
+seconds = 10
+reps = 1
+live = "none"
+
+[titles]
+en = "Count in your band"
+cs = "Počítání v pásmu"
+
+[summaries]
+en = "Count from one to ten in the voice the drills found."
+cs = "Napočítat do deseti hlasem, který cvičení našla."
+
+[instructions]
+en = "In the voice from the drills before, count slowly from one to ten in the language chosen for this session. Speak, don't sing: let the pitch move a little, as it does in speech, staying around your band."
+cs = "Hlasem z předchozích cvičení pomalu napočítejte od jedné do deseti v jazyce, který je pro toto sezení vybraný. Mluvte, nezpívejte: nechte výšku trochu se pohybovat jako v řeči, kolem svého pásma."
+
+[why]
+en = "A drill only helps once the voice carries over into speech, and counting is the simplest speech there is."
+cs = "Cvičení pomůže, až když se hlas přenese do řeči, a počítání je ta nejjednodušší řeč."
+
+[safety]
+en = "If you feel yourself pushing to stay in the band, let the voice drop a little: comfort comes first."
+cs = "Když cítíte, že se do pásma tlačíte, nechte hlas trochu klesnout: pohodlí má přednost."
+
+[rule]
+kind = "pitch_band"
+min_share_pct = 50
+
+[[sources]]
+author = "Sumian Voice wiki (TransVoice Wiki mirror)"
+title = "Getting started: every exercise is followed by counting, reading or talking"
+url = "https://totalchaos05.github.io/TransVoice-Wiki/wiki/pages/getting-started"

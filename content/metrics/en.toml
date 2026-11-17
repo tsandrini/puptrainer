@@ -137,3 +137,8 @@ description = "The high end of the glide (98th percentile of the clearly periodi
 title = "Range"
 description = "Distance between the lowest and the highest note, in semitones."
 note = "Twelve semitones are one octave."
+
+[glide_breaks]
+title = "Breaks"
+description = "Sudden jumps of three semitones or more in the glide: a flip between the low and the high voice, a yodel."
+note = "Zero is a smooth glide. Jumps of about an octave are left out (the tracker's errors at a creaky bottom), so a real octave flip is missed too."

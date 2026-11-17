@@ -13,6 +13,8 @@ from puptrainer.api.app import create_app
 from puptrainer.core.settings import Settings
 
 REPO = Path(__file__).resolve().parents[2]
+# NOTE: the Nix build runs the tests outside the repository; it points here
+CONTENT = Path(os.environ.get("PUPTRAINER_CONTENT_DIR", REPO / "content"))
 SAMPLE_RATE = 48000
 
 
@@ -45,8 +47,7 @@ def wav_bytes(
 
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
-    content = Path(os.environ.get("PUPTRAINER_CONTENT_DIR", REPO / "content"))
-    return Settings(data_dir=tmp_path / "data", content_dir=content, job_timeout_s=600)
+    return Settings(data_dir=tmp_path / "data", content_dir=CONTENT, job_timeout_s=600)
 
 
 @pytest.fixture

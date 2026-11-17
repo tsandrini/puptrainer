@@ -5,8 +5,8 @@ Titles, descriptions and reliability notes live in `content/metrics/<language>.t
 
 from puptrainer.core.schemas import Item, MetricDef, MetricGroup
 
-SPEECH = [Item.PASSAGE, Item.FREE, Item.OTHER]
-VOICED = [Item.VOWELS, Item.PASSAGE, Item.FREE, Item.OTHER]
+SPEECH = [Item.PHRASE, Item.PASSAGE, Item.FREE, Item.OTHER]
+VOICED = [Item.VOWELS, Item.SUSTAIN, Item.PHRASE, Item.PASSAGE, Item.FREE, Item.OTHER]
 
 
 def _m(
@@ -48,6 +48,7 @@ REGISTRY: tuple[MetricDef, ...] = (
     _m("glide_low_hz", "Hz", 0, MetricGroup.RANGE, [Item.GLIDE]),
     _m("glide_high_hz", "Hz", 0, MetricGroup.RANGE, [Item.GLIDE]),
     _m("glide_range_st", "st", 1, MetricGroup.RANGE, [Item.GLIDE]),
+    _m("glide_breaks", "", 0, MetricGroup.RANGE, [Item.GLIDE]),
 )
 
 KEYS: frozenset[str] = frozenset(m.key for m in REGISTRY)

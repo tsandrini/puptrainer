@@ -11,6 +11,7 @@ from alembic.config import Config
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Dialect,
     Engine,
@@ -70,6 +71,38 @@ class Device(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
 
 
+class PracticeSession(Base):
+    """A guided practice session; its takes point to it.
+
+    The id is made by the browser, so writing a session twice (a retry from the upload
+    queue) changes nothing.
+    """
+
+    __tablename__ = "practice_session"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
+    routine_ref: Mapped[str | None] = mapped_column(String(120))
+    language: Mapped[str | None] = mapped_column(String(8))
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
+    ended_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    feel_start: Mapped[str | None] = mapped_column(String(10))
+    comfort_end: Mapped[int | None]
+    lasting_tension: Mapped[bool | None] = mapped_column(Boolean)
+    note: Mapped[str] = mapped_column(String(2000), default="")
+
+
+class TargetBand(Base):
+    """The pitch band the learner works in; append-only, the newest is current."""
+
+    __tablename__ = "target_band"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
+    low_hz: Mapped[float]
+    high_hz: Mapped[float]
+
+
 class Take(Base):
     """One recording with its labels."""
 
@@ -90,6 +123,12 @@ class Take(Base):
     sample_rate: Mapped[int]
     channels: Mapped[int]
     duration_s: Mapped[float]
+    # NOTE: no ON DELETE action: SQLite cannot reflect one added by ALTER TABLE, so the
+    # API unlinks a session's takes before it deletes the session
+    session_id: Mapped[str | None] = mapped_column(ForeignKey("practice_session.id"), index=True)
+    exercise_ref: Mapped[str | None] = mapped_column(String(120))
+    target: Mapped[str | None] = mapped_column(Text)
+    comfort: Mapped[int | None]
 
     device: Mapped[Device] = relationship()
     jobs: Mapped[list["AnalysisJob"]] = relationship(

@@ -1,0 +1,29 @@
+# Texty čísel, podle kterých se posuzuje cvičná nahrávka (`puptrainer.core.evaluation`).
+
+[band_share_pct]
+title = "Čas ve vašem pásmu"
+description = "Podíl znělého času, kdy je výška uvnitř vašeho pásma."
+
+[hold_s]
+title = "Klidné podržení"
+description = "Nejdelší úsek klidně podržený uvnitř rozsahu (výpadky kratší než 50 ms ho nepřeruší)."
+
+[hold_pitch_hz]
+title = "Podržená výška"
+description = "Medián výšky toho klidného úseku."
+
+[hold_offset_cents]
+title = "Odchylka od tónu"
+description = "Jak daleko je podržená výška od tónu, v centech (setina půltónu); minus je pod ním."
+
+[steps_found]
+title = "Podržené zvuky"
+description = "Kolik podržených zvuků se našlo (každý aspoň 1,5 s, s pauzou mezi nimi)."
+
+[step_rise_pct]
+title = "Zjasnění"
+description = "O kolik vzrostla vzdálenost formantů od prvního podrženého zvuku k poslednímu: menší a jasnější je víc."
+
+[step_drift_st]
+title = "Posun výšky"
+description = "Jak daleko od sebe jsou výšky podržených zvuků, v půltónech."

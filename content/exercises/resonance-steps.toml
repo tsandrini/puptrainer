@@ -1,0 +1,39 @@
+id = "resonance-steps"
+version = 1
+skill = "size"
+item = "sustain"
+intent = "drill"
+seconds = 15
+reps = 2
+live = "none"
+hints = ["formant_spacing_hz"]
+
+[titles]
+en = "Dark, neutral, bright"
+cs = "Tmavě, neutrálně, jasně"
+
+[summaries]
+en = "Hold “ah” three times on one note, changing only its colour."
+cs = "Třikrát podržet „á“ na jednom tónu a měnit jen jeho barvu."
+
+[instructions]
+en = "Pick one comfortable note and hold “ah” on it three times, about three seconds each, with a short pause between: first dark (as at the start of a yawn, lots of room in mouth and throat), then neutral, then bright (less room, as with a slight smile). Keep the pitch the same; only the colour changes. Step from one to the next, don't slide."
+cs = "Zvolte jeden pohodlný tón a podržte na něm třikrát „á“, každé asi tři sekundy, s krátkou pauzou: nejdřív tmavě (jako na začátku zívnutí, hodně místa v ústech a hrdle), pak neutrálně, pak jasně (méně místa, jako s lehkým úsměvem). Výška zůstává stejná, mění se jen barva. Z jednoho do druhého přejděte skokem, neklouzejte."
+
+[why]
+en = "This is size: the space above the vocal folds. Changing it while the pitch stays put teaches you to move the two separately; otherwise raising one drags the other along."
+cs = "Tohle je velikost: prostor nad hlasivkami. Měnit ji, zatímco výška stojí, učí ovládat obojí zvlášť; jinak jedno táhne s sebou druhé."
+
+[safety]
+en = "Back off if it turns buzzy or tight, and don't add breath to make it brighter."
+cs = "Uberte, pokud to začne bzučet nebo se stahovat, a nepřidávejte dech, aby to znělo jasněji."
+
+[rule]
+kind = "steps"
+count = 3
+max_drift_st = 1.0
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Resonance: voiced resonance stepping (adapted: a held “ah” instead of counting, so each step can be measured)"
+url = "https://wiki.sumianvoice.com/wiki/pages/resonance"

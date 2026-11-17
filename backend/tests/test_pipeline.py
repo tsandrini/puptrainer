@@ -208,3 +208,60 @@ def test_unreadable_file_raises(tmp_path: Path) -> None:
     path.write_bytes(b"nope")
     with pytest.raises(parselmouth.PraatError):
         analyse(path, Item.FREE)
+
+
+def test_phrase_take_has_every_speech_metric(tmp_path: Path) -> None:
+    metrics = measure(tmp_path, vowel(NEUTRAL), Item.PHRASE)
+    expected = {m.key for m in REGISTRY if m.items is None or Item.PHRASE in m.items}
+    assert set(metrics) == expected
+
+
+def test_sustain_take_is_measured_per_held_sound(tmp_path: Path) -> None:
+    gap = np.zeros(int(0.6 * SAMPLE_RATE))
+    steps = [vowel(f, f0=180.0, seconds=2.5, wobble=0.0) for f in (NEUTRAL, SHORTER, SHORT)]
+    take = np.concatenate([steps[0], gap, steps[1], gap, steps[2]])
+    analysis = analyse(write(tmp_path, take), Item.SUSTAIN)
+    held = analysis.details.segments
+    assert analysis.details.vowels == []
+    assert len(held) == 3
+    assert all(s.vowel is None for s in held)
+    assert all(s.pitch_hz == pytest.approx(180.0, rel=0.02) for s in held)
+    spacings = [spacing(s.formants_hz)[0] for s in held]
+    assert spacings[0] < spacings[1] < spacings[2]
+    assert "f1_median_hz" not in analysis.metrics
+    assert analysis.metrics["subharmonic_share_pct"] == 0
+
+
+def glide(points: list[tuple[float, float]], seconds: float) -> np.ndarray:
+    """A harmonic tone whose pitch follows `points` (time in 0..1, Hz), log-interpolated."""
+    t = np.arange(int(seconds * SAMPLE_RATE)) / SAMPLE_RATE
+    where, hz = zip(*points, strict=True)
+    f0 = np.exp(np.interp(t / seconds, where, np.log(hz)))
+    phase = 2 * np.pi * np.cumsum(f0) / SAMPLE_RATE
+    x = sum(np.sin(k * phase) / k for k in range(1, 16))
+    return 0.3 * x / np.abs(x).max()
+
+
+@pytest.mark.parametrize(
+    ("points", "breaks"),
+    [
+        ([(0.0, 110.0), (1.0, 330.0)], 0),
+        ([(0.0, 110.0), (0.5, 160.0), (0.501, 240.0), (1.0, 330.0)], 1),
+        (
+            [
+                (0.0, 110.0),
+                (0.3, 150.0),
+                (0.301, 220.0),
+                (0.7, 250.0),
+                (0.701, 180.0),
+                (1.0, 200.0),
+            ],
+            2,
+        ),
+        ([(0.0, 110.0), (0.5, 150.0), (0.501, 300.0), (1.0, 330.0)], 0),
+    ],
+    ids=["smooth", "one-flip", "two-flips", "octave-jump"],
+)
+def test_glide_breaks(tmp_path: Path, points: list[tuple[float, float]], breaks: int) -> None:
+    metrics = measure(tmp_path, glide(points, seconds=4.0), Item.GLIDE)
+    assert metrics["glide_breaks"] == breaks

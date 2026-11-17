@@ -1,0 +1,11 @@
+# NOTE: frozen once takes exist for it: any change is a new version
+# The first three lines have no nasal consonants (m, n, ň).
+id = "anchors-cs"
+language = "cs"
+version = 1
+title = "Kotevní věty"
+text = """
+Ahoj, jak se ti daří?
+Je to tvoje kafe?
+Podívej, ptáček u vody.
+Promiň, že jdu pozdě, ujel mi vlak!"""

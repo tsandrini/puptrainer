@@ -172,13 +172,15 @@ def test_content_and_metrics(client: TestClient) -> None:
 
 
 def test_passage_text_is_frozen(client: TestClient) -> None:
-    # NOTE: takes exist for version 1; a changed text must become version 2
+    # NOTE: takes exist for version 1 (anchors: from M2 on); a changed text is a new version
     passages = {p["id"]: p["text"] for p in client.get("/api/v1/content").json()["passages"]}
     digests = {k: hashlib.sha256(v.encode()).hexdigest() for k, v in passages.items()}
     assert digests["garden-en"].startswith("492ab02d8bec0424")
     assert digests["garden-cs"].startswith("13dfbf086efc9c7f")
     assert passages["garden-en"].startswith("Every evening, a warm wind moves along the river")
     assert passages["garden-cs"].endswith("anebo zůstaneme tady a budeme si zpívat.")
+    assert digests["anchors-en"].startswith("f3d0ce2c99d0f8f2")
+    assert digests["anchors-cs"].startswith("741bc235e813ec5f")
 
 
 def test_web_types_are_current() -> None:

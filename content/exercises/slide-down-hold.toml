@@ -1,0 +1,45 @@
+id = "slide-down-hold"
+version = 1
+skill = "pitch-weight"
+item = "sustain"
+intent = "drill"
+seconds = 12
+reps = 3
+live = "pitch"
+hints = ["spectral_slope_db"]
+
+[titles]
+en = "Slide down and hold"
+cs = "Sklouznout dolů a podržet"
+
+[summaries]
+en = "Start high and light, slide down into your band and hold the light sound there."
+cs = "Začít vysoko a lehce, sklouznout do svého pásma a tam lehký zvuk podržet."
+
+[instructions]
+en = "On “ee” or “oo”, slide up to a high note that feels light and easy, almost suspiciously easy, and let the voice thin out instead of pushing. From there, slide gently down into your band (the shaded strip on the screen) and hold one steady note there for about three seconds, keeping the lightness the voice had at the top."
+cs = "Na „í“ nebo „ú“ vyklouzněte nahoru k vysokému tónu, který je lehký a snadný, až podezřele snadný, a nechte hlas zeslábnout, místo abyste tlačili. Odtud pomalu sklouzněte dolů do svého pásma (vybarvený pruh na obrazovce) a podržte tam jeden klidný tón asi tři sekundy se stejnou lehkostí, jakou měl hlas nahoře."
+
+[why]
+en = "Coming down from a light, high sound carries the lighter setting of the vocal folds (less weight) into your speaking range. Pitch is the tool here; the lightness is what you are after."
+cs = "Sestup z lehkého vysokého zvuku přenese lehčí nastavení hlasivek (menší váhu) do vaší řečové polohy. Výška je tu nástroj; jde o tu lehkost."
+
+[safety]
+en = "If you have to push to get up there, that is weight, not lightness: go less high."
+cs = "Pokud se tam nahoru dá dostat jen tlačením, je to váha, ne lehkost: jděte méně vysoko."
+
+[rule]
+kind = "pitch_hold"
+at = "band"
+min_hold_s = 1.5
+spread_cents = 50
+
+[[sources]]
+author = "Scinguistics / CRAMD Voice Lessons"
+title = "Course syllabus: slide down from a comfortable high pitch to speaking pitch"
+url = "https://docs.google.com/document/d/195pRpO6Ulj_AXVG48CQQbR0Z51pc8bD_t2iXt6b5hNQ/edit"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Vocal weight: pitch slides for thinness"
+url = "https://wiki.sumianvoice.com/wiki/pages/vocal-weight"

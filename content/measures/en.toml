@@ -1,0 +1,29 @@
+# Texts of the numbers a practice take is judged by (`puptrainer.core.evaluation`).
+
+[band_share_pct]
+title = "Time in your band"
+description = "Share of the voiced time whose pitch lies inside your band."
+
+[hold_s]
+title = "Steady hold"
+description = "The longest stretch held steadily inside the range (dropouts under 50 ms do not end it)."
+
+[hold_pitch_hz]
+title = "Held pitch"
+description = "The median pitch of that steady stretch."
+
+[hold_offset_cents]
+title = "Off the note"
+description = "How far the held pitch lies from the note, in cents (a hundredth of a semitone); minus is below."
+
+[steps_found]
+title = "Held sounds"
+description = "How many held sounds were found (each at least 1.5 s, with a pause between)."
+
+[step_rise_pct]
+title = "Brightening"
+description = "How much the formant spacing rose from the first held sound to the last: smaller and brighter is higher."
+
+[step_drift_st]
+title = "Pitch drift"
+description = "How far apart the held sounds' pitches lie, in semitones."

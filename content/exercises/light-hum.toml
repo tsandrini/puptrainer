@@ -1,0 +1,44 @@
+id = "light-hum"
+version = 1
+skill = "clarity"
+item = "sustain"
+intent = "drill"
+seconds = 10
+reps = 2
+live = "none"
+hints = ["hnr_db"]
+
+[titles]
+en = "Light hum"
+cs = "Lehké broukání"
+
+[summaries]
+en = "Hum as lightly as a sine tone, then speak in the same clean way."
+cs = "Broukat lehce jako čistý sinusový tón a pak stejně čistě promluvit."
+
+[instructions]
+en = "With your lips closed, hum on a comfortable note as lightly as you can: a quiet, pure sine tone rather than a buzz. Hold it for about three seconds, then open into “mm-hmm, one, two, three”, keeping the same light, clean sound. No hiss of air, no rattle, no crackle."
+cs = "Se zavřenými rty brukejte na pohodlném tónu co nejlehčeji: tichý čistý sinusový tón, ne bzučení. Držte ho asi tři sekundy a pak přejděte do „mhm, jedna, dva, tři“ se stejně lehkým a čistým zvukem. Žádné syčení vzduchu, žádné chrastění ani praskání."
+
+[why]
+en = "A light, clean start teaches the vocal folds to close just enough: not breathy, not pressed, not creaky. Many untrained voices drop into creak (a crackly, rattling vibration) at the ends of sounds; this works on its opposite."
+cs = "Lehký, čistý začátek tónu učí hlasivky dovírat tak akorát: ne dechově, ne tlačeně, ne skřípavě. Mnoho netrénovaných hlasů na koncích zvuků sklouzává do skřípání (praskavé, chrastivé kmitání); tohle cvičení trénuje opak."
+
+[safety]
+en = "If the hum rattles, make it lighter and a little higher rather than pushing through."
+cs = "Když broukání chrastí, udělejte ho lehčí a trochu výš, místo abyste se přes to protlačili."
+
+[rule]
+kind = "metric"
+key = "subharmonic_share_pct"
+below = 5
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Breathiness: a light hum into speech"
+url = "https://wiki.sumianvoice.com/wiki/pages/clarity/breathiness.html"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "False vocal folds: the light-hum rattle test"
+url = "https://wiki.sumianvoice.com/wiki/pages/clarity/FVF.html"

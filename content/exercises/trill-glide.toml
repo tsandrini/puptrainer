@@ -1,0 +1,47 @@
+id = "trill-glide"
+version = 1
+skill = "warm-up"
+item = "glide"
+intent = "drill"
+seconds = 20
+reps = 2
+live = "none"
+hints = ["glide_low_hz", "glide_high_hz", "glide_breaks"]
+
+[titles]
+en = "Lip trill glide"
+cs = "Klouzání s rtovým trylkem"
+
+[summaries]
+en = "Warm up with an easy lip trill or a straw, sliding from low to high and back."
+cs = "Rozcvička: lehký rtový trylek nebo brčko, klouzání zdola nahoru a zpět."
+
+[instructions]
+en = "Close your lips loosely and blow so that they flutter (“brrr”), or hum into a drinking straw instead. Keep it quiet and easy. Slide slowly from a low, comfortable note up to a high, comfortable one and back down, twice in one take. If the trill keeps stopping, press lightly on your cheeks with your fingertips, or use the straw. The top is wherever it still feels easy; don't reach for more."
+cs = "Volně sevřete rty a foukejte tak, aby se chvěly („brrr“), nebo místo toho bzučte do brčka. Potichu a lehce. Pomalu klouzejte od nízkého pohodlného tónu k vysokému pohodlnému a zpět, v jedné nahrávce dvakrát. Pokud se trylek pořád zastavuje, lehce si přitlačte prsty na tváře, nebo použijte brčko. Vrchol je tam, kde je to ještě snadné; nesnažte se o víc."
+
+[why]
+en = "A half-closed mouth (lips, a straw) lets the vocal folds vibrate with very little effort. Teachers use it to warm up and to smooth the jump between the low and the high voice."
+cs = "Napůl uzavřená ústa (rty, brčko) nechají hlasivky kmitat s velmi malou námahou. Učitelé to používají na rozehřátí a k uhlazení skoku mezi nízkým a vysokým hlasem."
+
+[safety]
+en = "Stop if anything scratches, tickles into a cough or tightens in your throat."
+cs = "Přestaňte, pokud cokoli škrábe, dráždí ke kašli nebo se v krku něco stahuje."
+
+[rule]
+kind = "none"
+
+[[sources]]
+author = "Selene Da Silva (clip archive)"
+title = "SOVTE explorations"
+url = "https://selenearchive.github.io/"
+
+[[sources]]
+author = "TransVoiceLessons"
+title = "8 Exercises to Reduce Vocal Fold Mass"
+url = "https://www.youtube.com/watch?v=1PNnBRBfOVY"
+
+[[sources]]
+author = "lavendercat (notes from coached lessons)"
+title = "Voice training background: warm-ups"
+url = "https://lavendercat.neocities.org/voice_training_background"

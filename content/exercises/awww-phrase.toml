@@ -1,0 +1,37 @@
+id = "awww-phrase"
+version = 1
+skill = "pitch-weight"
+item = "phrase"
+intent = "attempt"
+seconds = 8
+reps = 2
+live = "none"
+
+[titles]
+en = "The “awww” trigger"
+cs = "Spouštěč „awww“"
+
+[summaries]
+en = "Say a soft “awww” to something cute, then a sentence in that voice."
+cs = "Říct něžné „awww“ něčemu roztomilému a pak větu stejným hlasem."
+
+[instructions]
+en = "Picture something really cute, a puppy or a kitten, and say a soft, sincere “awww” to it, one to three times. Then, without resetting, say a short sentence in that same voice, for example “Oh, look at you, you're so tiny!” It only works if you really picture something cute."
+cs = "Představte si něco opravdu roztomilého, štěňátko nebo kotě, a řekněte mu jedno až tři něžná, upřímná „awww“ (nebo „jééé“). Pak bez přestávky řekněte krátkou větu stejným hlasem, třeba „Jéé, ty jsi ale malinký!“ Funguje to, jen když si to roztomilé opravdu představíte."
+
+[why]
+en = "An emotional trigger often finds a lighter voice without any thinking about mechanics; the sentence right after it carries that voice into speech."
+cs = "Citový spouštěč často najde lehčí hlas bez přemýšlení o mechanice; věta hned potom ho přenese do řeči."
+
+[safety]
+en = "Keep it soft; this is not about going as high as possible."
+cs = "Zůstaňte u něžného tónu; nejde o to dostat se co nejvýš."
+
+[rule]
+kind = "pitch_band"
+min_share_pct = 50
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Vocal weight: the “awww” trigger"
+url = "https://wiki.sumianvoice.com/wiki/pages/vocal-weight"

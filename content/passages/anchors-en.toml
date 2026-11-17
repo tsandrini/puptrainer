@@ -1,0 +1,11 @@
+# NOTE: frozen once takes exist for it: any change is a new version
+# The first three lines have no nasal consonants (m, n, ng).
+id = "anchors-en"
+language = "en"
+version = 1
+title = "Anchor phrases"
+text = """
+Hey, how's your day?
+Is this your coffee?
+Look, a little bird by the water.
+Sorry I'm late, I missed my train!"""

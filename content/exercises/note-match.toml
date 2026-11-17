@@ -1,0 +1,40 @@
+id = "note-match"
+version = 1
+skill = "pitch-weight"
+item = "sustain"
+intent = "drill"
+seconds = 8
+reps = 3
+live = "none"
+
+[titles]
+en = "Match the note"
+cs = "Trefit tón"
+
+[summaries]
+en = "Listen to a note from your band, then sing it back and hold it."
+cs = "Poslechnout si tón ze svého pásma, pak ho zazpívat a podržet."
+
+[instructions]
+en = "Press “Play the note” and listen; it plays before the recording starts, so it is not recorded. Then record and sing it back on “mm” or “ah”, as lightly as in the slide, and hold it steady for about three seconds. Don't hunt around for it: start, listen to yourself, adjust gently. Each rep plays a different note from your band."
+cs = "Stiskněte „Přehrát tón“ a poslouchejte; hraje před začátkem nahrávání, takže se nenahraje. Pak nahrávejte, zazpívejte ho zpátky na „mm“ nebo „á“ stejně lehce jako při klouzání a držte ho klidně asi tři sekundy. Nehledejte ho dlouho: začněte, poslouchejte se, jemně dolaďte. Každé opakování zahraje jiný tón z vašeho pásma."
+
+[why]
+en = "Finding a given note trains your ear and your control of pitch, and it is the one thing a pitch tracker can check exactly."
+cs = "Trefování daného tónu trénuje sluch a ovládání výšky a je to jediná věc, kterou měření výšky dokáže zkontrolovat přesně."
+
+[safety]
+en = "Sing quietly. If a note feels out of reach, skip it rather than strain."
+cs = "Zpívejte potichu. Když je tón mimo dosah, přeskočte ho, místo abyste se namáhali."
+
+[rule]
+kind = "pitch_hold"
+at = "note"
+min_hold_s = 1.5
+tolerance_cents = 50
+spread_cents = 50
+
+[[sources]]
+author = "Scinguistics / CRAMD Voice Lessons"
+title = "Course syllabus: matching a tone generator's note"
+url = "https://docs.google.com/document/d/195pRpO6Ulj_AXVG48CQQbR0Z51pc8bD_t2iXt6b5hNQ/edit"

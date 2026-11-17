@@ -137,3 +137,8 @@ description = "Horní konec klouzání (98. percentil zřetelně periodických r
 title = "Rozsah"
 description = "Vzdálenost mezi nejnižším a nejvyšším tónem v půltónech."
 note = "Dvanáct půltónů je jedna oktáva."
+
+[glide_breaks]
+title = "Zlomy"
+description = "Náhlé skoky o tři půltóny a víc: přeskok mezi nízkým a vysokým hlasem, jódlování."
+note = "Nula je plynulé klouzání. Skoky zhruba o oktávu se nepočítají (chyby měření na skřípavém spodku), takže skutečný přeskok o oktávu se také nezapočítá."
