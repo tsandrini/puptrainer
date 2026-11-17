@@ -2,8 +2,16 @@
 // the metric registry, the microphone setups, and whether the API and its
 // analysis worker are there.
 
-import { Offline } from './api/client.js';
-import { fetchContent, fetchDevices, fetchHealth, fetchMetrics } from './api/index.js';
+import { ApiError, Offline, Unauthorized, auth } from './api/client.js';
+import {
+	fetchContent,
+	fetchDevices,
+	fetchHealth,
+	fetchMetrics,
+	fetchSession,
+	login,
+	logout
+} from './api/index.js';
 import type {
 	Content,
 	DeviceOut,
@@ -27,9 +35,22 @@ class AppData {
 	reachable = $state(true);
 	loaded = $state(false);
 	error = $state<string | null>(null);
+	/** The API asks for its access token and this browser has not given it. */
+	needLogin = $state(false);
+	/** The API has a token at all (so signing out makes sense). */
+	loginRequired = $state(false);
 
 	/** Loads everything once and keeps an eye on the API. */
 	start(): void {
+		auth.onUnauthorized = () => (this.needLogin = true);
+		void fetchSession()
+			.then((session) => {
+				this.loginRequired = session.login_required;
+				this.needLogin = !session.signed_in;
+			})
+			.catch(() => {
+				// NOTE: the poll below says when the API is away
+			});
 		void this.load();
 		void this.poll();
 		setInterval(() => void this.poll(), POLL_MS);
@@ -47,8 +68,33 @@ class AppData {
 			this.error = null;
 		} catch (e) {
 			if (e instanceof Offline) this.reachable = false;
-			else this.error = e instanceof Error ? e.message : String(e);
+			else if (!(e instanceof Unauthorized))
+				this.error = e instanceof Error ? e.message : String(e);
 		}
+	}
+
+	/**
+	 * Signs in with the access token.
+	 *
+	 * @returns whether the token was accepted
+	 * @throws Offline when the API cannot be reached
+	 */
+	async signIn(token: string): Promise<boolean> {
+		try {
+			await login(token);
+		} catch (e) {
+			if (e instanceof ApiError && e.status === 401) return false;
+			throw e;
+		}
+		this.needLogin = false;
+		this.loginRequired = true;
+		await this.load();
+		return true;
+	}
+
+	async signOut(): Promise<void> {
+		await logout();
+		this.needLogin = true;
 	}
 
 	async refreshDevices(): Promise<void> {

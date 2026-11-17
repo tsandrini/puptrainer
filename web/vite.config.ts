@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 
 /** The API `npm run dev` proxies to. */
 const api = process.env.PUPTRAINER_API_URL ?? 'http://127.0.0.1:8437';
+/** The dev server's port: its own, so other projects' Vite servers on 5173 do not collide. */
+const port = Number(process.env.PUPTRAINER_WEB_PORT ?? 8436);
 
 export default defineConfig({
 	plugins: [
@@ -22,6 +24,9 @@ export default defineConfig({
 		})
 	],
 	server: {
+		port,
+		// NOTE: a taken port is an error, not a silent move to the next one
+		strictPort: true,
 		proxy: {
 			'/api': { target: api, changeOrigin: false }
 		}

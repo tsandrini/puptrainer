@@ -10,12 +10,23 @@ import type {
 	MetricDef,
 	Requeued,
 	Series,
+	SessionOut,
 	TakeMeta,
 	TakeOut,
 	TakePatch
 } from './types.js';
 
 export type * from './types.js';
+
+export const fetchSession = () => getJson<SessionOut>('session');
+/** Signs in with the access token; the API answers with a session cookie. */
+export const login = (token: string) =>
+	api('login', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ token })
+	});
+export const logout = () => api('logout', { method: 'POST' });
 
 export const fetchHealth = () => getJson<Health>('health');
 export const fetchContent = () => getJson<Content>('content');

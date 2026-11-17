@@ -191,6 +191,14 @@ export const cs: Messages = {
 			other: 'Jiný'
 		}
 	},
+	login: {
+		title: 'Přihlášení',
+		prompt: 'Tento puptrainer vyžaduje přístupový token.',
+		token: 'Přístupový token',
+		submit: 'Přihlásit se',
+		wrong: 'Tento token nebyl přijat.',
+		signOut: 'Odhlásit se'
+	},
 	queue: {
 		title: 'Čeká na odeslání',
 		rejected: 'API soubor odmítlo'

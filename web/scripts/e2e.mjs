@@ -5,10 +5,12 @@
 // unreachable during an upload, microphone refused, a file that is not
 // audio, a failed analysis, clipping).
 //
-//   node web/scripts/e2e.mjs --base http://127.0.0.1:8437 --worker "puptrainer-worker"
+//   node web/scripts/e2e.mjs --base http://127.0.0.1:8437 --worker "puptrainer-worker" \
+//     [--locked http://127.0.0.1:8438 --token SECRET]
 //
 // `--worker` is the command that runs the analysis worker; the script
-// starts it itself, after it has seen the app without one. Needs
+// starts it itself, after it has seen the app without one. `--locked` is a
+// second API that asks for `--token`, for the sign-in checks. Needs
 // `PLAYWRIGHT_CORE` (the playwright-core package directory) and
 // `PLAYWRIGHT_BROWSERS_PATH`; docs/development.md has the Nix lines.
 // Exits 1 when a check fails.
@@ -23,7 +25,9 @@ import { parseArgs } from 'node:util';
 const { values: args } = parseArgs({
 	options: {
 		base: { type: 'string', default: 'http://127.0.0.1:8437' },
-		worker: { type: 'string' }
+		worker: { type: 'string' },
+		locked: { type: 'string' },
+		token: { type: 'string' }
 	}
 });
 if (!process.env.PLAYWRIGHT_CORE || !args.worker) {
@@ -489,6 +493,37 @@ try {
 		'no recording starts without a microphone',
 		(await count(refused, '[data-testid=stop]')) === 0
 	);
+
+	// --- an API that asks for its token
+	if (args.locked && args.token) {
+		const guarded = await (
+			await browser.newContext({ baseURL: args.locked, locale: 'en-GB' })
+		).newPage();
+		await guarded.goto('/');
+		await guarded.waitForSelector('[data-testid=login]');
+		check(
+			'a locked API shows the sign-in panel',
+			(await count(guarded, '[data-testid=takes]')) === 0
+		);
+		await guarded.getByLabel('Access token').fill('not the token');
+		await guarded.getByRole('button', { name: 'Sign in' }).click();
+		await guarded.waitForSelector('[data-testid=login] [role=alert]');
+		check(
+			'a wrong token is refused',
+			(await text(guarded, '[data-testid=login] [role=alert]')).includes('not accepted')
+		);
+		await guarded.getByLabel('Access token').fill(args.token);
+		await guarded.getByRole('button', { name: 'Sign in' }).click();
+		await guarded.waitForSelector('text=No takes yet');
+		check('the right token opens the app', (await count(guarded, '[data-testid=login]')) === 0);
+		await guarded.reload();
+		await guarded.waitForSelector('text=No takes yet');
+		check('the sign-in survives a reload', (await count(guarded, '[data-testid=login]')) === 0);
+		await guarded.click('[data-testid=sign-out]');
+		await guarded.waitForSelector('[data-testid=login]');
+		check('signing out locks the app again', true);
+		await guarded.close();
+	}
 
 	check('no uncaught errors in the page', errors.length === 0, errors.join(' | '));
 	await browser.close();

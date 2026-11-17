@@ -12,6 +12,7 @@
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { app } from '#lib/app.svelte.js';
+	import Login from '#lib/components/app/Login.svelte';
 	import Paw from '#lib/components/app/Paw.svelte';
 	import ThemeToggle from '#lib/components/app/ThemeToggle.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -90,6 +91,11 @@
 					{i18n.t.common.install}
 				</Button>
 			{/if}
+			{#if app.loginRequired && !app.needLogin}
+				<Button variant="ghost" size="sm" onclick={() => app.signOut()} data-testid="sign-out">
+					{i18n.t.login.signOut}
+				</Button>
+			{/if}
 			<ThemeToggle />
 			<select
 				class="select h-8 rounded-full"
@@ -156,6 +162,10 @@
 	{/if}
 
 	<main class="flex-1 pt-2 pb-10">
-		{@render children()}
+		{#if app.needLogin}
+			<Login />
+		{:else}
+			{@render children()}
+		{/if}
 	</main>
 </div>

@@ -62,6 +62,11 @@ export type Item = 'vowels' | 'glide' | 'passage' | 'free' | 'other';
 /** State of an analysis job. */
 export type JobStatus = 'pending' | 'claimed' | 'done' | 'failed';
 
+/** What the web app sends to sign in. */
+export type Login = {
+	token: string;
+};
+
 /** One metric of the registry. */
 export type MetricDef = {
 	key: string;
@@ -114,6 +119,12 @@ export type Series = {
 	start_s: number;
 	step_s: number;
 	values: (number | null)[];
+};
+
+/** Whether this API asks for a token, and whether the caller has given it. */
+export type SessionOut = {
+	login_required: boolean;
+	signed_in: boolean;
 };
 
 /** The labels of a take being uploaded. */

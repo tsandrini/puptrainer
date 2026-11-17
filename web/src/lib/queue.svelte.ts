@@ -2,7 +2,7 @@
 // only when the API has confirmed the take. Uploads are retried while the
 // API is away; a take the API refuses stays, marked, until discarded.
 
-import { ApiError } from './api/client.js';
+import { ApiError, Unauthorized } from './api/client.js';
 import { createTake } from './api/index.js';
 import type { TakeMeta, TakeOut } from './api/types.js';
 import { allPending, deletePending, putPending, type Pending } from './store.js';
@@ -69,7 +69,12 @@ class UploadQueue {
 					this.items = this.items.filter((i) => i.id !== item.id);
 					for (const listener of this.#listeners) listener(take);
 				} catch (e) {
-					const rejected = e instanceof ApiError && e.status >= 400 && e.status < 500;
+					// NOTE: signed out is like offline: the take waits, it is not refused
+					const rejected =
+						!(e instanceof Unauthorized) &&
+						e instanceof ApiError &&
+						e.status >= 400 &&
+						e.status < 500;
 					const next = { ...item, error: e instanceof Error ? e.message : String(e), rejected };
 					await putPending(next);
 					this.items = this.items.map((i) => (i.id === item.id ? next : i));

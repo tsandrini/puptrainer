@@ -184,6 +184,14 @@ export const en = {
 			other: 'Other'
 		}
 	},
+	login: {
+		title: 'Sign in',
+		prompt: 'This puptrainer asks for its access token.',
+		token: 'Access token',
+		submit: 'Sign in',
+		wrong: 'That token was not accepted.',
+		signOut: 'Sign out'
+	},
 	queue: {
 		title: 'Waiting to upload',
 		rejected: 'Rejected by the API'
