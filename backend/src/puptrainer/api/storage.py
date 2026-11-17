@@ -1,8 +1,8 @@
 """Recordings on disk: verified, stored losslessly as FLAC, addressed by content."""
 
 import hashlib
-import io
 import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -62,20 +62,28 @@ class AudioStore:
         Raises:
             InvalidAudioError: Not a readable audio file, empty, or longer than 30 minutes.
         """
-        try:
-            with sf.SoundFile(io.BytesIO(data)) as source:
-                subtype = source.subtype
-                sample_rate = source.samplerate
-                channels = source.channels
-                if subtype in FLOAT_SUBTYPES:
-                    # NOTE: libsndfile truncates float data read as integers instead of scaling it
-                    floats = source.read(dtype="float64", always_2d=True)
-                    scaled = np.clip(np.rint(floats * 2**23), -(2**23), 2**23 - 1)
-                    samples: np.ndarray = scaled.astype(np.int32) << 8
-                else:
-                    samples = np.asarray(source.read(dtype="int32", always_2d=True))
-        except (sf.LibsndfileError, RuntimeError) as exc:
-            raise InvalidAudioError("not a readable audio file (WAV or FLAC expected)") from exc
+        # NOTE: read from a file, not from memory: libsndfile's in-memory reader goes through
+        # callbacks that need write+execute memory, which a hardened service is denied
+        # (systemd's MemoryDenyWriteExecute)
+        self.root.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(dir=self.root, suffix=".upload") as upload:
+            upload.write(data)
+            upload.flush()
+            try:
+                with sf.SoundFile(upload.name) as source:
+                    subtype = source.subtype
+                    sample_rate = source.samplerate
+                    channels = source.channels
+                    if subtype in FLOAT_SUBTYPES:
+                        # NOTE: libsndfile truncates float data read as integers instead
+                        # of scaling it
+                        floats = source.read(dtype="float64", always_2d=True)
+                        scaled = np.clip(np.rint(floats * 2**23), -(2**23), 2**23 - 1)
+                        samples: np.ndarray = scaled.astype(np.int32) << 8
+                    else:
+                        samples = np.asarray(source.read(dtype="int32", always_2d=True))
+            except (sf.LibsndfileError, RuntimeError) as exc:
+                raise InvalidAudioError("not a readable audio file (WAV or FLAC expected)") from exc
         frames = samples.shape[0]
         if frames == 0:
             raise InvalidAudioError("the recording is empty")

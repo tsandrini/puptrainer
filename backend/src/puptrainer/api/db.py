@@ -1,11 +1,15 @@
 """The database: tables, engine and migrations."""
 
+import sqlite3
 import uuid
-from datetime import UTC, datetime
+from contextlib import closing
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import (
     DateTime,
     Dialect,
@@ -22,6 +26,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 MIGRATIONS = Path(__file__).parent / "migrations"
+KEEP_SNAPSHOTS = 14
+SNAPSHOT_EVERY = timedelta(hours=20)
 
 
 def now() -> datetime:
@@ -163,10 +169,62 @@ def make_engine(path: Path) -> Engine:
     return engine
 
 
-def migrate(engine: Engine) -> None:
-    """Bring the database to the newest schema."""
+def snapshot(database: Path, folder: Path, reason: str) -> Path | None:
+    """Copy the database into `folder`, consistently even while it is in use.
+
+    Uses SQLite's online backup, so a write-ahead log is included. Only the newest
+    `KEEP_SNAPSHOTS` files are kept.
+
+    Args:
+        database: The SQLite file.
+        folder: Where snapshots go; created when missing.
+        reason: Why it was taken, part of the file name (`start`, `before-0003`).
+
+    Returns:
+        The snapshot's path, or `None` when there is no database yet.
+    """
+    if not database.exists():
+        return None
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    target = folder / f"{database.stem}-{stamp}-{reason}.sqlite3"
+    with closing(sqlite3.connect(database)) as source, closing(sqlite3.connect(target)) as copy:
+        source.backup(copy)
+    for old in sorted(folder.glob(f"{database.stem}-*.sqlite3"))[:-KEEP_SNAPSHOTS]:
+        old.unlink()
+    return target
+
+
+def snapshot_if_stale(database: Path, folder: Path) -> Path | None:
+    """Take a `start` snapshot unless one was taken within the last `SNAPSHOT_EVERY`.
+
+    Returns:
+        The new snapshot, or `None` when the last one is recent or there is no database.
+    """
+    recent = sorted(folder.glob(f"{database.stem}-*-start.sqlite3"))
+    if recent:
+        age = datetime.now(UTC).timestamp() - recent[-1].stat().st_mtime
+        if age < SNAPSHOT_EVERY.total_seconds():
+            return None
+    return snapshot(database, folder, "start")
+
+
+def migrate(engine: Engine, backups: Path | None = None) -> None:
+    """Bring the database to the newest schema.
+
+    Args:
+        engine: The database.
+        backups: Where to put a snapshot before an existing database is changed; without
+            it no snapshot is taken.
+    """
     config = Config()
     config.set_main_option("script_location", str(MIGRATIONS))
+    head = ScriptDirectory.from_config(config).get_current_head()
+    with engine.connect() as connection:
+        current = MigrationContext.configure(connection).get_current_revision()
+    if backups is not None and current is not None and current != head and engine.url.database:
+        # NOTE: an existing database is about to change shape: keep it as it was
+        snapshot(Path(engine.url.database), backups, f"before-{head}")
     with engine.begin() as connection:
         config.attributes["connection"] = connection
         command.upgrade(config, "head")

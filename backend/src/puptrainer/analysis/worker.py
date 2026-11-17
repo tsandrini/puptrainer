@@ -84,16 +84,18 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     log.info("pipeline %s, API at %s", PIPELINE_VERSION, settings.api_url)
-    with httpx.Client(base_url=settings.api_url, timeout=60.0) as client:
+    token = settings.access_token
+    headers = {} if token is None else {"Authorization": f"Bearer {token}"}
+    with httpx.Client(base_url=settings.api_url, timeout=60.0, headers=headers) as client:
         while not stopping:
             try:
                 worked = run_once(client)
             except httpx.HTTPError as exc:
+                refused = isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 401
+                problem = "refused the worker's token" if refused else f"is not reachable: {exc}"
                 if args.once:
-                    raise SystemExit(
-                        f"the API at {settings.api_url} is not reachable: {exc}"
-                    ) from exc
-                log.warning("API not reachable (%s), retrying", exc)
+                    raise SystemExit(f"the API at {settings.api_url} {problem}") from exc
+                log.warning("the API at %s %s; retrying", settings.api_url, problem)
                 worked = False
             if not worked:
                 if args.once:

@@ -1,5 +1,7 @@
 """The FastAPI application."""
 
+import hashlib
+import hmac
 import math
 import time
 from collections.abc import AsyncIterator, Iterator, Sequence
@@ -40,6 +42,7 @@ from puptrainer.api.db import (
     make_engine,
     migrate,
     now,
+    snapshot_if_stale,
 )
 from puptrainer.api.storage import AudioStore, InvalidAudioError
 from puptrainer.core.content import load_content, load_metrics
@@ -58,9 +61,11 @@ from puptrainer.core.schemas import (
     JobFailure,
     JobResult,
     JobStatus,
+    Login,
     MetricDef,
     Requeued,
     Series,
+    SessionOut,
     TakeMeta,
     TakeOut,
     TakePatch,
@@ -69,8 +74,11 @@ from puptrainer.core.schemas import (
 from puptrainer.core.settings import Settings
 
 ERRORS: dict[int | str, dict[str, object]] = {
-    code: {"model": ErrorOut} for code in (400, 404, 409, 422)
+    code: {"model": ErrorOut} for code in (400, 401, 404, 409, 422)
 }
+
+SESSION_COOKIE = "puptrainer_session"
+SESSION_SECONDS = 365 * 24 * 3600
 
 
 def database(request: Request) -> Iterator[Session]:
@@ -154,8 +162,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """
     settings = settings or Settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    # NOTE: labels and devices cannot be recomputed: a copy of the database is kept from
+    # each day it is opened, and one from before every change of its schema
+    snapshot_if_stale(settings.database_path, settings.backup_dir)
     engine = make_engine(settings.database_path)
-    migrate(engine)
+    migrate(engine, settings.backup_dir)
     sessions = sessionmaker(engine, expire_on_commit=False)
     store = AudioStore(settings.audio_dir)
     content = load_content(settings.content_dir)
@@ -180,6 +191,55 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.worker_seen = None
     app.state.pipeline_version = None
+
+    # --- access: open without a token (localhost only), else a bearer token (the worker)
+    # or the cookie a sign-in sets (the web app, whose <audio> cannot send a header)
+    token = settings.access_token
+    # NOTE: the cookie holds a value derived from the token, never the token itself
+    cookie_value = (
+        None if token is None else hashlib.sha256(f"{token}|session".encode()).hexdigest()
+    )
+
+    def signed_in(request: Request) -> bool:
+        if token is None or cookie_value is None:
+            return True
+        header = request.headers.get("authorization", "")
+        if header.startswith("Bearer ") and hmac.compare_digest(header[7:], token):
+            return True
+        return hmac.compare_digest(request.cookies.get(SESSION_COOKIE, ""), cookie_value)
+
+    def guard(request: Request) -> None:
+        if not signed_in(request):
+            raise HTTPException(401, "this puptrainer asks for its access token")
+
+    public = APIRouter(prefix="/api/v1", responses=ERRORS)
+
+    @public.get("/session", operation_id="session")
+    def session_state(request: Request) -> SessionOut:
+        return SessionOut(login_required=token is not None, signed_in=signed_in(request))
+
+    @public.post("/login", status_code=204, operation_id="login")
+    def login(body: Login, request: Request, response: Response) -> None:
+        if token is None or cookie_value is None:
+            return
+        if not hmac.compare_digest(body.token.strip(), token):
+            raise HTTPException(401, "that token was not accepted")
+        secure = (
+            request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+        )
+        response.set_cookie(
+            SESSION_COOKIE,
+            cookie_value,
+            max_age=SESSION_SECONDS,
+            httponly=True,
+            samesite="strict",
+            secure=secure,
+        )
+
+    @public.post("/logout", status_code=204, operation_id="logout")
+    def logout(response: Response) -> None:
+        response.delete_cookie(SESSION_COOKIE)
+
     app.state.engine = engine
     app.state.sessions = sessions
 
@@ -191,7 +251,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def _validation_error(_request: object, exc: RequestValidationError) -> JSONResponse:
         return JSONResponse({"error": describe(exc.errors())}, status_code=422)
 
-    router = APIRouter(prefix="/api/v1", responses=ERRORS)
+    router = APIRouter(prefix="/api/v1", responses=ERRORS, dependencies=[Depends(guard)])
 
     def get_take(db: Session, take_id: str) -> Take:
         take = db.scalar(select(Take).where(Take.id == take_id).options(*TAKE_LOAD))
@@ -207,7 +267,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # --- health, content ---
 
-    @router.get("/health", operation_id="health")
+    @public.get("/health", operation_id="health")
     def health(db: Db) -> Health:
         pending = db.scalar(
             select(func.count())
@@ -491,6 +551,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         db.commit()
         return Response(status_code=204)
 
+    app.include_router(public)
     app.include_router(router)
 
     @app.api_route(

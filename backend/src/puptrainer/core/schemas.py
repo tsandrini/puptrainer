@@ -348,6 +348,24 @@ class Content(Schema):
     protocols: list[Protocol]
 
 
+class Login(Schema):
+    """What the web app sends to sign in."""
+
+    token: str = Field(min_length=1, max_length=512)
+
+
+class SessionOut(Schema):
+    """Whether this API asks for a token, and whether the caller has given it.
+
+    Attributes:
+        login_required: The API has an access token configured.
+        signed_in: The request carried the token (or none is required).
+    """
+
+    login_required: bool
+    signed_in: bool
+
+
 class ErrorOut(Schema):
     """Every error response."""
 

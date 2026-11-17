@@ -1,4 +1,6 @@
 import io
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -76,3 +78,25 @@ def test_delete_is_idempotent(tmp_path: Path) -> None:
     store.delete(info.sha256)
     store.delete(info.sha256)
     assert not store.path(info.sha256).exists()
+
+
+def test_ingest_needs_no_write_execute_memory(tmp_path: Path) -> None:
+    # systemd's MemoryDenyWriteExecute, which the NixOS module sets: the same restriction
+    # is switched on in a child process, which then stores an upload
+    upload = tmp_path / "upload.wav"
+    upload.write_bytes(wav_bytes(tone()))
+    script = f"""
+import ctypes, sys
+from pathlib import Path
+PR_SET_MDWE, REFUSE_EXEC_GAIN = 65, 1
+if ctypes.CDLL(None, use_errno=True).prctl(PR_SET_MDWE, REFUSE_EXEC_GAIN, 0, 0, 0) != 0:
+    sys.exit(77)  # a kernel without the switch
+from puptrainer.api.storage import AudioStore
+info = AudioStore(Path({str(tmp_path / "store")!r})).ingest(Path({str(upload)!r}).read_bytes())
+print(info.sample_rate, info.duration_s)
+"""
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+    if result.returncode == 77:
+        pytest.skip("this kernel cannot deny write+execute memory per process")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["48000", "2.0"]
