@@ -13,6 +13,7 @@
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { app } from '#lib/app.svelte.js';
 	import Login from '#lib/components/app/Login.svelte';
+	import { isTake } from '#lib/store.js';
 	import Paw from '#lib/components/app/Paw.svelte';
 	import ThemeToggle from '#lib/components/app/ThemeToggle.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -32,6 +33,12 @@
 			label: i18n.t.nav.takes,
 			Icon: AudioLinesIcon,
 			active: (p: string) => p === '/' || p.startsWith('/takes') || p.startsWith('/compare')
+		},
+		{
+			href: '/practice',
+			label: i18n.t.nav.practice,
+			Icon: Paw,
+			active: starts('/practice')
 		},
 		{ href: '/record', label: i18n.t.nav.record, Icon: MicIcon, active: starts('/record') },
 		{
@@ -139,11 +146,16 @@
 
 	{#if queue.items.length}
 		<section class="panel mb-3 text-sm" data-testid="queue">
-			<p class="font-bold">{i18n.t.status.queued(queue.items.length)}</p>
+			<p class="font-bold">
+				{queue.takes.length
+					? i18n.t.status.queued(queue.takes.length)
+					: i18n.t.status.practiceQueued}
+			</p>
 			<ul class="mt-1 space-y-1">
 				{#each queue.items as item (item.id)}
 					<li class="flex flex-wrap items-center gap-2">
-						<span class="font-mono text-xs">{item.name}</span>
+						<span class="font-mono text-xs">{isTake(item) ? item.name : i18n.t.queue.practice}</span
+						>
 						{#if item.rejected}
 							<span class="text-critical">{i18n.t.queue.rejected}: {item.error}</span>
 						{/if}

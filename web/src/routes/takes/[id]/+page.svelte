@@ -1,8 +1,8 @@
 <script lang="ts">
-	// One take: the player, its pitch over time, every measurement in
-	// groups with what it means, the vowels of a vowels take one by one,
-	// the labels (editable), the state of the analysis with a retry, and
-	// delete.
+	// One take: the player, for a practice take its exercise, comfort and
+	// result, its pitch over time, every measurement in groups with what it
+	// means, the vowels (or held sounds) one by one, the labels (editable),
+	// the state of the analysis with a retry, and delete.
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { ApiError } from '#lib/api/client.js';
@@ -14,9 +14,10 @@
 		takeAudioUrl,
 		updateTake
 	} from '#lib/api/index.js';
-	import type { Intent, Item, Series, TakeOut } from '#lib/api/types.js';
+	import type { Intent, Item, Series, TakeOut, VowelSegment } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import AnalysisBadge from '#lib/components/app/AnalysisBadge.svelte';
+	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
 	import MetricGroups from '#lib/components/app/MetricGroups.svelte';
 	import Figure from '#lib/components/charts/Figure.svelte';
@@ -52,7 +53,16 @@
 				note !== take.note)
 	);
 	const passage = $derived(app.passage(take?.content_ref));
+	const exercise = $derived(app.exerciseOf(take?.exercise_ref));
 	const hz = (value: number) => `${Math.round(value)} Hz`;
+	/** The vowels of a vowels take, or the held sounds of a sustain take. */
+	const segments = $derived<{ title: string; rows: VowelSegment[]; testid: string } | null>(
+		take?.details.vowels.length
+			? { title: i18n.t.take.vowels, rows: take.details.vowels, testid: 'vowels' }
+			: take?.details.segments.length
+				? { title: i18n.t.take.segments, rows: take.details.segments, testid: 'segments' }
+				: null
+	);
 
 	function show(next: TakeOut, labels: boolean) {
 		take = next;
@@ -113,6 +123,9 @@
 
 	const analyse = () => act(async () => show(await analyseTake(id), false));
 
+	const setComfort = (value: string) =>
+		act(async () => show(await updateTake(id, { comfort: value ? Number(value) : null }), false));
+
 	const remove = () =>
 		act(async () => {
 			if (!confirm(i18n.t.take.confirmDelete)) return;
@@ -141,6 +154,39 @@
 		<audio class="w-full" controls preload="metadata" src={takeAudioUrl(take.id)}></audio>
 	</div>
 
+	{#if take.exercise_ref}
+		<section class="panel mb-4 space-y-2" data-testid="practice">
+			<div class="flex flex-wrap items-baseline justify-between gap-2">
+				<h2 class="text-base">
+					{i18n.t.take.exercise}:
+					{i18n.pick(exercise?.titles) || take.exercise_ref}
+				</h2>
+				{#if take.session_id}
+					<a class="text-sm hover:text-primary" href="/practice/sessions/{take.session_id}">
+						{i18n.t.take.session}
+					</a>
+				{/if}
+			</div>
+			<label class="flex items-center gap-2 text-sm">
+				<span class="text-muted-foreground">{i18n.t.take.comfort}</span>
+				<select
+					class="select"
+					value={take.comfort ?? ''}
+					onchange={(event) => setComfort(event.currentTarget.value)}
+					data-testid="take-comfort"
+				>
+					<option value="">{i18n.t.common.none}</option>
+					{#each i18n.t.practice.run.comforts as label, index (index)}
+						<option value={index + 1}>{index + 1} · {label}</option>
+					{/each}
+				</select>
+			</label>
+			{#if take.evaluation}
+				<EvaluationView evaluation={take.evaluation} />
+			{/if}
+		</section>
+	{/if}
+
 	{#if error}
 		<p
 			class="mb-4 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
@@ -159,8 +205,18 @@
 	{/if}
 
 	{#if contour && contour.values.some((v) => v !== null)}
-		<Figure title={i18n.t.take.contour} sub={i18n.t.take.contourBand} class="mb-4">
-			<PitchContour series={contour} />
+		{@const target = take.target}
+		<Figure
+			title={i18n.t.take.contour}
+			sub={target
+				? i18n.t.take.contourTarget(Math.round(target.band_low_hz), Math.round(target.band_high_hz))
+				: i18n.t.take.contourBand}
+			class="mb-4"
+		>
+			<PitchContour
+				series={contour}
+				band={target ? [target.band_low_hz, target.band_high_hz] : undefined}
+			/>
 		</Figure>
 	{/if}
 
@@ -170,9 +226,9 @@
 		<MetricGroups {take} />
 	{/if}
 
-	{#if take.details.vowels.length}
-		<section class="panel mt-4" data-testid="vowels">
-			<h2 class="mb-2 text-base">{i18n.t.take.vowels}</h2>
+	{#if segments}
+		<section class="panel mt-4" data-testid={segments.testid}>
+			<h2 class="mb-2 text-base">{segments.title}</h2>
 			<div class="overflow-x-auto">
 				<table class="w-full text-sm tabular-nums">
 					<thead class="text-left text-xs text-muted-foreground">
@@ -189,9 +245,11 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each take.details.vowels as vowel (vowel.start_s)}
+						{#each segments.rows as vowel (vowel.start_s)}
 							<tr class="border-t">
-								<td class="py-1.5 pr-3 text-base font-extrabold">{vowel.vowel}</td>
+								<td class="py-1.5 pr-3 text-base font-extrabold">
+									{vowel.vowel ?? i18n.t.common.none}
+								</td>
 								<td class="py-1.5 pr-3">{fmtNumber(vowel.duration_s, 1, i18n.locale)} s</td>
 								<td class="py-1.5 pr-3">{hz(vowel.pitch_hz)}</td>
 								{#each vowel.formants_hz as formant, index (index)}

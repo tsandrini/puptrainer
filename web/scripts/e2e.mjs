@@ -1,9 +1,10 @@
 // The end-to-end check: drives the built app in a headless Chromium whose
 // microphone is a synthetic tone, against a running API with an empty data
 // directory. It records, saves, waits for the analysis, edits labels,
-// imports files, and triggers the failure paths on purpose (no worker, API
-// unreachable during an upload, microphone refused, a file that is not
-// audio, a failed analysis, clipping).
+// imports files, runs guided practice sessions, and triggers the failure
+// paths on purpose (no worker, API unreachable during an upload and during
+// a session, microphone refused, a file that is not audio, a failed
+// analysis, clipping, a strained rep, a hoarse check-in).
 //
 //   node web/scripts/e2e.mjs --base http://127.0.0.1:8437 --worker "puptrainer-worker" \
 //     [--locked http://127.0.0.1:8438 --token SECRET]
@@ -105,6 +106,14 @@ async function record(page, seconds) {
 }
 
 let worker = null;
+function startWorker() {
+	worker = spawn(args.worker, {
+		shell: true,
+		detached: true,
+		stdio: 'ignore',
+		env: { ...process.env, PUPTRAINER_API_URL: args.base, PUPTRAINER_POLL_INTERVAL_S: '0.5' }
+	});
+}
 function stopWorker() {
 	if (worker?.pid) {
 		try {
@@ -113,8 +122,20 @@ function stopWorker() {
 			// already gone
 		}
 	}
+	worker = null;
 }
 process.on('exit', stopWorker);
+
+const pause = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+
+/** Records one rep in a practice session and stops; leaves the comfort question open. */
+async function practiseRep(page, seconds) {
+	await page.click('[data-testid=record]');
+	await page.waitForSelector('[data-testid=stop]');
+	await pause(seconds);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=rating]');
+}
 
 let browser = await launch(toneFile('voice.wav'));
 try {
@@ -199,12 +220,7 @@ try {
 	check('missing worker is announced', true);
 
 	// --- the worker arrives
-	worker = spawn(args.worker, {
-		shell: true,
-		detached: true,
-		stdio: 'ignore',
-		env: { ...process.env, PUPTRAINER_API_URL: args.base, PUPTRAINER_POLL_INTERVAL_S: '0.5' }
-	});
+	startWorker();
 	await page.waitForSelector('[data-testid=takes] [data-status=done]', { timeout: 60_000 });
 	const row = await text(page, '[data-testid=takes] tbody tr');
 	check('analysed take shows its pitch', /1[67]\d\sHz/.test(row), row.replace(/\s+/g, ' '));
@@ -468,6 +484,169 @@ try {
 		60_000
 	);
 	check('and analysed again', again === 4, `${again} done`);
+
+	// --- practice: a band first
+	await page.goto('/practice');
+	await page.waitForSelector('[data-testid=band-card]');
+	check('sessions wait for a band', (await count(page, '[data-testid=start-quick]')) === 0);
+	await page.fill('[data-testid=band-low]', '200');
+	await page.fill('[data-testid=band-high]', '190');
+	await page.click('[data-testid=band-set]');
+	await page.waitForSelector('[data-testid=band-card] [role=alert]');
+	check('a band upside down is refused', true);
+	await page.fill('[data-testid=band-low]', '160');
+	await page.fill('[data-testid=band-high]', '200');
+	await page.click('[data-testid=band-set]');
+	await page.waitForSelector('[data-testid=start-quick]');
+	check('the band is set', (await text(page, '[data-testid=band]')).includes('160 Hz'));
+	check(
+		'the catalogue lists the exercises with sources',
+		(await count(page, '[data-testid=catalogue] [data-exercise]')) >= 8 &&
+			// NOTE: textContent, the sources sit inside closed <details>
+			((await page.locator('[data-testid=catalogue]').textContent()) ?? '').includes(
+				'Sumian Voice wiki'
+			)
+	);
+
+	// --- practice: the quick routine from start to end
+	await page.click('[data-testid=start-quick]');
+	await page.waitForSelector('[data-testid=checkin]');
+	await page.click('[data-testid=feel-fresh]');
+	await page.waitForSelector('[data-testid=step][data-exercise=slide-down-hold]');
+	check(
+		'the session walks its steps',
+		(await text(page, '[data-testid=position]')).includes('Exercise 1 of 2')
+	);
+	await page.click('[data-testid=record]');
+	await page.waitForSelector('[data-testid=band-strip]');
+	check('a live band strip guides the slide', true);
+	await pause(2.5);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=rating]');
+	check(
+		'comfort is asked before any number',
+		(await count(page, '[data-testid=evaluation]')) === 0
+	);
+	check('playback is never automatic', (await count(page, 'audio')) === 0);
+	await page.click('[data-testid=listen]');
+	check('playback is there when asked for', (await count(page, 'audio')) === 1);
+	await page.click('[data-testid=comfort-4]');
+	await page.waitForSelector('[data-testid=verdict]', { timeout: 30_000 });
+	check('a steady hold in the band is met', (await text(page, '[data-testid=verdict]')) === 'Met');
+	check(
+		'the result shows the hold and the band',
+		(await text(page, '[data-testid=result]')).includes('Steady hold')
+	);
+
+	await page.click('[data-testid=next]');
+	await practiseRep(page, 2);
+	await page.click('[data-testid=comfort-1]');
+	await page.waitForSelector('[data-testid=strained]');
+	check('a strained rep offers to stop', true);
+	await page.getByRole('button', { name: 'Go to the next exercise' }).click();
+	await page.waitForSelector('[data-testid=step][data-exercise=count-in-band]');
+
+	// the worker goes away: the result is measured later
+	stopWorker();
+	await practiseRep(page, 2);
+	await page.click('[data-testid=comfort-5]');
+	await page.waitForSelector('[data-testid=measuring]');
+	check('without a worker the result waits', true);
+	await page.click('[data-testid=next]');
+	await page.waitForSelector('[data-testid=checkout]');
+	await page.click('[data-testid=checkout] [data-testid=comfort-4]');
+	await page.click('[data-testid=tension-no]');
+	await page.click('[data-testid=finish]');
+	await page.waitForSelector('[data-testid=done]');
+	check('the session is saved', (await text(page, '[data-testid=summary]')).startsWith('Takes: 3'));
+	startWorker();
+	await page.getByRole('link', { name: 'Open it in the log' }).click();
+	await page.waitForSelector('[data-testid=session-takes]');
+	check(
+		'the log has the session with its takes',
+		(await count(page, '[data-testid=session-takes] > li')) === 3 &&
+			(await text(page, '[data-testid=comfort-end]')).includes('Comfortable')
+	);
+
+	const later = await until(
+		async () => {
+			await page.reload();
+			await page.waitForSelector('[data-testid=session-takes]');
+			return count(page, '[data-testid=session-takes] [data-testid=verdict]');
+		},
+		(n) => n === 3,
+		60_000
+	);
+	check('the waiting result arrives once the worker is back', later === 3, `${later} judged`);
+	check(
+		'a strained rep does not count as met',
+		(await count(page, '[data-testid=strained-result]')) === 1
+	);
+
+	// --- practice: the API goes away during a session; nothing is lost
+	const practiceApi = /\/api\/v1\/(practice\/|takes$)/;
+	await page.route(practiceApi, (route) =>
+		['PUT', 'POST'].includes(route.request().method()) ? route.abort() : route.continue()
+	);
+	await page.goto('/practice/run?exercise=count-in-band');
+	await page.waitForSelector('[data-testid=checkin]');
+	await page.selectOption('[data-testid=session-language]', 'cs');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	await practiseRep(page, 2);
+	await page.click('[data-testid=comfort-3]');
+	await page.waitForSelector('[data-testid=result-offline]');
+	check('an unreachable API keeps the practice take', true);
+	await page.click('[data-testid=next]');
+	await page.click('[data-testid=finish]');
+	await page.waitForSelector('[data-testid=done]');
+	check(
+		'the session waits on the device too',
+		(await text(page, '[data-testid=queue]')).includes('1 take waiting')
+	);
+	await page.unroute(practiceApi);
+	const drained = await until(
+		() => count(page, '[data-testid=queue]'),
+		(n) => n === 0,
+		30_000
+	);
+	check('session and take upload once the API is back', drained === 0);
+	const sessions = await (await context.request.get('/api/v1/practice')).json();
+	const offline = sessions.find((s) => s.language === 'cs');
+	check(
+		'the session arrived whole, before its take',
+		offline?.take_count === 1 && offline?.ended_at !== null && offline?.routine_ref === null,
+		JSON.stringify(offline)
+	);
+
+	// --- practice: a hoarse voice is told to rest
+	await page.goto('/practice/run?routine=quick');
+	await page.click('[data-testid=feel-hoarse]');
+	await page.waitForSelector('[data-testid=rest]');
+	await page.click('[data-testid=rest]');
+	await page.waitForSelector('[data-testid=done]');
+	check('resting needs no recording', (await count(page, '[data-testid=summary]')) === 0);
+	const rested = await until(
+		async () => (await (await context.request.get('/api/v1/practice')).json()).length,
+		(n) => n === 3,
+		20_000
+	);
+	const latest = (await (await context.request.get('/api/v1/practice')).json())[0];
+	check(
+		'the rest day is in the log',
+		rested === 3 && latest.feel_start === 'hoarse' && latest.take_count === 0,
+		JSON.stringify(latest)
+	);
+
+	// --- practice takes stay out of the voice's progress
+	await page.goto('/progress');
+	await page.waitForSelector('[data-testid=kind]');
+	const kinds = await text(page, '[data-testid=kind]');
+	check('drills draw no progress line', !kinds.includes('Held sound'), kinds);
+	await page.click('[data-testid=with-practice]');
+	check(
+		'practice attempts join when asked for',
+		(await text(page, '[data-testid=kind]')).includes('Short phrase')
+	);
 
 	// --- the installed app
 	check(

@@ -16,8 +16,8 @@
 		idPrefix?: string;
 	} = $props();
 
-	const items: Item[] = ['vowels', 'glide', 'passage', 'free', 'other'];
-	const intents: Intent[] = ['habitual', 'attempt'];
+	const items: Item[] = ['vowels', 'glide', 'sustain', 'phrase', 'passage', 'free', 'other'];
+	const intents: Intent[] = ['habitual', 'attempt', 'drill'];
 	const languages = ['en', 'cs'];
 </script>
 

@@ -2,7 +2,7 @@
 // `2026-11-16_passage-en_habitual.wav` says the date, what was spoken, the
 // language and which voice it was.
 
-import type { Intent, Item, Passage } from './api/types.js';
+import type { Exercise, Intent, Item, Passage, Routine } from './api/types.js';
 
 export type Guess = {
 	item: Item;
@@ -12,11 +12,17 @@ export type Guess = {
 	date: string | null;
 };
 
-const ITEMS: Item[] = ['vowels', 'glide', 'passage', 'free', 'other'];
-const INTENTS: Intent[] = ['habitual', 'attempt'];
+const ITEMS: Item[] = ['vowels', 'glide', 'sustain', 'phrase', 'passage', 'free', 'other'];
+const INTENTS: Intent[] = ['habitual', 'attempt', 'drill'];
 
 /** The reference a take stores for a passage: `passage:garden-en@1`. */
 export const passageRef = (passage: Passage) => `passage:${passage.id}@${passage.version}`;
+
+/** The reference a practice take stores for its exercise: `exercise:note-match@1`. */
+export const exerciseRef = (exercise: Exercise) => `exercise:${exercise.id}@${exercise.version}`;
+
+/** The reference a practice session stores for its routine: `routine:starter@1`. */
+export const routineRef = (routine: Routine) => `routine:${routine.id}@${routine.version}`;
 
 /** The newest passage in a language, if any. */
 export function passageFor(passages: Passage[], language: string | null): Passage | null {

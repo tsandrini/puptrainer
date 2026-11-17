@@ -17,8 +17,8 @@
 	import { queue } from '#lib/queue.svelte.js';
 
 	const POLL_MS = 2_000;
-	const items: Item[] = ['vowels', 'glide', 'passage', 'free', 'other'];
-	const intents: Intent[] = ['habitual', 'attempt'];
+	const items: Item[] = ['vowels', 'glide', 'sustain', 'phrase', 'passage', 'free', 'other'];
+	const intents: Intent[] = ['habitual', 'attempt', 'drill'];
 
 	let takes = $state.raw<TakeOut[] | null>(null);
 	let item = $state('');

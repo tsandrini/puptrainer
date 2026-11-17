@@ -3,8 +3,11 @@
 
 import type { Intent } from './api/types.js';
 
+/** The intents that are a voice; drills are sounds made for an exercise and draw no line. */
+export type Voice = Exclude<Intent, 'drill'>;
+
 /** Series colours by the voice a take was spoken in. */
-export const INTENT_COLOR: Record<Intent, string> = {
+export const INTENT_COLOR: Record<Voice, string> = {
 	habitual: 'var(--series-1)',
 	attempt: 'var(--series-2)'
 };

@@ -3,11 +3,16 @@
 
 import { api, getJson, patchJson, postJson, putJson, query } from './client.js';
 import type {
+	BandIn,
+	BandOut,
 	Content,
 	DeviceIn,
 	DeviceOut,
 	Health,
+	MeasureDef,
 	MetricDef,
+	PracticeIn,
+	PracticeOut,
 	Requeued,
 	Series,
 	SessionOut,
@@ -31,13 +36,34 @@ export const logout = () => api('logout', { method: 'POST' });
 export const fetchHealth = () => getJson<Health>('health');
 export const fetchContent = () => getJson<Content>('content');
 export const fetchMetrics = () => getJson<MetricDef[]>('metrics');
+export const fetchMeasures = () => getJson<MeasureDef[]>('measures');
+
+/** Every pitch band set so far, the current one first. */
+export const fetchBands = () => getJson<BandOut[]>('bands');
+export const createBand = (body: BandIn) => postJson<BandOut>('bands', body);
+
+/** Practice sessions, the newest first. */
+export const fetchPracticeList = () => getJson<PracticeOut[]>('practice');
+export const fetchPractice = (id: string) =>
+	getJson<PracticeOut>(`practice/${encodeURIComponent(id)}`);
+/** Writes a whole practice session; writing it again changes nothing. */
+export const putPractice = (id: string, body: PracticeIn) =>
+	putJson<PracticeOut>(`practice/${encodeURIComponent(id)}`, body);
+export const deletePractice = (id: string) =>
+	api(`practice/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
 export const fetchDevices = () => getJson<DeviceOut[]>('devices');
 export const createDevice = (body: DeviceIn) => postJson<DeviceOut>('devices', body);
 export const updateDevice = (id: number, body: DeviceIn) =>
 	putJson<DeviceOut>(`devices/${id}`, body);
 
-export type TakeFilter = { item?: string; intent?: string; language?: string; device_id?: number };
+export type TakeFilter = {
+	item?: string;
+	intent?: string;
+	language?: string;
+	device_id?: number;
+	session_id?: string;
+};
 
 export const fetchTakes = (filter: TakeFilter = {}) => getJson<TakeOut[]>(`takes${query(filter)}`);
 export const fetchTake = (id: string) => getJson<TakeOut>(`takes/${encodeURIComponent(id)}`);

@@ -2,31 +2,38 @@
 	// Progress: each measurement over time, one point per take, for one
 	// kind of take on one microphone setup at a time (numbers are only
 	// comparable like with like). Everyday voice and attempts are separate
-	// lines.
+	// lines. Drills are sounds, not a voice, and never draw a line; attempts
+	// made inside practice sessions join only when asked for.
 	import { fetchTakes } from '#lib/api/index.js';
-	import type { Intent, Item, MetricDef, TakeOut } from '#lib/api/types.js';
+	import type { Item, MetricDef, TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Figure from '#lib/components/charts/Figure.svelte';
 	import Trend, { type TrendSeries } from '#lib/components/charts/Trend.svelte';
-	import { INTENT_COLOR } from '#lib/charts.js';
+	import { INTENT_COLOR, type Voice } from '#lib/charts.js';
 	import { fmtDateTime, fmtMetric } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 
 	type Kind = { key: string; item: Item; language: string | null; label: string };
-	const INTENTS: Intent[] = ['habitual', 'attempt'];
+	const INTENTS: Voice[] = ['habitual', 'attempt'];
 	/** Recording-quality numbers say nothing about the voice; they stay on the take's page. */
 	const SKIP = new Set(['recording']);
 
 	let takes = $state.raw<TakeOut[] | null>(null);
 	let deviceId = $state<number | null>(null);
 	let kindKey = $state('');
+	let withPractice = $state(false);
+
+	/** The takes that speak for a voice: lab takes, and practice attempts when asked for. */
+	const voiced = $derived(
+		(takes ?? []).filter((t) => t.intent !== 'drill' && (withPractice || !t.exercise_ref))
+	);
 
 	const device = $derived(app.devices.find((d) => d.id === deviceId) ?? app.devices[0] ?? null);
 	/** The kinds of take that exist on this setup, most takes first. */
 	const kinds = $derived.by(() => {
 		const found: Record<string, Kind & { count: number }> = {};
-		for (const take of takes ?? []) {
+		for (const take of voiced) {
 			if (take.device_id !== device?.id) continue;
 			const key = `${take.item}:${take.language ?? ''}`;
 			found[key] ??= {
@@ -42,7 +49,7 @@
 	});
 	const kind = $derived(kinds.find((k) => k.key === kindKey) ?? kinds[0] ?? null);
 	const shown = $derived(
-		(takes ?? [])
+		voiced
 			.filter(
 				(t) =>
 					kind !== null &&
@@ -121,7 +128,11 @@
 		</select>
 	{/if}
 </div>
-<p class="mb-4 text-sm text-muted-foreground">{i18n.t.progress.intro}</p>
+<p class="mb-2 text-sm text-muted-foreground">{i18n.t.progress.intro}</p>
+<label class="mb-4 flex items-center gap-2 text-sm">
+	<input type="checkbox" bind:checked={withPractice} data-testid="with-practice" />
+	{i18n.t.progress.withPractice}
+</label>
 
 {#if takes === null}
 	<p class="text-muted-foreground">{i18n.t.common.loading}</p>

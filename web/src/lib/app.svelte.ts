@@ -1,25 +1,33 @@
-// What every page needs from the API: the content (passages, protocols),
-// the metric registry, the microphone setups, and whether the API and its
-// analysis worker are there.
+// What every page needs from the API: the content (passages, protocols,
+// the exercise catalogue), the metric registry and the evaluation's
+// measures, the microphone setups, the pitch band, and whether the API and
+// its analysis worker are there.
 
 import { ApiError, Offline, Unauthorized, auth } from './api/client.js';
 import {
+	createBand,
+	fetchBands,
 	fetchContent,
 	fetchDevices,
 	fetchHealth,
+	fetchMeasures,
 	fetchMetrics,
 	fetchSession,
 	login,
 	logout
 } from './api/index.js';
 import type {
+	BandOut,
 	Content,
 	DeviceOut,
+	Exercise,
 	Health,
 	Item,
+	MeasureDef,
 	MetricDef,
 	MetricGroup,
-	Passage
+	Passage,
+	Routine
 } from './api/types.js';
 import { passageRef } from './labels.js';
 
@@ -30,7 +38,10 @@ const WORKER_QUIET_S = 30;
 class AppData {
 	content = $state.raw<Content | null>(null);
 	metrics = $state.raw<MetricDef[]>([]);
+	measures = $state.raw<MeasureDef[]>([]);
 	devices = $state.raw<DeviceOut[]>([]);
+	/** The current pitch band; `null` until one is set. */
+	band = $state.raw<BandOut | null>(null);
 	health = $state.raw<Health | null>(null);
 	reachable = $state(true);
 	loaded = $state(false);
@@ -58,11 +69,15 @@ class AppData {
 
 	async load(): Promise<void> {
 		try {
-			[this.content, this.metrics, this.devices] = await Promise.all([
+			let bands: BandOut[];
+			[this.content, this.metrics, this.measures, this.devices, bands] = await Promise.all([
 				fetchContent(),
 				fetchMetrics(),
-				fetchDevices()
+				fetchMeasures(),
+				fetchDevices(),
+				fetchBands()
 			]);
+			this.band = bands[0] ?? null;
 			this.loaded = true;
 			this.reachable = true;
 			this.error = null;
@@ -101,6 +116,11 @@ class AppData {
 		this.devices = await fetchDevices();
 	}
 
+	/** Sets a new pitch band; the old ones stay in the history. */
+	async setBand(low: number, high: number): Promise<void> {
+		this.band = await createBand({ low_hz: low, high_hz: high });
+	}
+
 	async poll(): Promise<void> {
 		try {
 			this.health = await fetchHealth();
@@ -120,6 +140,31 @@ class AppData {
 
 	metric(key: string): MetricDef | undefined {
 		return this.metrics.find((m) => m.key === key);
+	}
+
+	/** A number a judgement shows: one of the evaluation's measures or a registry metric. */
+	measure(key: string): MeasureDef | MetricDef | undefined {
+		return this.measures.find((m) => m.key === key) ?? this.metric(key);
+	}
+
+	exercise(id: string | null | undefined): Exercise | null {
+		return this.content?.exercises.find((e) => e.id === id) ?? null;
+	}
+
+	/** The exercise a take was recorded for, from its `exercise:<id>@<version>`. */
+	exerciseOf(ref: string | null | undefined): Exercise | null {
+		const match = ref?.match(/^exercise:([a-z0-9-]+)@\d+$/);
+		return match ? this.exercise(match[1]) : null;
+	}
+
+	routine(id: string | null | undefined): Routine | null {
+		return this.content?.routines.find((r) => r.id === id) ?? null;
+	}
+
+	/** The routine a session followed, from its `routine:<id>@<version>`. */
+	routineOf(ref: string | null | undefined): Routine | null {
+		const match = ref?.match(/^routine:([a-z0-9-]+)@\d+$/);
+		return match ? this.routine(match[1]) : null;
 	}
 
 	/** The registry's metrics that apply to a kind of take, by group, in registry order. */

@@ -1,7 +1,8 @@
 <script lang="ts">
 	// The pitch of one take over its length: a single series, broken where
-	// the voice is unvoiced, with the 145–185 Hz band shaded for reference.
-	// A crosshair reads the pitch at the moment under the pointer.
+	// the voice is unvoiced, with a band shaded for reference (145–185 Hz, or
+	// the band a practice take was recorded against). A crosshair reads the
+	// pitch at the moment under the pointer.
 	import { Axis, Chart, ChartClipPath, Highlight, Rect, Spline, Svg, Tooltip } from 'layerchart';
 	import type { Series } from '#lib/api/types.js';
 	import { niceTicks } from '#lib/charts.js';
@@ -9,9 +10,13 @@
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import Tip from './Tip.svelte';
 
-	let { series, height = 200 }: { series: Series; height?: number } = $props();
+	let {
+		series,
+		height = 200,
+		band = [145, 185]
+	}: { series: Series; height?: number; band?: readonly [number, number] } = $props();
 
-	const BAND = [145, 185] as const;
+	const BAND = $derived(band);
 	const PAD = { top: 8, right: 12, bottom: 24, left: 44 };
 	type Point = { t: number; hz: number | null };
 
