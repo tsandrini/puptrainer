@@ -39,12 +39,12 @@ cs = "Věty znějí o číslo menší než běžný hlas, trochu jako mluvení s
 [mistakes]
 en = [
   "The brightness is gone by the second word: it drops on certain vowels (oh, oo). Slow down and keep the tongue forward through them.",
-  "Raising the pitch instead: check the strip in the pitch exercises; here pitch should stay easy.",
+  "Raising the pitch instead: bright is not high. Keep the marker on the strip around your band; above about 300 Hz the size cannot be measured.",
   "A tight or pinched sound: less effort; a smaller change that is comfortable is worth more.",
 ]
 cs = [
   "Jas zmizí u druhého slova: padá na některých samohláskách (o, u). Zpomalte a držte jazyk vpředu i přes ně.",
-  "Zvedání výšky místo jasu: výška tu má zůstat snadná.",
+  "Zvedání výšky místo jasu: jasný neznamená vysoký. Držte značku na pruhu kolem svého pásma; nad zhruba 300 Hz se velikost nedá změřit.",
   "Stažený nebo zmáčknutý zvuk: méně úsilí; menší změna, která je pohodlná, má větší cenu.",
 ]
 

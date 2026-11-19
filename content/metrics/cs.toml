@@ -103,7 +103,7 @@ note = "Větší rozestup znamená kratší, jasněji znějící hlasový trakt.
 [vtl_cm]
 title = "Zdánlivá délka traktu"
 description = "Délka rovnoměrné trubice, která by rezonovala s tímto rozestupem formantů."
-note = "Odhad rezonance, ne anatomická délka. Na jednom nastavení se mezi nahrávkami opakovala s přesností asi ±0,3 cm; posunutí mikrofonu ji změnilo o 0,5 cm. Učebnicové průměry jsou asi 17 cm u mužů a 14,5–15 cm u žen."
+note = "Odhad rezonance, ne anatomická délka. Na jednom nastavení se mezi nahrávkami opakovala s přesností asi ±0,3 cm; posunutí mikrofonu ji změnilo o 0,5 cm. Učebnicové průměry jsou asi 17 cm u mužů a 14,5–15 cm u žen. Nad 300 Hz výšky se neměří: harmonické jsou tam od sebe moc daleko, než aby rezonance ukázaly. Mění se také se samohláskou („í“ vyjde kratší než „ú“), takže porovnávejte stejnou samohlásku."
 
 # --- kvalita hlasu
 

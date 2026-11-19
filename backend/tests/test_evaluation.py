@@ -137,6 +137,17 @@ def test_resonance_steps(catalogue: dict[str, Exercise]) -> None:
     # a short cough between the steps is not one of them
     cough = [*rising[:2], segment(4.5, 900, 180, seconds=1.5), rising[2]]
     assert evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=cough)).met
+    assert drift.advice == ["pitch-moved"]
+    same = [segment(0, 1000, 180), segment(3, 1000, 180), segment(6, 990, 180)]
+    flat = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=same))
+    assert (flat.met, flat.advice) == (False, ["not-brighter"])
+    # a "bright" sound that shot up in pitch cannot be measured: no sizes, and why
+    squeak = rising[:2] + [
+        VowelSegment(start_s=6, duration_s=2.5, pitch_hz=520, formants_hz=[], cpps_db=0, hnr_db=0)
+    ]
+    high = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=squeak))
+    assert (high.met, high.advice) == (False, ["pitch-moved", "pitch-too-high"])
+    assert [m.key for m in high.measures] == ["step_drift_st"]
     two = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=rising[:2]))
     assert two.met is False and measures(two)["steps_found"] == 2
 
@@ -232,3 +243,6 @@ def test_sizes_are_shown_beside_the_everyday_voice(catalogue: dict[str, Exercise
     phrase.baseline_cm = 17.8
     hint = evaluate("exercise:bright-phrase@1", catalogue["bright-phrase"], phrase).hints[0]
     assert (hint.key, hint.value, hint.baseline) == ("vtl_cm", 16.9, 17.8)
+    squeaky = facts(None, metrics={"pitch_median_hz": 420.0})
+    unmeasured = evaluate("exercise:bright-phrase@1", catalogue["bright-phrase"], squeaky)
+    assert (unmeasured.hints, unmeasured.advice) == ([], ["pitch-too-high"])

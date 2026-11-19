@@ -265,3 +265,32 @@ def glide(points: list[tuple[float, float]], seconds: float) -> np.ndarray:
 def test_glide_breaks(tmp_path: Path, points: list[tuple[float, float]], breaks: int) -> None:
     metrics = measure(tmp_path, glide(points, seconds=4.0), Item.GLIDE)
     assert metrics["glide_breaks"] == breaks
+
+
+def test_no_formants_above_300_hz(tmp_path: Path) -> None:
+    # NOTE: found on a real take: a held 671 Hz read "formants" at its own harmonics
+    squeak = vowel(SHORT, f0=420.0, seconds=2.5, wobble=0.0)
+    speech = measure(tmp_path, squeak, Item.PHRASE)
+    assert speech["pitch_median_hz"] == pytest.approx(420.0, rel=0.02)
+    assert not {"vtl_cm", "formant_spacing_hz", "f1_median_hz"} & set(speech)
+    assert "cpps_db" in speech
+
+    gap = np.zeros(int(0.6 * SAMPLE_RATE))
+    low = vowel(NEUTRAL, f0=180.0, seconds=2.5, wobble=0.0)
+    analysis = analyse(write(tmp_path, np.concatenate([low, gap, squeak])), Item.SUSTAIN)
+    first, second = analysis.details.segments
+    assert len(first.formants_hz) == 4 and second.formants_hz == []
+    assert second.pitch_hz == pytest.approx(420.0, rel=0.02)
+    assert analysis.metrics["vtl_cm"] == pytest.approx(17.5, abs=0.5)
+    assert analyse(write(tmp_path, squeak), Item.VOWELS).details.vowels == []
+
+
+def test_held_sounds_are_fitted_one_by_one(tmp_path: Path) -> None:
+    # NOTE: a dark and a bright sound differ in length on purpose; one ceiling fits neither
+    gap = np.zeros(int(0.6 * SAMPLE_RATE))
+    take = np.concatenate(
+        [vowel(NEUTRAL, f0=180.0, seconds=2.5), gap, vowel(SHORT, f0=180.0, seconds=2.5)]
+    )
+    dark, bright = analyse(write(tmp_path, take), Item.SUSTAIN).details.segments
+    assert spacing(dark.formants_hz)[1] == pytest.approx(17.5, abs=0.5)
+    assert spacing(bright.formants_hz)[1] == pytest.approx(14.0, abs=0.5)

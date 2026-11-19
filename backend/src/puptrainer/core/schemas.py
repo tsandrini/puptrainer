@@ -228,6 +228,9 @@ class Advice(StrEnum):
     BELOW_NOTE = "below-note"
     UNSTEADY = "unsteady"
     EFFORTFUL = "effortful"
+    PITCH_MOVED = "pitch-moved"
+    PITCH_TOO_HIGH = "pitch-too-high"
+    NOT_BRIGHTER = "not-brighter"
 
 
 class Evaluation(Schema):
@@ -359,7 +362,8 @@ class VowelSegment(Schema):
         vowel: Which vowel it most likely is (`a`, `i` or `u`), from its formants; unset
             for the held sounds of a `sustain` take, which need not be those vowels.
         pitch_hz: Median pitch.
-        formants_hz: F1 to F4 over the steady middle.
+        formants_hz: F1 to F4 over the steady middle; empty when the sound is pitched too
+            high for formants to be measured (above 300 Hz).
         cpps_db: Smoothed cepstral peak prominence of the steady middle.
         hnr_db: Harmonics-to-noise ratio of the steady middle.
     """

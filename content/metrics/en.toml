@@ -103,7 +103,7 @@ note = "Wider spacing means a shorter, brighter-sounding vocal tract. A trend me
 [vtl_cm]
 title = "Apparent tract length"
 description = "The length of a uniform tube that would resonate with this formant spacing."
-note = "An estimate of resonance, not an anatomical length. On one setup it repeated within about ±0.3 cm between takes; moving the microphone shifted it by 0.5 cm. Textbook averages are about 17 cm for men and 14.5–15 cm for women."
+note = "An estimate of resonance, not an anatomical length. On one setup it repeated within about ±0.3 cm between takes; moving the microphone shifted it by 0.5 cm. Textbook averages are about 17 cm for men and 14.5–15 cm for women. Not measured above 300 Hz of pitch: the harmonics lie too far apart there to show the resonances. It also moves with the vowel (an “ee” reads shorter than an “oo”), so compare the same vowel."
 
 # --- voice quality
 

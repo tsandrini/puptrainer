@@ -14,7 +14,7 @@ from parselmouth.praat import call
 from puptrainer.core.acoustics import semitones, spacing
 from puptrainer.core.schemas import Details, Item, Series, VowelSegment
 
-PIPELINE_VERSION = "0.3.0"
+PIPELINE_VERSION = "0.3.1"
 
 TIME_STEP_S = 0.01
 FRAME_S = 0.02
@@ -41,6 +41,10 @@ FORMANT_CEILINGS_HZ = tuple(float(c) for c in range(4500, 6501, int(CEILING_STEP
 CEILING_PER_SPACING = 5.0
 MAX_BANDWIDTH_HZ = 500.0
 MIN_VOWEL_S = 1.5
+# NOTE: a spectrum only shows the vocal tract at the harmonics of the pitch. Above about
+# 300 Hz they lie too far apart: the analysis then finds the harmonics themselves (a
+# held 671 Hz read "formants" at 671, 1342, 2019, 2690 Hz), so nothing is reported
+FORMANT_MAX_F0_HZ = 300.0
 GLIDE_STRENGTH = 0.8
 # NOTE: a register flip moves a few semitones within a frame or two; a jump of about an
 # octave is the tracker's octave error at a creaky bottom, not a break
@@ -312,8 +316,9 @@ def formant_fit(
 def resonance_metrics(sound: parselmouth.Sound, pitch: PitchTrack, item: Item) -> dict[str, float]:
     """Median formants of the voiced, louder frames, their spacing and the tract length.
 
-    Frames count when they are voiced and at least as loud as the take's 60th
-    intensity percentile, which keeps vowels and drops most consonants.
+    Frames count when they are voiced, at least as loud as the take's 60th intensity
+    percentile, which keeps vowels and drops most consonants, and not above 300 Hz in
+    pitch, where formants cannot be measured.
     """
     intensity = sound.to_intensity(minimum_pitch=75.0, time_step=TIME_STEP_S)
     threshold = float(np.percentile(intensity.values[0], 60))
@@ -321,7 +326,8 @@ def resonance_metrics(sound: parselmouth.Sound, pitch: PitchTrack, item: Item) -
         [
             t
             for t, f in zip(pitch.times, pitch.values, strict=True)
-            if f > 0 and (intensity.get_value(float(t)) or -np.inf) >= threshold
+            if 0 < f <= FORMANT_MAX_F0_HZ
+            and (intensity.get_value(float(t)) or -np.inf) >= threshold
         ]
     )
     if len(times) < MIN_VOICED_FRAMES:
@@ -385,9 +391,12 @@ def vowel_segments(
 ) -> tuple[list[VowelSegment], list[float] | None]:
     """The sustained vowels, or held sounds, of a take: voiced stretches of at least 1.5 s.
 
-    Each is measured over its steady middle (the central 60%). One formant ceiling is
-    fitted for the take, on the mean formants of its vowels. The vowel is guessed from
-    the first two formants: a high F1 is "a", otherwise a high F2 is "i", otherwise "u".
+    Each is measured over its steady middle (the central 60%). For the vowels of one
+    voice (`classify`) one formant ceiling is fitted for the take, on their mean formants;
+    held sounds that differ on purpose (dark, bright) are fitted one by one. A sound
+    pitched above 300 Hz gets no formants: they cannot be measured there. The vowel is
+    guessed from the first two formants: a high F1 is "a", otherwise a high F2 is "i",
+    otherwise "u".
 
     Args:
         sound: The take.
@@ -395,7 +404,8 @@ def vowel_segments(
         classify: Guess which vowel each is; off for held sounds that need not be a, i, u.
 
     Returns:
-        The segments in order, and the mean of their formants (`None` without any).
+        The segments in order, and the mean of the formants of those that could be
+        measured (`None` without any).
     """
     values, times = pitch.values, pitch.times
     runs: list[tuple[int, int]] = []
@@ -419,29 +429,50 @@ def vowel_segments(
             middles.append((begin, duration, begin + 0.2 * duration, finish - 0.2 * duration))
     if not middles:
         return [], None
-    fit = formant_fit(sound, [np.arange(a, b, TIME_STEP_S) for _, _, a, b in middles])
-    if fit is None:
-        return [], None
-    segments = []
-    for (begin, duration, a, b), formants in zip(middles, fit[0], strict=True):
+    pitches = []
+    for _, _, a, b in middles:
         inside = values[(times >= a) & (times <= b)]
         inside = inside[inside > 0]
+        pitches.append(float(np.median(inside)) if len(inside) else 0.0)
+    groups = {
+        index: np.arange(a, b, TIME_STEP_S)
+        for index, (_, _, a, b) in enumerate(middles)
+        if 0 < pitches[index] <= FORMANT_MAX_F0_HZ
+    }
+    formants: dict[int, list[float]] = {}
+    if classify and groups:
+        fit = formant_fit(sound, list(groups.values()))
+        if fit is not None:
+            formants = dict(zip(groups, fit[0], strict=True))
+    else:
+        for index, group in groups.items():
+            fit = formant_fit(sound, [group])
+            if fit is not None:
+                formants[index] = fit[1]
+    if classify and not formants:
+        return [], None
+    segments = []
+    for index, (begin, duration, a, b) in enumerate(middles):
         quality = quality_metrics(sound.extract_part(a, b))
+        found = formants.get(index, [])
         vowel = None
-        if classify:
-            vowel = "a" if formants[0] > 550 else ("i" if formants[1] > 1700 else "u")
+        if classify and found:
+            vowel = "a" if found[0] > 550 else ("i" if found[1] > 1700 else "u")
         segments.append(
             VowelSegment(
                 start_s=begin,
                 duration_s=duration,
                 vowel=vowel,
-                pitch_hz=float(np.median(inside)) if len(inside) else 0.0,
-                formants_hz=formants,
+                pitch_hz=pitches[index],
+                formants_hz=found,
                 cpps_db=quality.get("cpps_db", 0.0),
                 hnr_db=quality.get("hnr_db", 0.0),
             )
         )
-    return segments, fit[1]
+    if classify:
+        segments = [segment for segment in segments if segment.formants_hz]
+    mean = [float(v) for v in np.mean(list(formants.values()), axis=0)] if formants else None
+    return segments, mean
 
 
 def analyse(path: Path, item: Item) -> Analysis:

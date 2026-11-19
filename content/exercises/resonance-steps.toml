@@ -35,13 +35,13 @@ cs = "Všechny tři jsou na stejném tónu, a přece první zní jako větší t
 
 [mistakes]
 en = [
-  "The pitch goes up with the brightness: the two like to travel together. Hum your note first before each “ah”.",
+  "The pitch shoots up with the brightness (the “chipmunk”): a rising larynx drags the pitch along, and above about 300 Hz the app can no longer measure the size at all. Hum your note before each “ah” and keep the marker on the strip where it was.",
   "Squeezing the throat or going buzzy to get bright: it is about less room in the mouth, not more force. Back off.",
   "Adding breath: brighter is not airier.",
   "Changing the vowel to “eh” or “ee”: it should still be an “ah”, only a brighter one.",
 ]
 cs = [
-  "Výška stoupá spolu s jasem: ty dvě věci rády cestují spolu. Před každým „á“ si svůj tón zabrukejte.",
+  "Výška s jasem vystřelí nahoru („veverka“): stoupající hrtan s sebou táhne výšku a nad zhruba 300 Hz už aplikace velikost vůbec nezměří. Před každým „á“ si svůj tón zabrukejte a držte značku na pruhu tam, kde byla.",
   "Stahování hrdla nebo bzučení kvůli jasu: jde o méně místa v ústech, ne o víc síly. Uberte.",
   "Přidávání dechu: jasnější neznamená vzdušnější.",
   "Změna samohlásky na „é“ nebo „í“: pořád to má být „á“, jen jasnější.",

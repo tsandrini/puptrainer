@@ -51,6 +51,8 @@ STRAINED = 1
 EFFORTFUL = 2
 """The comfort rating that still counts, with the advice to go easier."""
 SIZE_KEYS = frozenset({"vtl_cm"})
+FORMANT_MAX_F0_HZ = 300.0
+"""Above this pitch the pipeline measures no formants (see `analysis.pipeline`)."""
 """Hints read against the learner's baseline size."""
 
 
@@ -115,6 +117,9 @@ def evaluate(exercise_ref: str, exercise: Exercise | None, facts: TakeFacts) -> 
         for k in exercise.hints
         if k in facts.metrics
     ]
+    median = facts.metrics.get("pitch_median_hz", 0.0)
+    if SIZE_KEYS & set(exercise.hints) - set(facts.metrics) and median > FORMANT_MAX_F0_HZ:
+        out.advice.append(Advice.PITCH_TOO_HIGH)
     match rule:
         case NoRule():
             pass
@@ -308,7 +313,7 @@ def _metric(rule: MetricRule, facts: TakeFacts, out: Evaluation) -> None:
 
 
 def _steps(rule: StepsRule, facts: TakeFacts, out: Evaluation) -> None:
-    held = [s for s in facts.segments if s.pitch_hz > 0 and len(s.formants_hz) == 4]
+    held = [s for s in facts.segments if s.pitch_hz > 0]
     if len(held) < rule.count:
         out.met = False
         out.measures = [
@@ -319,16 +324,26 @@ def _steps(rule: StepsRule, facts: TakeFacts, out: Evaluation) -> None:
     chosen = sorted(
         sorted(held, key=lambda s: s.duration_s)[-rule.count :], key=lambda s: s.start_s
     )
-    widths = [spacing(s.formants_hz)[0] for s in chosen]
     pitches = [s.pitch_hz for s in chosen]
-    rising = all(b > a for a, b in zip(widths, widths[1:], strict=False))
     drift = semitones(max(pitches), min(pitches))
     steady = drift <= rule.max_drift_st
-    out.met = rising and steady
+    out.measures = [Measure(key="step_drift_st", value=drift, high=rule.max_drift_st, met=steady)]
+    if not steady:
+        out.advice.append(Advice.PITCH_MOVED)
+    if not all(len(s.formants_hz) == 4 for s in chosen):
+        # a sound pitched too high to show its resonances: nothing to compare
+        out.met = False
+        out.advice.append(Advice.PITCH_TOO_HIGH)
+        return
+    widths = [spacing(s.formants_hz)[0] for s in chosen]
     lengths = [spacing(s.formants_hz)[1] for s in chosen]
+    rising = all(b > a for a, b in zip(widths, widths[1:], strict=False))
+    out.met = rising and steady
+    if steady and not rising:
+        out.advice.append(Advice.NOT_BRIGHTER)
     out.measures = [
         Measure(key="step_rise_pct", value=100.0 * (widths[-1] / widths[0] - 1), met=rising),
-        Measure(key="step_drift_st", value=drift, high=rule.max_drift_st, met=steady),
+        *out.measures,
         Measure(key="step_first_cm", value=lengths[0], baseline=facts.baseline_cm),
         Measure(key="step_last_cm", value=lengths[-1], baseline=facts.baseline_cm),
     ]

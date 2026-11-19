@@ -2,7 +2,7 @@
 // Do not edit: change the models in backend/src/puptrainer/core/schemas.py and regenerate.
 
 /** What a judgement suggests trying next. */
-export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful';
+export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful' | 'pitch-moved' | 'pitch-too-high' | 'not-brighter';
 
 /** The latest analysis job of a take. */
 export type AnalysisOut = {
