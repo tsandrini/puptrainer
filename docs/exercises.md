@@ -37,8 +37,9 @@ item = "sustain"               # the kind of take a rep is
 intent = "drill"               # drill (a sound) or attempt (speech in the voice)
 seconds = 12                   # rough length of one rep
 reps = 3                       # unless a routine says otherwise
-live = "pitch"                 # live pitch and band while recording, or "none"
-hints = ["spectral_slope_db"]  # registry metrics shown beside the result
+live = "pitch"                 # while recording: "pitch" (tuner strip), "formants", "none"
+demo = "slide-down"            # a tone that plays the pitch pattern: "slide-down", "glide"
+hints = ["hnr_db"]             # registry metrics shown beside the result
 
 [texts]                        # optional: a passage to read, per language
 en = "passage:anchors-en@1"
@@ -49,10 +50,16 @@ en = "Slide down and hold"
 [summaries]
 en = "Start high and light, slide down into your band and hold it there."
 
-[instructions]
+[steps]                        # what to do, one action per step
+en = ["…", "…"]
+
+[right]                        # what it sounds and feels like when it goes right
 en = "…"
 
-[why]
+[mistakes]                     # optional: common mistakes, each with what to do about it
+en = ["…"]
+
+[why]                          # what it is for, and what the app checks
 en = "…"
 
 [safety]                       # optional: when to stop or back off
@@ -83,6 +90,14 @@ practice only when asked to.
 what the learner is asked to do changes; a fixed typo needs none. Takes are
 always judged by the current rule.
 
+**Write for someone with no teacher.** The reader cannot tell whether they
+are doing it right, so every exercise says what it is for and what the app
+checks (`why`), fixes the vowel where the numbers depend on it ("ah"), and
+describes success in sensations (`right`). `live = "pitch"` shows the band,
+the note to match and the learner's pitch while recording; `formants` shows
+the live spectrogram for size work. Live guidance is on while skills are
+new; fading it is the curriculum's job later (M4).
+
 **Czech texts** address the reader without grammatical gender: imperatives
 and the present tense, no past participles (`zkuste`, not `zkusil(a) jste`).
 
@@ -90,7 +105,14 @@ and the present tense, no past participles (`zkuste`, not `zkusil(a) jste`).
 
 A take is judged when it is served, from its stored measurements and the
 band it was recorded against; nothing of the judgement is stored. A rep
-rated strained (comfort 1) is never met, whatever the numbers.
+rated strained (comfort 1) is never met, whatever the numbers; one rated
+effortful (2) counts, with the advice to go lower or lighter. A miss says
+which way to go (above or below the band or the note, or not held).
+`pitch_band` with `above_ok = true` only minds the band's lower edge, for
+sounds meant to be light and high. Sizes (`vtl_cm` as a hint, the first and
+last sound of `steps`) are shown beside the learner's everyday voice on the
+same microphone setup: the "a" of the lab's habitual vowels takes for held
+sounds, the habitual passages and free speech for phrases.
 
 | `kind`       | Takes         | Met when                                                                                                                           |
 | ------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |

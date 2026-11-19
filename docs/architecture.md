@@ -4,7 +4,8 @@
 
 ```text
 Browser (web/, SvelteKit single-page app)
-  record: AudioWorklet -> 24-bit WAV    live level and pitch (a guide only)
+  record: AudioWorklet -> 24-bit WAV    live level, pitch and spectrogram
+  player: spectrogram of a whole take   (pictures, a guide only)
   practice: session runner, reference tones
   upload queue in IndexedDB             takes and practice sessions, in order
         |  HTTP, /api/v1
@@ -33,8 +34,14 @@ than the API and its storage.
   pipeline version that ran it. A take can be analysed again; its page shows
   the newest finished result.
 - **One source of numbers.** What is stored comes from the worker's
-  pipeline. The level and pitch shown while recording are computed in the
-  browser as a guide and are never stored.
+  pipeline. The level, the pitch and the spectrograms shown while recording
+  and playing are computed in the browser as a guide and are never stored.
+- **Live guidance while a skill is new.** A learner without a teacher cannot
+  tell whether a drill is going right, so pitch steps show the band, the
+  note and the live pitch while recording, and size steps the formants
+  spectrogram; other steps show the level only. Always-on displays help the
+  session and hurt what is kept, so fading them as skills settle belongs to
+  the curriculum (M4).
 - **Every take carries its context**: the microphone setup, what was spoken,
   the language, the text that was read (with its version), and the intent
   (`habitual`, `attempt`, or `drill` for a sound made for an exercise).

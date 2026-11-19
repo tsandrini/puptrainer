@@ -116,6 +116,13 @@ series colours (`--series-1` for the everyday voice, `--series-2` for
 attempts) are a validated pair: a colour follows the voice it stands for,
 and a third series needs a new validated colour, not a guess.
 
+Spectrograms (`web/src/lib/audio/spectrum.ts`, drawn by the components in
+`web/src/lib/components/audio/`) are computed in the browser with the
+module's own FFT: 0–5 kHz, a long window for harmonics or a short one for
+formants, shaded over 65 dB below the loudest point of the picture. Their
+ramp is one hue from the card's surface outwards, per theme, hard-coded in
+that module from the theme's rose; change both when the theme changes.
+
 ## Translations
 
 `web/src/lib/i18n/en.ts` is the source of the message keys; `cs.ts` is typed

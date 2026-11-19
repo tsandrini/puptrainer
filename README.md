@@ -29,7 +29,11 @@ every rep, and a practice log. Voice exploration and lessons come next
 
 - **Records losslessly in the browser.** Echo cancellation, noise
   suppression and automatic gain are switched off; a level meter shows the
-  target zone and warns about clipping.
+  target zone and warns about clipping, and a live spectrogram shows what
+  the microphone hears.
+- **Plays takes over a picture of them**: a spectrogram of the whole take
+  with the level under it, a playhead, click to seek. One switch shows
+  either the voice's harmonics or its resonances (formants).
 - **Labels every take**: the microphone setup, what was spoken, the
   language, and whether it was your everyday voice or an attempt at the
   voice you are training.
@@ -127,7 +131,8 @@ listening does not. `services.puptrainer.api.enable` and
    sustained vowels, a pitch glide, a reading passage and free speech in
    each language.
 3. Watch the level: the loudest parts should land in the marked zone
-   (−12 to −6 dBFS). Listen back, then save.
+   (−12 to −6 dBFS). The spectrogram under it is a picture to look at, not
+   a measurement. Listen back, then save.
 4. **Takes** lists everything; a take's page has the player, its pitch over
    time, its numbers and its labels. Tick two takes to compare them.
 5. **Progress** charts each measurement over time.
