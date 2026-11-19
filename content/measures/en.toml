@@ -4,6 +4,22 @@
 title = "Time in your band"
 description = "Share of the voiced time whose pitch lies inside your band."
 
+[band_up_share_pct]
+title = "Time in or above your band"
+description = "Share of the voiced time whose pitch is not below your band's lower edge."
+
+[note_offset_st]
+title = "Away from the note"
+description = "How far your voice was from the note on the whole, in semitones; minus is below."
+
+[step_first_cm]
+title = "Size of the first sound"
+description = "Apparent vocal-tract length of the first held sound. Smaller is brighter; under half a centimetre is noise."
+
+[step_last_cm]
+title = "Size of the last sound"
+description = "Apparent vocal-tract length of the last held sound."
+
 [hold_s]
 title = "Steady hold"
 description = "The longest stretch held steadily inside the range (dropouts under 50 ms do not end it)."

@@ -1,32 +1,59 @@
 id = "resonance-steps"
-version = 1
+version = 2
 skill = "size"
 item = "sustain"
 intent = "drill"
 seconds = 15
 reps = 2
-live = "none"
-hints = ["formant_spacing_hz"]
+live = "formants"
 
 [titles]
 en = "Dark, neutral, bright"
 cs = "Tmavě, neutrálně, jasně"
 
 [summaries]
-en = "Hold “ah” three times on one note, changing only its colour."
-cs = "Třikrát podržet „á“ na jednom tónu a měnit jen jeho barvu."
+en = "The same note three times, changing only how big the sound is."
+cs = "Třikrát stejný tón, mění se jen to, jak velký zvuk je."
 
-[instructions]
-en = "Pick one comfortable note and hold “ah” on it three times, about three seconds each, with a short pause between: first dark (as at the start of a yawn, lots of room in mouth and throat), then neutral, then bright (less room, as with a slight smile). Keep the pitch the same; only the colour changes. Step from one to the next, don't slide."
-cs = "Zvolte jeden pohodlný tón a podržte na něm třikrát „á“, každé asi tři sekundy, s krátkou pauzou: nejdřív tmavě (jako na začátku zívnutí, hodně místa v ústech a hrdle), pak neutrálně, pak jasně (méně místa, jako s lehkým úsměvem). Výška zůstává stejná, mění se jen barva. Z jednoho do druhého přejděte skokem, neklouzejte."
+[steps]
+en = [
+  "Pick one easy note and keep it for the whole take.",
+  "Hold “ah” for three seconds, dark: as at the start of a yawn, with lots of room in the mouth and throat. Think of a big, sleepy bear.",
+  "Pause. Hold “ah” again for three seconds in your ordinary way.",
+  "Pause. Hold “ah” bright for three seconds: little room, the tongue higher and further forward, the mouth corners slightly back as in a small smile. Think of a small, alert creature.",
+]
+cs = [
+  "Zvolte jeden snadný tón a držte se ho celou nahrávku.",
+  "Podržte tři sekundy „á“ tmavě: jako na začátku zívnutí, se spoustou místa v ústech a hrdle. Myslete na velkého ospalého medvěda.",
+  "Pauza. Podržte tři sekundy „á“ znovu, svým obvyklým způsobem.",
+  "Pauza. Podržte tři sekundy „á“ jasně: málo místa, jazyk výš a víc vpředu, koutky lehce dozadu jako při malém úsměvu. Myslete na malé čilé stvoření.",
+]
+
+[right]
+en = "All three sit on the same note, yet the first sounds like a bigger body and the last like a smaller one. On the picture, the bands of the bright one sit a little higher than those of the dark one."
+cs = "Všechny tři jsou na stejném tónu, a přece první zní jako větší tělo a poslední jako menší. Na obrázku jsou pásy toho jasného o něco výš než u tmavého."
+
+[mistakes]
+en = [
+  "The pitch goes up with the brightness: the two like to travel together. Hum your note first before each “ah”.",
+  "Squeezing the throat or going buzzy to get bright: it is about less room in the mouth, not more force. Back off.",
+  "Adding breath: brighter is not airier.",
+  "Changing the vowel to “eh” or “ee”: it should still be an “ah”, only a brighter one.",
+]
+cs = [
+  "Výška stoupá spolu s jasem: ty dvě věci rády cestují spolu. Před každým „á“ si svůj tón zabrukejte.",
+  "Stahování hrdla nebo bzučení kvůli jasu: jde o méně místa v ústech, ne o víc síly. Uberte.",
+  "Přidávání dechu: jasnější neznamená vzdušnější.",
+  "Změna samohlásky na „é“ nebo „í“: pořád to má být „á“, jen jasnější.",
+]
 
 [why]
-en = "This is size: the space above the vocal folds. Changing it while the pitch stays put teaches you to move the two separately; otherwise raising one drags the other along."
-cs = "Tohle je velikost: prostor nad hlasivkami. Měnit ji, zatímco výška stojí, učí ovládat obojí zvlášť; jinak jedno táhne s sebou druhé."
+en = "This is size, also called resonance: the space above the vocal folds, which makes a voice sound like a larger or a smaller person. For your voice it is probably the biggest lever. Here you learn to move it on purpose, in both directions, without the pitch tagging along. The app checks three held sounds on one note, each brighter than the one before, and shows their apparent size beside your everyday “ah”."
+cs = "Tohle je velikost, jinak také rezonance: prostor nad hlasivkami, díky kterému hlas zní jako větší nebo menší člověk. Pro váš hlas je to nejspíš ta největší páka. Tady se ji učíte vědomě posouvat oběma směry, aniž by se s ní vezla výška. Aplikace kontroluje tři podržené zvuky na jednom tónu, každý jasnější než předchozí, a ukáže jejich zdánlivou velikost vedle vašeho běžného „á“."
 
 [safety]
-en = "Back off if it turns buzzy or tight, and don't add breath to make it brighter."
-cs = "Uberte, pokud to začne bzučet nebo se stahovat, a nepřidávejte dech, aby to znělo jasněji."
+en = "Back off if it turns buzzy or tight, or if you feel it in your throat afterwards."
+cs = "Uberte, pokud to začne bzučet nebo se stahovat, nebo pokud to potom cítíte v krku."
 
 [rule]
 kind = "steps"

@@ -1,32 +1,56 @@
 id = "slide-down-hold"
-version = 1
+version = 2
 skill = "pitch-weight"
 item = "sustain"
 intent = "drill"
 seconds = 12
 reps = 3
 live = "pitch"
-hints = ["spectral_slope_db"]
+demo = "slide-down"
 
 [titles]
 en = "Slide down and hold"
 cs = "Sklouznout dolů a podržet"
 
 [summaries]
-en = "Start high and light, slide down into your band and hold the light sound there."
-cs = "Začít vysoko a lehce, sklouznout do svého pásma a tam lehký zvuk podržet."
+en = "Find a light sound up high, slide down into your band and keep the lightness."
+cs = "Najít nahoře lehký zvuk, sklouznout do svého pásma a lehkost si podržet."
 
-[instructions]
-en = "On “ee” or “oo”, slide up to a high note that feels light and easy, almost suspiciously easy, and let the voice thin out instead of pushing. From there, slide gently down into your band (the shaded strip on the screen) and hold one steady note there for about three seconds, keeping the lightness the voice had at the top."
-cs = "Na „í“ nebo „ú“ vyklouzněte nahoru k vysokému tónu, který je lehký a snadný, až podezřele snadný, a nechte hlas zeslábnout, místo abyste tlačili. Odtud pomalu sklouzněte dolů do svého pásma (vybarvený pruh na obrazovce) a podržte tam jeden klidný tón asi tři sekundy se stejnou lehkostí, jakou měl hlas nahoře."
+[steps]
+en = [
+  "On “ah”, slide up to a note well above your band where the voice turns thin and easy. It may sound small or childlike; that is the sound you want.",
+  "From there slide gently down until the marker on the strip is inside your band.",
+  "Hold one steady note there for about three seconds, as light as it was at the top. The lower half of the band is fine.",
+]
+cs = [
+  "Na „á“ vyklouzněte na tón vysoko nad svým pásmem, kde hlas zeslábne a jde snadno. Může znít drobně nebo dětsky; přesně takový zvuk chcete.",
+  "Odtud jemně sklouzněte dolů, až bude značka na pruhu uvnitř vašeho pásma.",
+  "Podržte tam jeden klidný tón asi tři sekundy, stejně lehký, jaký byl nahoře. Spodní polovina pásma je v pořádku.",
+]
+
+[right]
+en = "The held note feels no harder than the high one: light, quiet, a bit “smaller” than your normal voice, and clean. If it took effort, it was too heavy or too high, however good the numbers are."
+cs = "Podržený tón není o nic těžší než ten vysoký: lehký, tichý, trochu „menší“ než běžný hlas, a čistý. Pokud to stálo námahu, bylo to moc těžké nebo moc vysoko, ať jsou čísla jakkoli dobrá."
+
+[mistakes]
+en = [
+  "Pushing to stay up: the heaviness came back on the way down. Start again from the top and let the voice stay thin; land lower in the band.",
+  "Going breathy to make it light: light means thin, not airy. There should be no hiss.",
+  "Chasing the top of the band: nothing is gained up there. Easy and in the band beats high.",
+]
+cs = [
+  "Tlačení, aby hlas zůstal nahoře: cestou dolů se vrátila tíha. Začněte znovu shora a nechte hlas tenký; přistaňte v pásmu níž.",
+  "Dech místo lehkosti: lehký znamená tenký, ne vzdušný. Nemá být slyšet syčení.",
+  "Honba za horním okrajem pásma: tam nahoře nic nezískáte. Snadno a v pásmu je lepší než vysoko.",
+]
 
 [why]
-en = "Coming down from a light, high sound carries the lighter setting of the vocal folds (less weight) into your speaking range. Pitch is the tool here; the lightness is what you are after."
-cs = "Sestup z lehkého vysokého zvuku přenese lehčí nastavení hlasivek (menší váhu) do vaší řečové polohy. Výška je tu nástroj; jde o tu lehkost."
+en = "This is the main exercise for vocal weight. High up, the vocal folds thin out by themselves; sliding down carries that light setting into your speaking range. Pitch is only the vehicle. The app checks that you held a steady note in your band for 1.5 seconds; whether it was light, only you can tell, by how easy it felt."
+cs = "Tohle je hlavní cvičení na váhu hlasu. Vysoko se hlasivky ztenčí samy; sklouznutím dolů si to lehké nastavení přenesete do řečové polohy. Výška je jen dopravní prostředek. Aplikace kontroluje, že jste v pásmu drželi klidný tón 1,5 sekundy; jestli byl lehký, poznáte jen vy, podle toho, jak snadno to šlo."
 
 [safety]
-en = "If you have to push to get up there, that is weight, not lightness: go less high."
-cs = "Pokud se tam nahoru dá dostat jen tlačením, je to váha, ne lehkost: jděte méně vysoko."
+en = "If you have to push to get up there, that is weight, not lightness: start less high."
+cs = "Pokud se tam nahoru dá dostat jen tlačením, je to váha, ne lehkost: začněte méně vysoko."
 
 [rule]
 kind = "pitch_hold"

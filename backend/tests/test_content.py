@@ -24,9 +24,9 @@ def content_copy(tmp_path: Path) -> Path:
 def test_catalogue_loads_with_every_text_in_both_languages() -> None:
     content = load_content(CONTENT)
     assert {e.id for e in content.exercises} >= {"slide-down-hold", "note-match", "count-in-band"}
-    assert {r.id for r in content.routines} == {"starter", "quick"}
+    assert {r.id for r in content.routines} == {"starter", "quick", "size"}
     for exercise in content.exercises:
-        for field in ("titles", "summaries", "instructions", "why"):
+        for field in ("titles", "summaries", "steps", "right", "why"):
             assert set(getattr(exercise, field)) == LANGUAGES, (exercise.id, field)
         assert set(exercise.safety) in (set(), LANGUAGES), exercise.id
         assert exercise.sources, exercise.id

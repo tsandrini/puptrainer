@@ -105,7 +105,7 @@ def check(content: Content) -> None:
     skills = {s.key for s in content.skills}
     for exercise in content.exercises:
         where = f"exercise {exercise.id}"
-        for field in ("titles", "summaries", "instructions", "why"):
+        for field in ("titles", "summaries", "steps", "right", "why"):
             if BASE_LANGUAGE not in getattr(exercise, field):
                 raise ValueError(f"{where}: {field} lack the base language ({BASE_LANGUAGE})")
         if exercise.skill not in skills:

@@ -4,6 +4,22 @@
 title = "Čas ve vašem pásmu"
 description = "Podíl znělého času, kdy je výška uvnitř vašeho pásma."
 
+[band_up_share_pct]
+title = "Čas v pásmu nebo nad ním"
+description = "Podíl znělého času, kdy výška není pod dolním okrajem vašeho pásma."
+
+[note_offset_st]
+title = "Vzdálenost od tónu"
+description = "Jak daleko byl hlas celkově od tónu, v půltónech; minus je pod ním."
+
+[step_first_cm]
+title = "Velikost prvního zvuku"
+description = "Zdánlivá délka hlasového traktu prvního podrženého zvuku. Menší je jasnější; pod půl centimetru je šum."
+
+[step_last_cm]
+title = "Velikost posledního zvuku"
+description = "Zdánlivá délka hlasového traktu posledního podrženého zvuku."
+
 [hold_s]
 title = "Klidné podržení"
 description = "Nejdelší úsek klidně podržený uvnitř rozsahu (výpadky kratší než 50 ms ho nepřeruší)."

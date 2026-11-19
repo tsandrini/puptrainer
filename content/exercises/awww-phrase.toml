@@ -1,27 +1,51 @@
 id = "awww-phrase"
-version = 1
+version = 2
 skill = "pitch-weight"
 item = "phrase"
 intent = "attempt"
 seconds = 8
 reps = 2
-live = "none"
+live = "pitch"
 
 [titles]
 en = "The “awww” trigger"
 cs = "Spouštěč „awww“"
 
 [summaries]
-en = "Say a soft “awww” to something cute, then a sentence in that voice."
-cs = "Říct něžné „awww“ něčemu roztomilému a pak větu stejným hlasem."
+en = "A soft “awww” to something cute finds a light voice; a sentence keeps it."
+cs = "Něžné „awww“ něčemu roztomilému najde lehký hlas; věta ho udrží."
 
-[instructions]
-en = "Picture something really cute, a puppy or a kitten, and say a soft, sincere “awww” to it, one to three times. Then, without resetting, say a short sentence in that same voice, for example “Oh, look at you, you're so tiny!” It only works if you really picture something cute."
-cs = "Představte si něco opravdu roztomilého, štěňátko nebo kotě, a řekněte mu jedno až tři něžná, upřímná „awww“ (nebo „jééé“). Pak bez přestávky řekněte krátkou větu stejným hlasem, třeba „Jéé, ty jsi ale malinký!“ Funguje to, jen když si to roztomilé opravdu představíte."
+[steps]
+en = [
+  "Picture something really cute in front of you: a puppy, a kitten, a baby.",
+  "Say a soft, sincere “awww” to it, one to three times. It will come out high and light by itself.",
+  "Straight away, in the same voice, say: “Oh, look at you, you're so tiny!” Let the sentence come down towards your band; it does not have to stay as high as the “awww”.",
+]
+cs = [
+  "Představte si před sebou něco opravdu roztomilého: štěně, kotě, miminko.",
+  "Řekněte tomu něžné, upřímné „awww“ nebo „jééé“, jednou až třikrát. Samo vyjde vysoko a lehce.",
+  "Hned potom řekněte stejným hlasem: „Jéé, ty jsi ale maličké!“ Věta může klesnout k vašemu pásmu; nemusí zůstat tak vysoko jako „awww“.",
+]
+
+[right]
+en = "The “awww” is soft and small, with no rumble under it, and the sentence after it still has that softness. It should feel like play, not like work."
+cs = "„Awww“ je měkké a drobné, bez dunění pod ním, a věta po něm si tu měkkost drží. Má to být hra, ne práce."
+
+[mistakes]
+en = [
+  "Acting it without feeling it: it only works if you really picture something cute.",
+  "Squeaking as high as possible: soft matters, high does not.",
+  "The sentence drops back into your everyday voice: say it sooner, on the same breath as the last “awww”.",
+]
+cs = [
+  "Hraní bez prožitku: funguje to, jen když si to roztomilé opravdu představíte.",
+  "Pištění co nejvýš: jde o měkkost, ne o výšku.",
+  "Věta spadne zpátky do běžného hlasu: řekněte ji dřív, na stejný nádech jako poslední „awww“.",
+]
 
 [why]
-en = "An emotional trigger often finds a lighter voice without any thinking about mechanics; the sentence right after it carries that voice into speech."
-cs = "Citový spouštěč často najde lehčí hlas bez přemýšlení o mechanice; věta hned potom ho přenese do řeči."
+en = "A feeling often finds a lighter voice faster than any instruction about mechanics; the sentence carries it into speech. The app only checks that your voice did not fall below your band; being above it is fine here."
+cs = "Pocit často najde lehčí hlas rychleji než jakýkoli pokyn o mechanice; věta ho přenese do řeči. Aplikace kontroluje jen to, že hlas neklesl pod vaše pásmo; být nad ním tady nevadí."
 
 [safety]
 en = "Keep it soft; this is not about going as high as possible."
@@ -30,6 +54,7 @@ cs = "Zůstaňte u něžného tónu; nejde o to dostat se co nejvýš."
 [rule]
 kind = "pitch_band"
 min_share_pct = 50
+above_ok = true
 
 [[sources]]
 author = "Sumian Voice wiki"

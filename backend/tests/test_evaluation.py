@@ -172,3 +172,63 @@ def test_a_strained_rep_is_never_met(catalogue: dict[str, Exercise]) -> None:
     assert strained.measures[0].met is True  # the numbers themselves were fine
     take.comfort = 2
     assert evaluate("exercise:count-in-band@1", exercise, take).met is True
+
+
+def test_advice_says_where_the_pitch_sat(catalogue: dict[str, Exercise]) -> None:
+    count = catalogue["count-in-band"]
+    high = evaluate("exercise:count-in-band@2", count, facts(contour((240, 240, 2.0))))
+    assert (high.met, high.advice) == (False, ["above-band"])
+    low = evaluate("exercise:count-in-band@2", count, facts(contour((150, 150, 2.0))))
+    assert low.advice == ["below-band"]
+    assert evaluate("exercise:count-in-band@2", count, facts(contour((190, 190, 2.0)))).advice == []
+
+    slide = catalogue["slide-down-hold"]
+    above = evaluate("exercise:slide-down-hold@2", slide, facts(contour((320, 260, 3.0))))
+    assert above.advice == ["above-band"]
+    wobbly = contour(*[(180, 215, 0.4), (215, 180, 0.4)] * 4)
+    assert evaluate("exercise:slide-down-hold@2", slide, facts(wobbly)).advice == ["unsteady"]
+
+
+def test_a_sound_meant_to_be_high_may_sit_above_the_band(catalogue: dict[str, Exercise]) -> None:
+    awww = catalogue["awww-phrase"]
+    high = evaluate("exercise:awww-phrase@2", awww, facts(contour((250, 250, 2.0))))
+    assert high.met is True
+    assert measures(high)["band_up_share_pct"] == 100
+    low = evaluate("exercise:awww-phrase@2", awww, facts(contour((150, 150, 2.0))))
+    assert (low.met, low.advice) == (False, ["below-band"])
+
+
+def test_a_missed_note_says_how_far_and_which_way(catalogue: dict[str, Exercise]) -> None:
+    exercise = catalogue["note-match"]
+    note = Target(band_low_hz=170.0, band_high_hz=220.0, note_hz=196.0)
+    under = evaluate("exercise:note-match@2", exercise, facts(contour((131, 131, 3.0)), note))
+    assert (under.met, under.advice) == (False, ["below-note"])
+    assert measures(under)["note_offset_st"] == pytest.approx(-6.97, abs=0.05)
+    over = evaluate("exercise:note-match@2", exercise, facts(contour((230, 230, 3.0)), note))
+    assert over.advice == ["above-note"]
+    brief = contour((131, 196, 1.0), (196, 196, 0.8))
+    assert evaluate("exercise:note-match@2", exercise, facts(brief, note)).advice == ["unsteady"]
+
+
+def test_an_effortful_rep_counts_with_the_advice_to_go_easier(
+    catalogue: dict[str, Exercise],
+) -> None:
+    take = facts(contour((190, 190, 2.0)))
+    take.comfort = 2
+    result = evaluate("exercise:count-in-band@2", catalogue["count-in-band"], take)
+    assert (result.met, result.advice) == (True, ["effortful"])
+
+
+def test_sizes_are_shown_beside_the_everyday_voice(catalogue: dict[str, Exercise]) -> None:
+    steps = [segment(0, 1000, 180), segment(3, 1080, 181), segment(6, 1150, 182)]
+    take = facts(None, segments=steps)
+    take.baseline_cm = 17.6
+    result = evaluate("exercise:resonance-steps@2", catalogue["resonance-steps"], take)
+    sizes = {m.key: m for m in result.measures}
+    assert sizes["step_first_cm"].value == pytest.approx(17.5)
+    assert sizes["step_last_cm"].value == pytest.approx(15.22, abs=0.01)
+    assert sizes["step_last_cm"].baseline == 17.6 and sizes["step_last_cm"].met is None
+    phrase = facts(None, metrics={"vtl_cm": 16.9})
+    phrase.baseline_cm = 17.8
+    hint = evaluate("exercise:bright-phrase@1", catalogue["bright-phrase"], phrase).hints[0]
+    assert (hint.key, hint.value, hint.baseline) == ("vtl_cm", 16.9, 17.8)

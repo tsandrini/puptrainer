@@ -91,7 +91,7 @@ def test_practice_takes_are_labelled_and_judged(client: TestClient, device_id: i
     hold = {m["key"]: m for m in judged["measures"]}
     assert hold["hold_s"]["value"] == pytest.approx(3.0, abs=0.1)
     assert hold["hold_pitch_hz"]["value"] == pytest.approx(190.0, abs=1.0)
-    assert [h["key"] for h in judged["hints"]] == ["spectral_slope_db"]
+    assert judged["hints"] == []
 
     summary = client.get(f"/api/v1/practice/{SESSION}").json()
     assert summary["take_count"] == 1
@@ -112,7 +112,8 @@ def test_lab_takes_have_no_evaluation(client: TestClient, device_id: int) -> Non
     ("ref", "status"),
     [
         ("exercise:note-match@1", 201),
-        ("exercise:note-match@2", 422),
+        ("exercise:note-match@2", 201),
+        ("exercise:note-match@3", 422),
         ("exercise:yodel@1", 422),
         ("note-match", 422),
     ],
@@ -146,7 +147,7 @@ def test_measures_have_texts(client: TestClient) -> None:
 
 def test_content_has_the_catalogue(client: TestClient) -> None:
     content = client.get("/api/v1/content").json()
-    assert {r["id"] for r in content["routines"]} == {"starter", "quick"}
+    assert {r["id"] for r in content["routines"]} == {"starter", "quick", "size"}
     note = next(e for e in content["exercises"] if e["id"] == "note-match")
     assert note["rule"] == {
         "kind": "pitch_hold",
@@ -156,3 +157,45 @@ def test_content_has_the_catalogue(client: TestClient) -> None:
         "spread_cents": 50.0,
     }
     assert json.dumps(content)  # serialisable as it is
+
+
+def test_setting_the_same_band_again_adds_nothing(client: TestClient) -> None:
+    first = client.post("/api/v1/bands", json={"low_hz": 165, "high_hz": 205}).json()
+    again = client.post("/api/v1/bands", json={"low_hz": 165, "high_hz": 205}).json()
+    assert again == first
+    assert len(client.get("/api/v1/bands").json()) == 1
+    client.post("/api/v1/bands", json={"low_hz": 170, "high_hz": 205})
+    assert len(client.get("/api/v1/bands").json()) == 2
+
+
+def test_practice_sizes_are_read_against_the_lab_baseline(
+    client: TestClient, device_id: int
+) -> None:
+    from .conftest import vowel
+
+    speech = wav_bytes(vowel((500.0, 1500.0, 2500.0, 3500.0, 4500.0), seconds=3.0))
+    upload(client, device_id, speech, item="free")  # the everyday voice, 17.5 cm
+    labels = {
+        "item": "phrase",
+        "intent": "attempt",
+        "exercise_ref": "exercise:bright-phrase@1",
+        "target": {"band_low_hz": 110, "band_high_hz": 130, "note_hz": None},
+    }
+    brighter = wav_bytes(vowel((570.0, 1710.0, 2850.0, 3990.0, 5130.0), seconds=3.0))
+    take = upload(client, device_id, brighter, **labels).json()
+    while run_once(client):
+        pass
+    judged = client.get(f"/api/v1/takes/{take['id']}").json()["evaluation"]
+    assert judged["met"] is None
+    size = judged["hints"][0]
+    assert size["key"] == "vtl_cm"
+    assert size["value"] == pytest.approx(15.35, abs=0.5)
+    assert size["baseline"] == pytest.approx(17.5, abs=0.5)
+    # a practice take is not part of the baseline, and another setup has none
+    listed = client.get("/api/v1/takes", params={"item": "phrase"}).json()
+    assert listed[0]["evaluation"]["hints"][0]["baseline"] == size["baseline"]
+    other = client.post("/api/v1/devices", json={"name": "phone", "kind": "phone"}).json()["id"]
+    elsewhere = upload(client, other, brighter, **labels).json()
+    run_once(client)
+    hint = client.get(f"/api/v1/takes/{elsewhere['id']}").json()["evaluation"]["hints"][0]
+    assert hint["baseline"] is None

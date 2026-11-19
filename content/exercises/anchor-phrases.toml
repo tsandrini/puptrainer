@@ -1,11 +1,11 @@
 id = "anchor-phrases"
-version = 1
+version = 2
 skill = "carry-over"
 item = "phrase"
 intent = "attempt"
 seconds = 15
 reps = 1
-live = "none"
+live = "pitch"
 
 [texts]
 en = "passage:anchors-en@1"
@@ -16,16 +16,40 @@ en = "Anchor phrases"
 cs = "Kotevní věty"
 
 [summaries]
-en = "The same four short sentences every session, to compare over time."
-cs = "Stejné čtyři krátké věty v každém sezení, ke srovnání v čase."
+en = "The same four short sentences in every session, in the voice you are training."
+cs = "Stejné čtyři krátké věty v každém sezení, hlasem, který trénujete."
 
-[instructions]
-en = "Read the four phrases in the voice you are training, calmly, with a short pause between them. They stay the same in every session, so your takes of them can be compared over weeks. The first three have no m, n or ng sounds, which keeps nasality out of the way."
-cs = "Přečtěte čtyři věty hlasem, který trénujete, v klidu a s krátkou pauzou mezi nimi. V každém sezení jsou stejné, takže se nahrávky dají porovnávat po týdnech. První tři nemají m, n ani ň, aby nepřekážela nosovost."
+[steps]
+en = [
+  "Find the light sound once more with a short slide into your band.",
+  "Read the four phrases in that voice, calmly, as if talking to a friend.",
+  "Take a breath between the phrases; if the voice slips, slide into the band again before the next one.",
+]
+cs = [
+  "Ještě jednou najděte lehký zvuk krátkým sklouznutím do pásma.",
+  "Přečtěte tím hlasem čtyři věty, v klidu, jako při řeči s někým blízkým.",
+  "Mezi větami se nadechněte; když hlas uklouzne, před další větou znovu sklouzněte do pásma.",
+]
+
+[right]
+en = "Natural speech melody: questions rise, the last phrase is lively. The voice stays light to the end of each phrase and does not sink at the last word."
+cs = "Přirozená melodie řeči: otázky stoupají, poslední věta je živá. Hlas zůstane lehký až do konce každé věty a na posledním slově neklesne."
+
+[mistakes]
+en = [
+  "Dropping low and creaky at the end of a phrase: end the phrase a touch sooner and a touch higher.",
+  "Reading in a monotone to stay in the band: the band is wide enough for melody; a dip below it now and then is fine.",
+  "Rushing: slower is easier to keep light.",
+]
+cs = [
+  "Pokles a skřípání na konci věty: ukončete větu o chloupek dřív a o chloupek výš.",
+  "Monotónní čtení, aby hlas zůstal v pásmu: pásmo je na melodii dost široké; občasný pokles pod něj nevadí.",
+  "Spěch: pomaleji se lehkost drží snáz.",
+]
 
 [why]
-en = "Fixed phrases make a stable reference point: the same words, the same sounds, only the voice changes. Teachers use such “anchor” or “mantra” phrases to lock a voice in."
-cs = "Pevné věty dávají stálý bod: stejná slova, stejné hlásky, mění se jen hlas. Učitelé takové „kotevní“ věty nebo „mantry“ používají k ukotvení hlasu."
+en = "Fixed phrases are your measuring stick: the same words every time, so only the voice changes, and the takes can be compared over weeks. The first three have no m, n or ng, which keeps nasal sound out of the way. The app checks that half of your voiced time was inside your band."
+cs = "Pevné věty jsou vaše měřítko: pokaždé stejná slova, takže se mění jen hlas a nahrávky jdou porovnat po týdnech. První tři nemají m, n ani ň, aby nepřekážela nosovost. Aplikace kontroluje, že polovina znělého času byla uvnitř pásma."
 
 [rule]
 kind = "pitch_band"

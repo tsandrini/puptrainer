@@ -14,6 +14,7 @@ import numpy as np
 
 from puptrainer.core.acoustics import cents, semitones, spacing
 from puptrainer.core.schemas import (
+    Advice,
     Evaluation,
     EvaluationProblem,
     Exercise,
@@ -30,6 +31,10 @@ from puptrainer.core.schemas import (
 
 MEASURES: tuple[MeasureDef, ...] = (
     MeasureDef(key="band_share_pct", unit="%", decimals=0),
+    MeasureDef(key="band_up_share_pct", unit="%", decimals=0),
+    MeasureDef(key="note_offset_st", unit="st", decimals=1),
+    MeasureDef(key="step_first_cm", unit="cm", decimals=1),
+    MeasureDef(key="step_last_cm", unit="cm", decimals=1),
     MeasureDef(key="hold_s", unit="s", decimals=1),
     MeasureDef(key="hold_pitch_hz", unit="Hz", decimals=0),
     MeasureDef(key="hold_offset_cents", unit="cents", decimals=0),
@@ -43,6 +48,10 @@ MIN_VOICED_FRAMES = 10
 HOLD_GAP_S = 0.05
 STRAINED = 1
 """The lowest comfort rating: a rep rated so is never met."""
+EFFORTFUL = 2
+"""The comfort rating that still counts, with the advice to go easier."""
+SIZE_KEYS = frozenset({"vtl_cm"})
+"""Hints read against the learner's baseline size."""
 
 
 @dataclass
@@ -57,6 +66,8 @@ class TakeFacts:
         segments: The held sounds of a `sustain` take.
         target: The band, and the note, it was recorded against.
         comfort: How the rep felt, 1 (strained) to 5.
+        baseline_cm: The apparent tract length of the learner's everyday voice in a
+            comparable kind of take on the same microphone setup, if known.
     """
 
     analysed: bool
@@ -66,6 +77,7 @@ class TakeFacts:
     segments: list[VowelSegment] = field(default_factory=list)
     target: Target | None = None
     comfort: int | None = None
+    baseline_cm: float | None = None
 
 
 def needs_pitch(exercise: Exercise | None) -> bool:
@@ -95,7 +107,13 @@ def evaluate(exercise_ref: str, exercise: Exercise | None, facts: TakeFacts) -> 
         out.problem = EvaluationProblem.NOT_ANALYSED
         return out
     out.hints = [
-        Measure(key=k, value=facts.metrics[k]) for k in exercise.hints if k in facts.metrics
+        Measure(
+            key=k,
+            value=facts.metrics[k],
+            baseline=facts.baseline_cm if k in SIZE_KEYS else None,
+        )
+        for k in exercise.hints
+        if k in facts.metrics
     ]
     match rule:
         case NoRule():
@@ -110,6 +128,8 @@ def evaluate(exercise_ref: str, exercise: Exercise | None, facts: TakeFacts) -> 
             _steps(rule, facts, out)
     if out.met and facts.comfort == STRAINED:
         out.met, out.strained = False, True
+    if out.met and facts.comfort == EFFORTFUL:
+        out.advice.append(Advice.EFFORTFUL)
     return out
 
 
@@ -131,12 +151,32 @@ def _pitch_band(rule: PitchBandRule, facts: TakeFacts, out: Evaluation) -> None:
         out.problem = EvaluationProblem.TOO_LITTLE_VOICE
         return
     low, high = facts.target.band_low_hz, facts.target.band_high_hz
-    share = 100.0 * float(((voiced >= low) & (voiced <= high)).mean())
+    inside = voiced >= low if rule.above_ok else (voiced >= low) & (voiced <= high)
+    share = 100.0 * float(inside.mean())
+    median = float(np.median(voiced))
     out.met = share >= rule.min_share_pct
     out.measures = [
-        Measure(key="band_share_pct", value=share, low=rule.min_share_pct, met=out.met),
-        Measure(key="pitch_median_hz", value=float(np.median(voiced)), low=low, high=high),
+        Measure(
+            key="band_up_share_pct" if rule.above_ok else "band_share_pct",
+            value=share,
+            low=rule.min_share_pct,
+            met=out.met,
+        ),
+        Measure(key="pitch_median_hz", value=median, low=low, high=high),
     ]
+    if not out.met:
+        _where(median, low, None if rule.above_ok else high, out)
+
+
+def _where(pitch: float, low: float, high: float | None, out: Evaluation) -> bool:
+    """Say on which side of a range the pitch sat; whether it was outside at all."""
+    if pitch < low:
+        out.advice.append(Advice.BELOW_BAND)
+    elif high is not None and pitch > high:
+        out.advice.append(Advice.ABOVE_BAND)
+    else:
+        return False
+    return True
 
 
 def _pitch_hold(rule: PitchHoldRule, facts: TakeFacts, out: Evaluation) -> None:
@@ -160,29 +200,39 @@ def _pitch_hold(rule: PitchHoldRule, facts: TakeFacts, out: Evaluation) -> None:
     else:
         low, high = target.band_low_hz, target.band_high_hz
 
+    note = target.note_hz if rule.at == "note" else None
+    median = float(np.median(voiced))
     hold = steady_hold(facts.pitch, low, high, rule.spread_cents, facts.step_s)
-    if hold is None:
-        out.met = False
-        out.measures = [
-            Measure(key="hold_s", value=0.0, low=rule.min_hold_s, met=False),
-            Measure(key="pitch_median_hz", value=float(np.median(voiced)), low=low, high=high),
-        ]
-        return
-    seconds, pitch = hold
+    seconds, pitch = hold if hold is not None else (0.0, median)
     out.met = seconds >= rule.min_hold_s
     out.measures = [Measure(key="hold_s", value=seconds, low=rule.min_hold_s, met=out.met)]
-    if rule.at == "note" and target.note_hz is not None:
-        offset = cents(pitch, target.note_hz)
+    if note is not None and hold is not None:
         out.measures.append(
             Measure(
                 key="hold_offset_cents",
-                value=offset,
+                value=cents(pitch, note),
                 low=-rule.tolerance_cents,
                 high=rule.tolerance_cents,
             )
         )
-    else:
+    elif note is not None:
+        # nothing was held near the note: say how far off the voice was
+        limit = rule.tolerance_cents / 100
+        out.measures.append(
+            Measure(key="note_offset_st", value=semitones(median, note), low=-limit, high=limit)
+        )
+    elif hold is not None:
         out.measures.append(Measure(key="hold_pitch_hz", value=pitch, low=low, high=high))
+    else:
+        out.measures.append(Measure(key="pitch_median_hz", value=median, low=low, high=high))
+    if out.met:
+        return
+    if note is not None and hold is None:
+        out.advice.append(Advice.BELOW_NOTE if median < note else Advice.ABOVE_NOTE)
+    elif hold is None and _where(median, low, high, out):
+        pass
+    else:
+        out.advice.append(Advice.UNSTEADY)
 
 
 def steady_hold(
@@ -275,7 +325,10 @@ def _steps(rule: StepsRule, facts: TakeFacts, out: Evaluation) -> None:
     drift = semitones(max(pitches), min(pitches))
     steady = drift <= rule.max_drift_st
     out.met = rising and steady
+    lengths = [spacing(s.formants_hz)[1] for s in chosen]
     out.measures = [
         Measure(key="step_rise_pct", value=100.0 * (widths[-1] / widths[0] - 1), met=rising),
         Measure(key="step_drift_st", value=drift, high=rule.max_drift_st, met=steady),
+        Measure(key="step_first_cm", value=lengths[0], baseline=facts.baseline_cm),
+        Measure(key="step_last_cm", value=lengths[-1], baseline=facts.baseline_cm),
     ]

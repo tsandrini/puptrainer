@@ -48,6 +48,7 @@ from puptrainer.api.db import (
     snapshot_if_stale,
 )
 from puptrainer.api.storage import AudioStore, InvalidAudioError
+from puptrainer.core.acoustics import spacing
 from puptrainer.core.content import load_content, load_measures, load_metrics, parse_ref
 from puptrainer.core.evaluation import TakeFacts, evaluate, needs_pitch
 from puptrainer.core.metrics import KEYS
@@ -130,13 +131,19 @@ def decode_series(stored: AnalysisSeries) -> list[float | None]:
     return [None if np.isnan(v) else round(float(v), 2) for v in values]
 
 
-def take_out(take: Take, exercises: dict[str, Exercise] | None = None) -> TakeOut:
+def take_out(
+    take: Take,
+    exercises: dict[str, Exercise] | None = None,
+    baseline_cm: float | None = None,
+) -> TakeOut:
     """A take as the API returns it: labels, the latest job, the newest finished results.
 
     Args:
         take: The take, with its jobs, their metrics and series loaded.
         exercises: The catalogue by id, to judge a practice take; without it, or for a
             take of no exercise, there is no evaluation.
+        baseline_cm: The learner's everyday apparent tract length in a comparable kind of
+            take on the same setup, for the evaluation to show sizes against.
     """
     latest = take.jobs[-1] if take.jobs else None
     done = next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
@@ -156,6 +163,7 @@ def take_out(take: Take, exercises: dict[str, Exercise] | None = None) -> TakeOu
             segments=details.segments,
             target=target,
             comfort=take.comfort,
+            baseline_cm=baseline_cm,
         )
         contour = next((s for s in done.series if s.key == "pitch_hz"), None) if done else None
         if contour is not None and needs_pitch(exercise):
@@ -313,8 +321,49 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "no such take")
         return take
 
-    def out(take: Take) -> TakeOut:
-        return take_out(take, exercises)
+    def baseline_cm(
+        db: Session, take: Take, cache: dict[tuple[int, bool], float | None]
+    ) -> float | None:
+        """The everyday size to read a practice take against: same setup, comparable sound.
+
+        For held sounds, the "a" of the habitual vowels takes of the lab; for speech, the
+        habitual passages and free speech. The median over those takes.
+        """
+        held = take.item in (Item.SUSTAIN, Item.VOWELS)
+        key = (take.device_id, held)
+        if key in cache:
+            return cache[key]
+        items = [Item.VOWELS] if held else [Item.PASSAGE, Item.FREE]
+        query = (
+            select(Take)
+            .where(
+                Take.device_id == take.device_id,
+                Take.intent == Intent.HABITUAL,
+                Take.exercise_ref.is_(None),
+                Take.item.in_(items),
+            )
+            .options(selectinload(Take.jobs).selectinload(AnalysisJob.metrics))
+        )
+        values: list[float] = []
+        for lab in db.scalars(query):
+            done = next((j for j in reversed(lab.jobs) if j.status == JobStatus.DONE), None)
+            if done is None:
+                continue
+            if held:
+                vowels = Details.model_validate_json(done.details).vowels if done.details else []
+                values += [spacing(v.formants_hz)[1] for v in vowels if v.vowel == "a"]
+            else:
+                values += [m.value for m in done.metrics if m.key == "vtl_cm"]
+        cache[key] = float(np.median(values)) if values else None
+        return cache[key]
+
+    def out(
+        db: Session, take: Take, cache: dict[tuple[int, bool], float | None] | None = None
+    ) -> TakeOut:
+        size = None
+        if take.exercise_ref is not None:
+            size = baseline_cm(db, take, {} if cache is None else cache)
+        return take_out(take, exercises, size)
 
     def known(ref: str, kind: str, catalogue: dict[str, Any]) -> None:
         # NOTE: the id must exist; an older version is fine (a take queued offline before
@@ -379,6 +428,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @router.post("/bands", status_code=201, operation_id="createBand")
     def create_band(body: BandIn, db: Db) -> BandOut:
+        current = db.scalar(select(TargetBand).order_by(TargetBand.id.desc()).limit(1))
+        if current is not None and (current.low_hz, current.high_hz) == (body.low_hz, body.high_hz):
+            # NOTE: setting the band it already is adds nothing to the history
+            return BandOut.model_validate(current)
         band = TargetBand(low_hz=body.low_hz, high_hz=body.high_hz)
         db.add(band)
         db.commit()
@@ -506,7 +559,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             stored = db.scalar(select(Take.id).where(Take.client_id == labels.client_id))
             if stored is not None:
                 response.status_code = 200
-                return out(get_take(db, stored))
+                return out(db, get_take(db, stored))
         check_labels(
             db, labels.device_id, labels.content_ref, labels.session_id, labels.exercise_ref
         )
@@ -536,7 +589,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         take.jobs.append(AnalysisJob(status=JobStatus.PENDING))
         db.add(take)
         db.commit()
-        return out(get_take(db, take.id))
+        return out(db, get_take(db, take.id))
 
     @router.get("/takes", operation_id="listTakes")
     def list_takes(
@@ -561,11 +614,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if session_id is not None:
             query = query.where(Take.session_id == session_id)
         query = query.order_by(Take.recorded_at.desc(), Take.id).limit(limit).offset(offset)
-        return [out(t) for t in db.scalars(query)]
+        cache: dict[tuple[int, bool], float | None] = {}
+        return [out(db, t, cache) for t in db.scalars(query)]
 
     @router.get("/takes/{take_id}", operation_id="getTake")
     def read_take(take_id: str, db: Db) -> TakeOut:
-        return out(get_take(db, take_id))
+        return out(db, get_take(db, take_id))
 
     @router.patch("/takes/{take_id}", operation_id="updateTake")
     def update_take(take_id: str, body: TakePatch, db: Db) -> TakeOut:
@@ -581,7 +635,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             setattr(take, field, value)
         db.commit()
         db.expire(take)
-        return out(get_take(db, take_id))
+        return out(db, get_take(db, take_id))
 
     @router.delete("/takes/{take_id}", status_code=204, operation_id="deleteTake")
     def delete_take(take_id: str, db: Db) -> Response:
@@ -607,7 +661,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not take.jobs or take.jobs[-1].status in (JobStatus.DONE, JobStatus.FAILED):
             take.jobs.append(AnalysisJob(status=JobStatus.PENDING))
             db.commit()
-        return out(get_take(db, take_id))
+        return out(db, get_take(db, take_id))
 
     @router.get("/takes/{take_id}/series/{key}", operation_id="takeSeries")
     def take_series(take_id: str, key: str, db: Db) -> Series:

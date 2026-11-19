@@ -207,6 +207,8 @@ class Measure(Schema):
         low: Lowest value that meets it; unset for no lower limit.
         high: Highest value that meets it; unset for no upper limit.
         met: Whether it is within limits; unset for a number given as context.
+        baseline: The same number in the learner's everyday voice on this microphone
+            setup, where one exists, to read the value against.
     """
 
     key: str
@@ -214,6 +216,18 @@ class Measure(Schema):
     low: float | None = None
     high: float | None = None
     met: bool | None = None
+    baseline: float | None = None
+
+
+class Advice(StrEnum):
+    """What a judgement suggests trying next."""
+
+    ABOVE_BAND = "above-band"
+    BELOW_BAND = "below-band"
+    ABOVE_NOTE = "above-note"
+    BELOW_NOTE = "below-note"
+    UNSTEADY = "unsteady"
+    EFFORTFUL = "effortful"
 
 
 class Evaluation(Schema):
@@ -228,6 +242,8 @@ class Evaluation(Schema):
         problem: Why there is no judgement.
         strained: The numbers met the rule but the rep was rated strained (comfort 1), so
             it is not met: comfort is a gate, a strained rep never counts.
+        advice: What to try next: where the pitch sat against the band or the note, or
+            that a met rep took effort.
     """
 
     exercise_ref: str
@@ -237,6 +253,7 @@ class Evaluation(Schema):
     hints: list[Measure] = []
     problem: EvaluationProblem | None = None
     strained: bool = False
+    advice: list[Advice] = []
 
 
 class MeasureDef(Schema):
@@ -550,6 +567,16 @@ class Live(StrEnum):
 
     NONE = "none"
     PITCH = "pitch"
+    FORMANTS = "formants"
+
+
+class Demo(StrEnum):
+    """The pitch pattern of an exercise the app can play as a tone, to show its shape."""
+
+    NONE = "none"
+    SLIDE_DOWN = "slide-down"
+    GLIDE = "glide"
+    HOLD = "hold"
 
 
 class SkillDef(Schema):
@@ -593,10 +620,13 @@ class PitchBandRule(Schema):
 
     Attributes:
         min_share_pct: The share that counts as met.
+        above_ok: Count time above the band as well: for sounds meant to be light and
+            high, where only falling below the band misses the point.
     """
 
     kind: Literal["pitch_band"]
     min_share_pct: float = Field(gt=0, le=100)
+    above_ok: bool = False
 
 
 class PitchHoldRule(Schema):
@@ -676,11 +706,14 @@ class Exercise(Schema):
         seconds: Rough length of one rep.
         reps: How many reps a session asks for, unless a routine says otherwise.
         live: What the recording screen shows while recording.
+        demo: The pitch pattern the app can play as a tone before recording.
         texts: The text to read, by language, as a passage reference.
         hints: Registry metrics shown beside the result, labelled as hints.
         titles: Short name per language.
         summaries: One line per language.
-        instructions: What to do, per language.
+        steps: What to do, step by step, per language.
+        right: What it sounds and feels like when it goes right, per language.
+        mistakes: Common mistakes and what to do about each, per language.
         why: What it is for, per language.
         safety: When to stop or back off, per language.
         rule: How a take is judged.
@@ -695,11 +728,14 @@ class Exercise(Schema):
     seconds: int = Field(ge=1, le=600)
     reps: int = Field(ge=1, le=20)
     live: Live = Live.NONE
+    demo: Demo = Demo.NONE
     texts: dict[str, str] = {}
     hints: list[str] = []
     titles: dict[str, str]
     summaries: dict[str, str]
-    instructions: dict[str, str]
+    steps: dict[str, list[str]]
+    right: dict[str, str]
+    mistakes: dict[str, list[str]] = {}
     why: dict[str, str]
     safety: dict[str, str] = {}
     rule: Rule

@@ -1,0 +1,70 @@
+id = "bright-phrase"
+version = 1
+skill = "size"
+item = "phrase"
+intent = "attempt"
+seconds = 12
+reps = 2
+live = "formants"
+hints = ["vtl_cm"]
+
+[texts]
+en = "passage:anchors-en@1"
+cs = "passage:anchors-cs@1"
+
+[titles]
+en = "Keep it bright in a phrase"
+cs = "Udržet jas ve větě"
+
+[summaries]
+en = "Find the bright “ah”, then say a few phrases without letting go of it."
+cs = "Najít jasné „á“ a pak říct pár vět, aniž ho pustíte."
+
+[steps]
+en = [
+  "Hold the bright “ah” from the exercise before for two seconds, on an easy note.",
+  "Keep your mouth and tongue as they are and go straight into the first phrase.",
+  "Read the other phrases the same way. When the sound gets big again, stop, find the bright “ah”, and go on.",
+]
+cs = [
+  "Podržte dvě sekundy jasné „á“ z předchozího cvičení, na snadném tónu.",
+  "Nechte ústa a jazyk, jak jsou, a rovnou přejděte do první věty.",
+  "Ostatní věty přečtěte stejně. Když zvuk zase zvětší, zastavte, najděte jasné „á“ a pokračujte.",
+]
+
+[right]
+en = "The phrases sound a size smaller than your everyday voice, a little like smiling while you talk, at a pitch that is easy for you. It will feel exaggerated; on a recording it is usually less than you think."
+cs = "Věty znějí o číslo menší než běžný hlas, trochu jako mluvení s úsměvem, ve výšce, která je pro vás snadná. Bude to působit přehnaně; na nahrávce je toho obvykle méně, než si myslíte."
+
+[mistakes]
+en = [
+  "The brightness is gone by the second word: it drops on certain vowels (oh, oo). Slow down and keep the tongue forward through them.",
+  "Raising the pitch instead: check the strip in the pitch exercises; here pitch should stay easy.",
+  "A tight or pinched sound: less effort; a smaller change that is comfortable is worth more.",
+]
+cs = [
+  "Jas zmizí u druhého slova: padá na některých samohláskách (o, u). Zpomalte a držte jazyk vpředu i přes ně.",
+  "Zvedání výšky místo jasu: výška tu má zůstat snadná.",
+  "Stažený nebo zmáčknutý zvuk: méně úsilí; menší změna, která je pohodlná, má větší cenu.",
+]
+
+[why]
+en = "Holding a bright “ah” is one thing; keeping it through real words is where size is actually learned, and where most people lose it. Nothing is judged here. Afterwards the app shows the apparent size of this take beside that of your everyday speech; smaller means brighter. Differences under about half a centimetre are within the measure's noise."
+cs = "Podržet jasné „á“ je jedna věc; udržet ho ve skutečných slovech je místo, kde se velikost opravdu učí a kde ji většina lidí ztrácí. Nic se tu nehodnotí. Aplikace potom ukáže zdánlivou velikost této nahrávky vedle velikosti vaší běžné řeči; menší znamená jasnější. Rozdíly pod zhruba půl centimetru jsou v šumu měření."
+
+[safety]
+en = "Stop if your throat feels tight; rest and try a smaller change."
+cs = "Přestaňte, pokud cítíte stažené hrdlo; odpočiňte si a zkuste menší změnu."
+
+[rule]
+kind = "none"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Resonance: stepping from dark to bright, then reading while staying bright"
+url = "https://wiki.sumianvoice.com/wiki/pages/resonance"
+
+[[sources]]
+author = "Adi (transvoice.coach)"
+title = "Getting the Most out of Practice: carrying resonance into words"
+url = "https://docs.google.com/document/d/1fsbPJ982MQvPOCzfUtl8jPlnwT2O3OJr9Hlk5_EoVGI/edit"

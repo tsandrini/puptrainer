@@ -1,27 +1,51 @@
 id = "note-match"
-version = 1
+version = 2
 skill = "pitch-weight"
 item = "sustain"
 intent = "drill"
 seconds = 8
 reps = 3
-live = "none"
+live = "pitch"
 
 [titles]
 en = "Match the note"
 cs = "Trefit tón"
 
 [summaries]
-en = "Listen to a note from your band, then sing it back and hold it."
-cs = "Poslechnout si tón ze svého pásma, pak ho zazpívat a podržet."
+en = "Hear a note from your band, then find it with your voice, with the tuner's help."
+cs = "Poslechnout si tón ze svého pásma a pak ho najít hlasem, s pomocí ladičky."
 
-[instructions]
-en = "Press “Play the note” and listen; it plays before the recording starts, so it is not recorded. Then record and sing it back on “mm” or “ah”, as lightly as in the slide, and hold it steady for about three seconds. Don't hunt around for it: start, listen to yourself, adjust gently. Each rep plays a different note from your band."
-cs = "Stiskněte „Přehrát tón“ a poslouchejte; hraje před začátkem nahrávání, takže se nenahraje. Pak nahrávejte, zazpívejte ho zpátky na „mm“ nebo „á“ stejně lehce jako při klouzání a držte ho klidně asi tři sekundy. Nehledejte ho dlouho: začněte, poslouchejte se, jemně dolaďte. Každé opakování zahraje jiný tón z vašeho pásma."
+[steps]
+en = [
+  "Press “Play the note” and listen. Play it again as often as you like; it plays before recording, so it is never recorded.",
+  "Start recording and sing “ah”, lightly. Watch the strip: the line is the note, the marker is you.",
+  "Slide up or down until the marker sits on the line, then hold it there for about three seconds.",
+]
+cs = [
+  "Stiskněte „Přehrát tón“ a poslouchejte. Přehrajte si ho, kolikrát chcete; hraje před nahráváním, takže se nikdy nenahraje.",
+  "Spusťte nahrávání a zazpívejte lehce „á“. Sledujte pruh: čára je tón, značka jste vy.",
+  "Klouzejte nahoru nebo dolů, až značka sedne na čáru, a pak ji tam asi tři sekundy držte.",
+]
+
+[right]
+en = "The marker rests on the line and your voice seems to melt into the note you remember. Using your eyes is fine: your ear learns from seeing where the note is."
+cs = "Značka sedí na čáře a hlas jako by splynul s tónem, který si pamatujete. Dívat se je v pořádku: sluch se učí z toho, že vidí, kde tón je."
+
+[mistakes]
+en = [
+  "Singing well below the note without noticing: very common at first. The note is higher than it seems; slide up until the marker reaches the line.",
+  "Jumping around: move slowly, in one direction, and stop when you arrive.",
+  "Pushing louder to get higher: stay quiet and light, as in the slide.",
+]
+cs = [
+  "Zpívání hluboko pod tónem, aniž si toho všimnete: zpočátku velmi běžné. Tón je výš, než se zdá; klouzejte nahoru, až značka dojde k čáře.",
+  "Skákání sem a tam: pohybujte se pomalu, jedním směrem, a zastavte, až dorazíte.",
+  "Přidávání hlasitosti kvůli výšce: zůstaňte potichu a lehce, jako při klouzání.",
+]
 
 [why]
-en = "Finding a given note trains your ear and your control of pitch, and it is the one thing a pitch tracker can check exactly."
-cs = "Trefování daného tónu trénuje sluch a ovládání výšky a je to jediná věc, kterou měření výšky dokáže zkontrolovat přesně."
+en = "It trains your ear and your control of pitch, so that later you can tell where your voice is without looking. Hardly anyone can do this by ear at the start; that is what the tuner is for. The app checks that you held within half a semitone of the note for 1.5 seconds."
+cs = "Trénuje sluch a ovládání výšky, abyste později poznali, kde hlas je, i bez dívání. Podle sluchu to na začátku nedokáže skoro nikdo; od toho je ladička. Aplikace kontroluje, že jste 1,5 sekundy drželi tón s přesností na půl půltónu."
 
 [safety]
 en = "Sing quietly. If a note feels out of reach, skip it rather than strain."

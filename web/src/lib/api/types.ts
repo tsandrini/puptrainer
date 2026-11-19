@@ -1,6 +1,9 @@
 // Generated from the API's models by `python -m puptrainer.api.tstypes`.
 // Do not edit: change the models in backend/src/puptrainer/core/schemas.py and regenerate.
 
+/** What a judgement suggests trying next. */
+export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful';
+
 /** The latest analysis job of a take. */
 export type AnalysisOut = {
 	status: JobStatus;
@@ -31,6 +34,9 @@ export type Content = {
 	exercises: Exercise[];
 	routines: Routine[];
 };
+
+/** The pitch pattern of an exercise the app can play as a tone, to show its shape. */
+export type Demo = 'none' | 'slide-down' | 'glide' | 'hold';
 
 /** What an analysis found besides single numbers. */
 export type Details = {
@@ -71,6 +77,7 @@ export type Evaluation = {
 	hints: Measure[];
 	problem: EvaluationProblem | null;
 	strained: boolean;
+	advice: Advice[];
 };
 
 /** Why a take of an exercise could not be judged. */
@@ -86,11 +93,14 @@ export type Exercise = {
 	seconds: number;
 	reps: number;
 	live: Live;
+	demo: Demo;
 	texts: Record<string, string>;
 	hints: string[];
 	titles: Record<string, string>;
 	summaries: Record<string, string>;
-	instructions: Record<string, string>;
+	steps: Record<string, string[]>;
+	right: Record<string, string>;
+	mistakes: Record<string, string[]>;
 	why: Record<string, string>;
 	safety: Record<string, string>;
 	rule: NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule;
@@ -119,7 +129,7 @@ export type Item = 'vowels' | 'glide' | 'sustain' | 'phrase' | 'passage' | 'free
 export type JobStatus = 'pending' | 'claimed' | 'done' | 'failed';
 
 /** What the recording screen shows while an exercise is recorded. */
-export type Live = 'none' | 'pitch';
+export type Live = 'none' | 'pitch' | 'formants';
 
 /** What the web app sends to sign in. */
 export type Login = {
@@ -133,6 +143,7 @@ export type Measure = {
 	low: number | null;
 	high: number | null;
 	met: boolean | null;
+	baseline: number | null;
 };
 
 /** A measure of the evaluation, with its texts. */
@@ -185,6 +196,7 @@ export type Passage = {
 export type PitchBandRule = {
 	kind: 'pitch_band';
 	min_share_pct: number;
+	above_ok: boolean;
 };
 
 /** A held note judged by how long it stays steady inside the band, or on a note. */

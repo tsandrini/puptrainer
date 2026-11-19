@@ -1,31 +1,55 @@
 id = "count-in-band"
-version = 1
+version = 2
 skill = "carry-over"
 item = "phrase"
 intent = "attempt"
 seconds = 10
 reps = 1
-live = "none"
+live = "pitch"
 
 [titles]
 en = "Count in your band"
 cs = "Počítání v pásmu"
 
 [summaries]
-en = "Count from one to ten in the voice the drills found."
-cs = "Napočítat do deseti hlasem, který cvičení našla."
+en = "Count to ten in the light voice the drills found."
+cs = "Napočítat do deseti lehkým hlasem, který cvičení našla."
 
-[instructions]
-en = "In the voice from the drills before, count slowly from one to ten in the language chosen for this session. Speak, don't sing: let the pitch move a little, as it does in speech, staying around your band."
-cs = "Hlasem z předchozích cvičení pomalu napočítejte od jedné do deseti v jazyce, který je pro toto sezení vybraný. Mluvte, nezpívejte: nechte výšku trochu se pohybovat jako v řeči, kolem svého pásma."
+[steps]
+en = [
+  "Find the light sound again: a short slide down into your band, as in the exercise before.",
+  "In that voice, count slowly from one to ten, in the language of this session.",
+  "Speak, don't sing. Let the pitch move a little, as it does in speech, with the marker mostly inside your band.",
+]
+cs = [
+  "Najděte znovu lehký zvuk: krátké sklouznutí do pásma jako v předchozím cvičení.",
+  "Tím hlasem pomalu napočítejte od jedné do deseti, v jazyce tohoto sezení.",
+  "Mluvte, nezpívejte. Nechte výšku trochu se pohybovat jako v řeči, se značkou většinou uvnitř pásma.",
+]
+
+[right]
+en = "It sounds like you talking, just a little lighter and higher than usual, and it is no more tiring than normal counting. Each number may rise and fall."
+cs = "Zní to jako vaše mluvení, jen o něco lehčí a vyšší než obvykle, a neunaví to víc než běžné počítání. Každé číslo může stoupat a klesat."
+
+[mistakes]
+en = [
+  "Ending up above the band: you are reaching. Come down; the lower half of the band is the easy part.",
+  "A flat, sung, robot-like tone: let the numbers have their natural melody.",
+  "Sinking back into the everyday voice by “six”: pause, slide down into the band again, go on.",
+]
+cs = [
+  "Skončíte nad pásmem: natahujete se. Jděte níž; spodní polovina pásma je ta snadná.",
+  "Plochý, zpívaný, robotický tón: nechte čísla mít přirozenou melodii.",
+  "Propad do běžného hlasu u „šestky“: zastavte, znovu sklouzněte do pásma a pokračujte.",
+]
 
 [why]
-en = "A drill only helps once the voice carries over into speech, and counting is the simplest speech there is."
-cs = "Cvičení pomůže, až když se hlas přenese do řeči, a počítání je ta nejjednodušší řeč."
+en = "A voice that exists only in drills is of no use. Counting is the simplest real speech there is, so it is the first place to try keeping the light voice. The app checks that at least half of your voiced time was inside your band."
+cs = "Hlas, který existuje jen ve cvičeních, je k ničemu. Počítání je ta nejjednodušší skutečná řeč, takže je to první místo, kde si lehký hlas zkusit udržet. Aplikace kontroluje, že aspoň polovina znělého času byla uvnitř pásma."
 
 [safety]
-en = "If you feel yourself pushing to stay in the band, let the voice drop a little: comfort comes first."
-cs = "Když cítíte, že se do pásma tlačíte, nechte hlas trochu klesnout: pohodlí má přednost."
+en = "If you feel yourself pushing to stay in the band, let the voice drop: comfort comes first."
+cs = "Když cítíte, že se do pásma tlačíte, nechte hlas klesnout: pohodlí má přednost."
 
 [rule]
 kind = "pitch_band"

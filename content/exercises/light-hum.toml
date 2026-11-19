@@ -1,11 +1,11 @@
 id = "light-hum"
-version = 1
+version = 2
 skill = "clarity"
 item = "sustain"
 intent = "drill"
 seconds = 10
 reps = 2
-live = "none"
+live = "pitch"
 hints = ["hnr_db"]
 
 [titles]
@@ -13,20 +13,44 @@ en = "Light hum"
 cs = "Lehké broukání"
 
 [summaries]
-en = "Hum as lightly as a sine tone, then speak in the same clean way."
-cs = "Broukat lehce jako čistý sinusový tón a pak stejně čistě promluvit."
+en = "Hum quietly and cleanly on an easy note, then say a few words the same way."
+cs = "Tiše a čistě broukat na snadném tónu a pak stejně říct pár slov."
 
-[instructions]
-en = "With your lips closed, hum on a comfortable note as lightly as you can: a quiet, pure sine tone rather than a buzz. Hold it for about three seconds, then open into “mm-hmm, one, two, three”, keeping the same light, clean sound. No hiss of air, no rattle, no crackle."
-cs = "Se zavřenými rty brukejte na pohodlném tónu co nejlehčeji: tichý čistý sinusový tón, ne bzučení. Držte ho asi tři sekundy a pak přejděte do „mhm, jedna, dva, tři“ se stejně lehkým a čistým zvukem. Žádné syčení vzduchu, žádné chrastění ani praskání."
+[steps]
+en = [
+  "Lips closed, hum “mmm” on an easy note around where you normally speak or a little above. The strip shows your pitch; there is no need to go high.",
+  "Make it as light as you can: quiet, smooth, like a single pure tone. Hold it for about three seconds.",
+  "Without stopping, open into “mm-hmm, one, two, three” with the same light, clean sound.",
+]
+cs = [
+  "Se zavřenými rty brukejte „mmm“ na snadném tónu zhruba tam, kde běžně mluvíte, nebo o kousek výš. Pruh ukazuje výšku; není potřeba jít vysoko.",
+  "Udělejte to co nejlehčí: tiché, hladké, jako jeden čistý tón. Držte asi tři sekundy.",
+  "Bez přerušení přejděte do „mhm, jedna, dva, tři“ se stejně lehkým a čistým zvukem.",
+]
+
+[right]
+en = "Your lips and nose tingle a little. The sound is smooth from start to end: no hiss of air, no rattle, no crackle at the beginning or the end."
+cs = "Rty a nos lehce brní. Zvuk je hladký od začátku do konce: žádné syčení vzduchu, žádné chrastění, žádné praskání na začátku ani na konci."
+
+[mistakes]
+en = [
+  "Humming high up: this is not a pitch exercise. Come down to an easy note.",
+  "A crackle or rattle (creak), usually at the end as the air runs out: stop the sound sooner, while it is still clean, and keep a little more air moving.",
+  "Hissing air: that is breathiness. Slightly firmer, not louder.",
+]
+cs = [
+  "Broukání vysoko: tohle není cvičení na výšku. Vraťte se na snadný tón.",
+  "Praskání nebo chrastění (skřípání), většinou na konci, když dochází vzduch: ukončete zvuk dřív, dokud je čistý, a nechte proudit o trochu víc vzduchu.",
+  "Syčení vzduchu: to je dechovost. Trochu pevněji, ne hlasitěji.",
+]
 
 [why]
-en = "A light, clean start teaches the vocal folds to close just enough: not breathy, not pressed, not creaky. Many untrained voices drop into creak (a crackly, rattling vibration) at the ends of sounds; this works on its opposite."
-cs = "Lehký, čistý začátek tónu učí hlasivky dovírat tak akorát: ne dechově, ne tlačeně, ne skřípavě. Mnoho netrénovaných hlasů na koncích zvuků sklouzává do skřípání (praskavé, chrastivé kmitání); tohle cvičení trénuje opak."
+en = "It trains a clean start and end of the voice: vocal folds that close just enough, neither breathy nor creaky. Your baseline recordings show a fair amount of creak; this is the exercise aimed at it. The app counts the share of creaky sound; under 5% is met."
+cs = "Trénuje čistý začátek a konec hlasu: hlasivky, které dovírají tak akorát, ani dechově, ani skřípavě. Vaše výchozí nahrávky ukazují dost skřípání; tohle cvičení míří právě na něj. Aplikace počítá podíl skřípavého zvuku; pod 5 % je splněno."
 
 [safety]
-en = "If the hum rattles, make it lighter and a little higher rather than pushing through."
-cs = "Když broukání chrastí, udělejte ho lehčí a trochu výš, místo abyste se přes to protlačili."
+en = "If the hum rattles, make it lighter rather than pushing through."
+cs = "Když broukání chrastí, uberte, místo abyste se přes to protlačili."
 
 [rule]
 kind = "metric"
