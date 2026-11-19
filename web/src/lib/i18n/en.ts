@@ -219,6 +219,12 @@ export const en = {
 				'You got there but did not stay. Arrive, then hold one steady note a little longer.',
 			effortful:
 				'The numbers are there, but it took effort. Next time go lower or lighter: easy matters more than high.',
+			'pitch-moved':
+				'Your pitch moved between the sounds. The exercise is to change the colour while the note stays put: hum your note before each sound and watch the marker.',
+			'pitch-too-high':
+				'This went above about 300 Hz, where resonance cannot be measured: the harmonics of the voice lie too far apart to show it. A raised larynx tends to drag the pitch up with it; bring the pitch back down and keep the brightness.',
+			'not-brighter':
+				'The sounds did not measure brighter step by step. A small change can hide in the measure’s noise; try a bigger difference between dark and bright, keeping the vowel an “ah”.',
 			aboveNote: (semitones: string) =>
 				`You were about ${semitones} semitones above the note. Slide down until the marker sits on the line.`,
 			belowNote: (semitones: string) =>

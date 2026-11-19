@@ -253,8 +253,10 @@
 								</td>
 								<td class="py-1.5 pr-3">{fmtNumber(vowel.duration_s, 1, i18n.locale)} s</td>
 								<td class="py-1.5 pr-3">{hz(vowel.pitch_hz)}</td>
-								{#each vowel.formants_hz as formant, index (index)}
-									<td class="py-1.5 pr-3">{hz(formant)}</td>
+								{#each [0, 1, 2, 3] as index (index)}
+									<td class="py-1.5 pr-3">
+										{index in vowel.formants_hz ? hz(vowel.formants_hz[index]) : i18n.t.common.none}
+									</td>
 								{/each}
 								<td class="py-1.5 pr-3">{fmtNumber(vowel.cpps_db, 1, i18n.locale)} dB</td>
 								<td class="py-1.5">{fmtNumber(vowel.hnr_db, 1, i18n.locale)} dB</td>

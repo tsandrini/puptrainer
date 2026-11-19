@@ -478,6 +478,8 @@
 						note={needsNote && note ? note.hz : null}
 					/>
 				{:else if exercise.live === 'formants'}
+					<!-- NOTE: size work wants the pitch held still, so the strip stays in view -->
+					<BandStrip low={band.low_hz} high={band.high_hz} pitch={pitchHz} />
 					<LiveScope bind:this={scope} fixed="formants" />
 				{/if}
 				<Meter {peakDb} {clipping} />

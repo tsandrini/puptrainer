@@ -89,7 +89,7 @@ Uploads are written to a file before they are decoded: libsndfile's
 in-memory reader needs write+execute memory, which the hardened service is
 denied (`MemoryDenyWriteExecute`).
 
-## The pipeline (version 0.3.0)
+## The pipeline (version 0.3.1)
 
 Which numbers a take gets depends on what it contains
 (`puptrainer.core.metrics`):
@@ -130,6 +130,11 @@ F1–F4 of the voiced, louder frames as a uniform tube's (`F_i = spacing × (2i 
 1. / 2`), and the tract length is the speed of sound over twice the spacing.
    It is an estimate of resonance for following a trend on one microphone
    setup, not an anatomical length.
+
+Formants are not measured where the pitch is above 300 Hz: the harmonics
+then lie too far apart to show the vocal tract, and the analysis would
+report the harmonics themselves. The held sounds of a sustain take, which
+differ in length on purpose, are each fitted with a ceiling of their own.
 
 **Voice quality** is measured on the voiced stretches joined together, never
 over pauses. CPPS uses the settings of the Acoustic Voice Quality Index.

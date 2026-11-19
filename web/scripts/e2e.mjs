@@ -780,9 +780,9 @@ try {
 	await page.click('[data-testid=record]');
 	await page.waitForSelector('[data-testid=live-scope]');
 	check(
-		'a size step shows the formants live, without the switch',
+		'a size step shows the formants live with the pitch strip, without the switch',
 		(await count(page, '[data-testid=live-scope] [data-testid=spectrum-toggle]')) === 0 &&
-			(await count(page, '[data-testid=band-strip]')) === 0
+			(await count(page, '[data-testid=band-strip]')) === 1
 	);
 	await pause(2);
 	await page.click('[data-testid=stop]');

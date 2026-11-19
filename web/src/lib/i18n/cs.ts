@@ -226,6 +226,12 @@ export const cs: Messages = {
 				'Hlas tam došel, ale nezůstal. Dojděte na místo a držte jeden klidný tón o něco déle.',
 			effortful:
 				'Čísla vyšla, ale stálo to námahu. Příště níž nebo lehčeji: snadnost je důležitější než výška.',
+			'pitch-moved':
+				'Mezi zvuky se změnila výška. Cvičení je měnit barvu, zatímco tón zůstává: před každým zvukem si svůj tón zabrukejte a sledujte značku.',
+			'pitch-too-high':
+				'Hlas vystoupal nad zhruba 300 Hz, kde se rezonance nedá změřit: harmonické hlasu jsou od sebe moc daleko, než aby ji ukázaly. Zvednutý hrtan s sebou rád táhne výšku; vraťte výšku dolů a jas si nechte.',
+			'not-brighter':
+				'Zvuky nevyšly krok za krokem jasnější. Malá změna se může ztratit v šumu měření; zkuste větší rozdíl mezi tmavým a jasným a nechte samohlásku „á“.',
 			aboveNote: (semitones) =>
 				`Hlas byl asi ${semitones} půltónů nad tónem. Klouzejte dolů, až značka sedne na čáru.`,
 			belowNote: (semitones) =>
