@@ -16,6 +16,7 @@
 	} from '#lib/api/index.js';
 	import type { Intent, Item, Series, TakeOut, VowelSegment } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
+	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import AnalysisBadge from '#lib/components/app/AnalysisBadge.svelte';
 	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
@@ -151,7 +152,7 @@
 	</div>
 
 	<div class="panel mb-4">
-		<audio class="w-full" controls preload="metadata" src={takeAudioUrl(take.id)}></audio>
+		<TakePlayer source={takeAudioUrl(take.id)} name="{take.id}.flac" />
 	</div>
 
 	{#if take.exercise_ref}

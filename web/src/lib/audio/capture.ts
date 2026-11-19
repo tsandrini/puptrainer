@@ -8,8 +8,13 @@ import { levelOf, type Level } from './meter.js';
 import { detectPitch } from './pitch.js';
 import { encodeWav } from './wav.js';
 
-/** What one captured block tells the screen. */
-export type Frame = Level & { pitchHz: number | null; seconds: number };
+/** What one captured block tells the screen; `samples` are the block itself, for live pictures. */
+export type Frame = Level & {
+	pitchHz: number | null;
+	seconds: number;
+	samples: Float32Array;
+	sampleRate: number;
+};
 
 /** A finished recording. */
 export type Recording = {
@@ -122,7 +127,9 @@ export class Recorder {
 		this.onFrame({
 			...level,
 			pitchHz: detectPitch(data, sampleRate)?.hz ?? null,
-			seconds: this.#samples / sampleRate
+			seconds: this.#samples / sampleRate,
+			samples: data,
+			sampleRate
 		});
 	}
 

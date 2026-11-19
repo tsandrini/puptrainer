@@ -206,8 +206,24 @@ export const en = {
 		start: 'Start',
 		catalogue: 'Exercises',
 		alone: 'Practise this one',
-		why: 'Why',
+		why: 'What it is for',
+		right: 'When it goes right',
+		mistakes: 'Common mistakes',
 		safety: 'When to stop',
+		advice: {
+			'above-band':
+				'You were above your band. Try lower: it should feel easier, and nothing is gained by going higher.',
+			'below-band':
+				'You were below your band. Start from a light, higher sound and slide down into it.',
+			unsteady:
+				'You got there but did not stay. Arrive, then hold one steady note a little longer.',
+			effortful:
+				'The numbers are there, but it took effort. Next time go lower or lighter: easy matters more than high.',
+			aboveNote: (semitones: string) =>
+				`You were about ${semitones} semitones above the note. Slide down until the marker sits on the line.`,
+			belowNote: (semitones: string) =>
+				`You were about ${semitones} semitones below the note. That is common at first: slide up until the marker sits on the line.`
+		},
 		sources: 'Sources',
 		aliases: 'Also called',
 		log: 'Practice log',
@@ -220,7 +236,10 @@ export const en = {
 		band: {
 			title: 'Your band',
 			intro:
-				'The pitch range you practise in. It is a training tool you choose and can move at any time; the numbers in teachers’ material are conventions, not goals.',
+				'The pitch range you practise in: a workspace for finding a lighter voice, not a goal. It should sit just above your everyday voice, where a light sound is easy; higher is not better. Move it whenever you like.',
+			own: (low: number, high: number) => `Use a band from your own voice: ${low}–${high} Hz`,
+			reach: (semitones: string) =>
+				`This band starts about ${semitones} semitones above your everyday voice. If practice feels effortful, a lower band is easier to stay light in.`,
 			none: 'No band set yet.',
 			low: 'From (Hz)',
 			high: 'To (Hz)',
@@ -249,6 +268,12 @@ export const en = {
 			step: (i: number, n: number) => `Exercise ${i} of ${n}`,
 			rep: (i: number, n: number) => `rep ${i} of ${n}`,
 			playNote: 'Play the note',
+			demo: 'Hear the shape',
+			demoHint: 'A tone that moves the way your voice should. It is not recorded.',
+			you: (pitch: string) => `You: ${pitch}`,
+			youSilent: 'You: —',
+			metWithEffort: 'Met, with effort',
+			everyday: (value: string) => `your everyday voice: ${value}`,
 			yourNote: (name: string) => `Your note: ${name}`,
 			record: 'Record',
 			stop: 'Stop',
@@ -299,6 +324,29 @@ export const en = {
 			tension: 'Lasting tension',
 			notFound: 'This session does not exist.',
 			confirmDelete: 'Delete this session from the log? Its takes stay.'
+		}
+	},
+	player: {
+		play: 'Play',
+		pause: 'Pause',
+		download: 'Download the recording',
+		position: 'Position in the take',
+		spectrogram: 'Spectrogram: frequency upwards to 5 kHz over time, with the level below',
+		drawing: 'Drawing…',
+		live: (seconds: number) =>
+			`The last ${seconds} seconds: frequency upwards, the level below. A picture to look at, not a measurement.`,
+		view: 'What the spectrogram shows',
+		views: { harmonics: 'Harmonics', formants: 'Formants' },
+		viewHint: {
+			harmonics:
+				'A long window: the separate harmonics of the voice as thin lines. Weight shows here: a lighter voice has fewer, fainter lines higher up.',
+			formants:
+				'A short window: the resonances of the mouth and throat as broad bands. Size shows here: a smaller space moves the bands up.'
+		},
+		problems: {
+			missing: 'The recording is missing from storage.',
+			unreachable: 'The recording could not be loaded: the API is not reachable.',
+			undecodable: 'This browser cannot draw this recording. It can still be downloaded.'
 		}
 	},
 	login: {

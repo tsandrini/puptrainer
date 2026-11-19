@@ -7,6 +7,18 @@ const NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A�
 /** A common band to start in, from the teachers' material (F3 to A3); a convention, not a goal. */
 export const STARTING_BAND = { low_hz: 174, high_hz: 220 } as const;
 
+/**
+ * A band to practise in, placed by the learner's own everyday voice: from one to four and
+ * a half semitones above its median pitch, so the band is reached lightly, not by pushing.
+ *
+ * @param everydayHz median pitch of the everyday speaking voice
+ * @returns the band's edges in whole Hz
+ */
+export const ownBand = (everydayHz: number) => ({
+	low_hz: Math.round(everydayHz * 2 ** (1 / 12)),
+	high_hz: Math.round(everydayHz * 2 ** (4.5 / 12))
+});
+
 /** The MIDI number of a pitch, fractional between notes (A4 = 69). */
 export const midiOf = (hz: number) => 69 + 12 * Math.log2(hz / A4_HZ);
 

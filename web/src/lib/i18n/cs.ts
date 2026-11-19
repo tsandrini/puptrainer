@@ -213,8 +213,24 @@ export const cs: Messages = {
 		start: 'Začít',
 		catalogue: 'Katalog cvičení',
 		alone: 'Procvičit samostatně',
-		why: 'Proč',
+		why: 'K čemu to je',
+		right: 'Když se to daří',
+		mistakes: 'Časté chyby',
 		safety: 'Kdy přestat',
+		advice: {
+			'above-band':
+				'Hlas byl nad vaším pásmem. Zkuste to níž: mělo by to jít snáz a výš se nic nezíská.',
+			'below-band':
+				'Hlas byl pod vaším pásmem. Začněte lehkým vyšším zvukem a sklouzněte do pásma.',
+			unsteady:
+				'Hlas tam došel, ale nezůstal. Dojděte na místo a držte jeden klidný tón o něco déle.',
+			effortful:
+				'Čísla vyšla, ale stálo to námahu. Příště níž nebo lehčeji: snadnost je důležitější než výška.',
+			aboveNote: (semitones) =>
+				`Hlas byl asi ${semitones} půltónů nad tónem. Klouzejte dolů, až značka sedne na čáru.`,
+			belowNote: (semitones) =>
+				`Hlas byl asi ${semitones} půltónů pod tónem. Zpočátku je to běžné: klouzejte nahoru, až značka sedne na čáru.`
+		},
 		sources: 'Zdroje',
 		aliases: 'Také se říká',
 		log: 'Deník cvičení',
@@ -227,7 +243,10 @@ export const cs: Messages = {
 		band: {
 			title: 'Vaše pásmo',
 			intro:
-				'Rozsah výšky, ve kterém cvičíte. Je to tréninkový nástroj, který si volíte a můžete ho kdykoli posunout; čísla v materiálech učitelů jsou zvyklosti, ne cíle.',
+				'Rozsah výšky, ve kterém cvičíte: pracovní prostor pro hledání lehčího hlasu, ne cíl. Má ležet těsně nad vaším běžným hlasem, kde jde lehký zvuk snadno; výš neznamená líp. Posuňte ho, kdykoli chcete.',
+			own: (low, high) => `Použít pásmo podle vlastního hlasu: ${low}–${high} Hz`,
+			reach: (semitones) =>
+				`Toto pásmo začíná asi ${semitones} půltónů nad vaším běžným hlasem. Pokud je cvičení namáhavé, v nižším pásmu se lehkost drží snáz.`,
 			none: 'Pásmo zatím není nastavené.',
 			low: 'Od (Hz)',
 			high: 'Do (Hz)',
@@ -257,6 +276,12 @@ export const cs: Messages = {
 			step: (i, n) => `Cvičení ${i} z ${n}`,
 			rep: (i, n) => `opakování ${i} z ${n}`,
 			playNote: 'Přehrát tón',
+			demo: 'Poslechnout si tvar',
+			demoHint: 'Tón, který se pohybuje tak, jak se má pohybovat hlas. Nenahrává se.',
+			you: (pitch) => `Vy: ${pitch}`,
+			youSilent: 'Vy: —',
+			metWithEffort: 'Splněno, s námahou',
+			everyday: (value) => `váš běžný hlas: ${value}`,
 			yourNote: (name) => `Váš tón: ${name}`,
 			record: 'Nahrávat',
 			stop: 'Stop',
@@ -306,6 +331,29 @@ export const cs: Messages = {
 			tension: 'Přetrvávající napětí',
 			notFound: 'Toto sezení neexistuje.',
 			confirmDelete: 'Smazat toto sezení z deníku? Jeho nahrávky zůstanou.'
+		}
+	},
+	player: {
+		play: 'Přehrát',
+		pause: 'Pozastavit',
+		download: 'Stáhnout nahrávku',
+		position: 'Pozice v nahrávce',
+		spectrogram: 'Spektrogram: frekvence směrem nahoru do 5 kHz v čase, pod ním úroveň',
+		drawing: 'Kreslí se…',
+		live: (seconds) =>
+			`Posledních ${seconds} sekund: frekvence směrem nahoru, pod ní úroveň. Obrázek na dívání, ne měření.`,
+		view: 'Co spektrogram ukazuje',
+		views: { harmonics: 'Harmonické', formants: 'Formanty' },
+		viewHint: {
+			harmonics:
+				'Dlouhé okno: jednotlivé harmonické hlasu jako tenké čáry. Tady je vidět váha: lehčí hlas má nahoře méně čar a slabší.',
+			formants:
+				'Krátké okno: rezonance úst a hrdla jako široké pásy. Tady je vidět velikost: menší prostor posouvá pásy nahoru.'
+		},
+		problems: {
+			missing: 'Nahrávka v úložišti chybí.',
+			unreachable: 'Nahrávku se nepodařilo načíst: API není dostupné.',
+			undecodable: 'Tento prohlížeč neumí tuto nahrávku vykreslit. Stáhnout ji lze.'
 		}
 	},
 	login: {

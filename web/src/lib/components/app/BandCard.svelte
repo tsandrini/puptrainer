@@ -10,7 +10,7 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { fmtNumber } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
-	import { STARTING_BAND, noteName } from '#lib/practice/notes.js';
+	import { STARTING_BAND, midiOf, noteName, ownBand } from '#lib/practice/notes.js';
 
 	let { onset }: { onset?: () => void } = $props();
 
@@ -31,6 +31,11 @@
 			.sort((a, b) => a - b);
 		return values.length ? values[Math.floor(values.length / 2)] : null;
 	});
+
+	/** A band placed just above the everyday voice, when there is a baseline to place it by. */
+	const suggested = $derived(everyday ? ownBand(everyday) : null);
+	/** How far the band's lower edge sits above the everyday voice, in semitones. */
+	const reach = $derived(everyday && app.band ? midiOf(app.band.low_hz) - midiOf(everyday) : null);
 
 	onMount(async () => {
 		try {
@@ -99,16 +104,33 @@
 			/>
 		</label>
 		<Button type="submit" disabled={busy} data-testid="band-set">{i18n.t.practice.band.set}</Button>
-		<Button
-			type="button"
-			variant="outline"
-			disabled={busy}
-			onclick={() => save(STARTING_BAND.low_hz, STARTING_BAND.high_hz)}
-			data-testid="band-starting"
-		>
-			{i18n.t.practice.band.starting}
-		</Button>
+		{#if suggested}
+			<Button
+				type="button"
+				variant="outline"
+				disabled={busy}
+				onclick={() => save(suggested.low_hz, suggested.high_hz)}
+				data-testid="band-own"
+			>
+				{i18n.t.practice.band.own(suggested.low_hz, suggested.high_hz)}
+			</Button>
+		{:else}
+			<Button
+				type="button"
+				variant="outline"
+				disabled={busy}
+				onclick={() => save(STARTING_BAND.low_hz, STARTING_BAND.high_hz)}
+				data-testid="band-starting"
+			>
+				{i18n.t.practice.band.starting}
+			</Button>
+		{/if}
 	</form>
+	{#if reach !== null && reach > 2.5}
+		<p class="mt-2 text-sm text-warning" data-testid="band-reach">
+			{i18n.t.practice.band.reach(fmtNumber(reach, 0, i18n.locale))}
+		</p>
+	{/if}
 	{#if problem}
 		<p class="mt-2 text-sm text-critical" role="alert">{problem}</p>
 	{/if}

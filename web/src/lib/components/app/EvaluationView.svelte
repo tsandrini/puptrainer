@@ -12,6 +12,18 @@
 
 	let { evaluation }: { evaluation: Evaluation } = $props();
 
+	/** What to try next; the note's advice says how far off the voice was. */
+	const advice = $derived(
+		evaluation.advice.map((code) => {
+			const off = evaluation.measures.find((m) => m.key === 'note_offset_st');
+			const far = off ? fmtNumber(Math.abs(off.value), 0, i18n.locale) : '';
+			if (code === 'above-note') return i18n.t.practice.advice.aboveNote(far);
+			if (code === 'below-note') return i18n.t.practice.advice.belowNote(far);
+			return i18n.t.practice.advice[code];
+		})
+	);
+	const effortful = $derived(evaluation.advice.includes('effortful'));
+
 	const unitOf = (key: string) => app.measure(key)?.unit ?? '';
 	const decimalsOf = (key: string) => app.measure(key)?.decimals ?? 1;
 
@@ -46,13 +58,20 @@
 		<p
 			class={cn(
 				'flex items-center gap-1.5 text-lg font-extrabold',
-				evaluation.met ? 'text-good' : 'text-muted-foreground'
+				evaluation.met && !effortful ? 'text-good' : 'text-muted-foreground'
 			)}
 			data-testid="verdict"
 		>
 			{#if evaluation.met}<CheckIcon class="size-5" />{/if}
-			{evaluation.met ? i18n.t.practice.run.met : i18n.t.practice.run.notYet}
+			{evaluation.met
+				? effortful
+					? i18n.t.practice.run.metWithEffort
+					: i18n.t.practice.run.met
+				: i18n.t.practice.run.notYet}
 		</p>
+		{#each advice as line (line)}
+			<p class="text-sm" data-testid="advice">{line}</p>
+		{/each}
 		{#if evaluation.strained}
 			<p class="text-sm text-muted-foreground" data-testid="strained-result">
 				{i18n.t.practice.run.strainedResult}
@@ -75,6 +94,11 @@
 								)}>{range(m)}</span
 							>
 						{/if}
+						{#if m.baseline !== null}
+							<span class="text-xs text-muted-foreground tabular-nums" data-testid="baseline">
+								{i18n.t.practice.run.everyday(number(m.key, m.baseline))}
+							</span>
+						{/if}
 					</dd>
 				</div>
 			{/each}
@@ -87,7 +111,9 @@
 				<span class="mr-3 inline-block" data-hint={h.key}>
 					{def ? i18n.pick(def.titles) : h.key}:
 					<span class="font-semibold text-foreground tabular-nums">{number(h.key, h.value)}</span>
-					({i18n.t.practice.run.hint})
+					({i18n.t.practice.run.hint}{#if h.baseline !== null}; {i18n.t.practice.run.everyday(
+							number(h.key, h.baseline)
+						)}{/if})
 				</span>
 			{/each}
 		</div>

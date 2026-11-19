@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Exercise, Routine } from '../api/types.js';
-import { midiOf, noteName, notesIn, pickNote } from './notes.js';
+import { shapeOf } from '../audio/tone.js';
+import { midiOf, noteName, notesIn, ownBand, pickNote } from './notes.js';
 import {
 	advance,
 	begin,
@@ -35,6 +36,21 @@ describe('notes', () => {
 		expect(midiOf(220)).toBeCloseTo(57);
 		expect(notesIn(174, 220).map(noteName)).toEqual(['F3', 'F♯3', 'G3', 'G♯3', 'A3']);
 		expect(notesIn(200, 205)).toEqual([]);
+	});
+
+	it('places a band just above the everyday voice', () => {
+		expect(ownBand(158)).toEqual({ low_hz: 167, high_hz: 205 });
+	});
+
+	it('shapes the demo tones around the band', () => {
+		const slide = shapeOf('slide-down', 167, 205)!;
+		expect(slide[0][1]).toBeCloseTo(328);
+		expect(slide.at(-1)![1]).toBeGreaterThan(167);
+		expect(slide.at(-1)![1]).toBeLessThan(186);
+		const glide = shapeOf('glide', 167, 205)!;
+		expect(glide[0][1]).toBe(glide[2][1]);
+		expect(glide[1][1]).toBeGreaterThan(205);
+		expect(shapeOf('none', 167, 205)).toBeNull();
 	});
 
 	it('picks a different note each time when it can', () => {

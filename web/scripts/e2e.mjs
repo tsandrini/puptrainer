@@ -95,6 +95,22 @@ const launch = (microphone) =>
 	});
 
 const text = (page, selector) => page.locator(selector).first().innerText();
+
+/** How many different colours a canvas shows: 1 for a blank one. */
+const colours = (page, selector) =>
+	page
+		.locator(selector)
+		.first()
+		.evaluate((canvas) => {
+			const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+			const seen = new Set();
+			for (let i = 0; i < data.length; i += 4)
+				seen.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
+			return seen.size;
+		});
+/** Where a player's playhead is, in seconds. */
+const playerSeconds = async (page) =>
+	Number(await page.locator('[data-testid=player-time]').first().getAttribute('data-seconds'));
 const count = (page, selector) => page.locator(selector).count();
 const hz = (value) => Number.parseInt(value.replace(/\s/g, ''), 10);
 
@@ -191,8 +207,24 @@ try {
 		'no clipping warning for a normal level',
 		(await count(page, '[data-testid=clip-warning]')) === 0
 	);
+	const scope = await until(
+		() => colours(page, '[data-testid=live-scope] canvas'),
+		(n) => n > 20,
+		5_000
+	);
+	check('a live spectrogram follows the microphone', scope > 20, `${scope} colours`);
 	await page.click('[data-testid=stop]');
 	await page.waitForSelector('[data-testid=review]');
+	await page.waitForSelector('[data-testid=player][data-ready=true]');
+	check(
+		'the review has the player with the take drawn',
+		(await colours(page, '[data-testid=player] canvas')) > 20
+	);
+	check(
+		'the review does not play by itself',
+		(await page.getAttribute('[data-testid=player-toggle]', 'data-playing')) === 'false' &&
+			(await playerSeconds(page)) === 0
+	);
 	const review = await text(page, '[data-testid=review]');
 	check(
 		'review shows length, peak and rate',
@@ -254,7 +286,8 @@ try {
 	// NOTE: attached, not visible: a steady tone draws a flat line, which has no height
 	await page.waitForSelector('[data-testid=contour] svg path.lc-path', { state: 'attached' });
 	check('the pitch contour is drawn', true);
-	const src = await page.locator('audio').getAttribute('src');
+	await page.waitForSelector('[data-testid=player-download]');
+	const src = await page.getAttribute('[data-testid=player-download]', 'href');
 	const audio = await context.request.get(src);
 	check(
 		'recording is served as FLAC',
@@ -273,6 +306,60 @@ try {
 		'edited note persists',
 		(await page.getByLabel('Note').inputValue()) === 'edited in the e2e run'
 	);
+
+	// --- the player: the whole take drawn, play, seek, the two views
+	await page.waitForSelector('[data-testid=player][data-ready=true]');
+	check(
+		'the player draws the stored take',
+		(await colours(page, '[data-testid=player] canvas')) > 20
+	);
+	await page.click('[data-testid=player-toggle]');
+	const moved = await until(
+		() => playerSeconds(page),
+		(s) => s > 0.3,
+		10_000
+	);
+	check('playing moves the playhead', moved > 0.3, `${moved} s`);
+	await page.click('[data-testid=player-toggle]');
+	// NOTE: the element reports its pause a moment after the click
+	await page.waitForSelector('[data-testid=player-toggle][data-playing=false]');
+	const stopped = await playerSeconds(page);
+	await pause(0.4);
+	check('pausing stops it', (await playerSeconds(page)) === stopped);
+	const plot = await page.locator('[data-testid=player-plot]').boundingBox();
+	await page.mouse.click(plot.x + plot.width * 0.75, plot.y + plot.height / 2);
+	const sought = await playerSeconds(page);
+	check('a click seeks', Math.abs(sought - 0.75 * 2.6) < 0.4, `${sought} s`);
+	await page.locator('[data-testid=player-plot]').press('Home');
+	check('the keyboard seeks too', (await playerSeconds(page)) === 0);
+	await page.click('[data-testid=spectrum-toggle] [data-view=formants]');
+	await page.waitForSelector('[data-testid=player][data-ready=true]');
+	check(
+		'the formants view is drawn and remembered',
+		(await colours(page, '[data-testid=player] canvas')) > 20 &&
+			(await page.evaluate(() => localStorage.getItem('puptrainer.spectrum'))) === 'formants'
+	);
+	await page.click('[data-testid=spectrum-toggle] [data-view=harmonics]');
+	check(
+		'the recording can be downloaded',
+		((await page.getAttribute('[data-testid=player-download]', 'href')) ?? '').endsWith('/audio')
+	);
+
+	// --- a recording missing from storage is said, not a broken player
+	const audioApi = '**/api/v1/takes/*/audio';
+	await page.route(audioApi, (route) =>
+		route.fulfill({ status: 404, json: { error: 'the recording is missing from storage' } })
+	);
+	await page.reload();
+	await page.waitForSelector('[data-testid=player][data-problem=missing]');
+	check(
+		'a missing recording is explained',
+		(await text(page, '[data-testid=player] [role=alert]')).includes('missing from storage') &&
+			(await count(page, '[data-testid=player-plot]')) === 0
+	);
+	await page.unroute(audioApi);
+	await page.reload();
+	await page.waitForSelector('[data-metric=pitch_median_hz]');
 
 	// --- a failed analysis is shown with its reason and a retry
 	const takeApi = `**/api/v1/takes/${takeUrl.split('/').pop()}`;
@@ -459,6 +546,20 @@ try {
 		difference.replace(/\s+/g, ' ')
 	);
 	check('comparison has both players', (await count(page, 'audio')) === 2);
+	await page.waitForFunction(
+		() => document.querySelectorAll('[data-testid=player][data-ready=true]').length === 2
+	);
+	const toggles = page.locator('[data-testid=player-toggle]');
+	await toggles.nth(0).click();
+	await page.waitForSelector('[data-testid=player-toggle][data-playing=true]');
+	await toggles.nth(1).click();
+	const sounding = await until(
+		() => toggles.evaluateAll((buttons) => buttons.map((button) => button.dataset.playing).join()),
+		(v) => v === 'false,true',
+		5_000
+	);
+	check('only one player sounds at a time', sounding === 'false,true', sounding);
+	await toggles.nth(1).click();
 
 	// --- an older pipeline's takes can be analysed again in one go
 	await page.route('**/api/v1/health', async (route) => {
@@ -514,12 +615,21 @@ try {
 	await page.click('[data-testid=feel-fresh]');
 	await page.waitForSelector('[data-testid=step][data-exercise=slide-down-hold]');
 	check(
+		'a step says what to do, in steps, and can play its shape',
+		(await count(page, '[data-testid=steps] li')) >= 3 &&
+			(await count(page, '[data-testid=play-demo]')) === 1
+	);
+	check(
 		'the session walks its steps',
 		(await text(page, '[data-testid=position]')).includes('Exercise 1 of 2')
 	);
 	await page.click('[data-testid=record]');
 	await page.waitForSelector('[data-testid=band-strip]');
 	check('a live band strip guides the slide', true);
+	check(
+		'pitch steps show no live spectrogram',
+		(await count(page, '[data-testid=live-scope]')) === 0
+	);
 	await pause(2.5);
 	await page.click('[data-testid=stop]');
 	await page.waitForSelector('[data-testid=rating]');
@@ -530,6 +640,11 @@ try {
 	check('playback is never automatic', (await count(page, 'audio')) === 0);
 	await page.click('[data-testid=listen]');
 	check('playback is there when asked for', (await count(page, 'audio')) === 1);
+	await page.waitForSelector('[data-testid=player][data-ready=true]');
+	check(
+		'and still waits to be started',
+		(await page.getAttribute('[data-testid=player-toggle]', 'data-playing')) === 'false'
+	);
 	await page.click('[data-testid=comfort-4]');
 	await page.waitForSelector('[data-testid=verdict]', { timeout: 30_000 });
 	check('a steady hold in the band is met', (await text(page, '[data-testid=verdict]')) === 'Met');
@@ -548,7 +663,17 @@ try {
 
 	// the worker goes away: the result is measured later
 	stopWorker();
-	await practiseRep(page, 2);
+	await page.click('[data-testid=record]');
+	await page.waitForSelector('[data-testid=stop]');
+	const strip = await until(
+		() => text(page, '[data-testid=strip-pitch]'),
+		(v) => Math.abs(hz(v.replace('You: ', '')) - TONE_HZ) <= 5,
+		5_000
+	);
+	check('speech steps show the live pitch against the band', strip.includes('Hz'), strip);
+	await pause(1.5);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=rating]');
 	await page.click('[data-testid=comfort-5]');
 	await page.waitForSelector('[data-testid=measuring]');
 	check('without a worker the result waits', true);
@@ -636,6 +761,58 @@ try {
 		rested === 3 && latest.feel_start === 'hoarse' && latest.take_count === 0,
 		JSON.stringify(latest)
 	);
+
+	// --- practice: the band can follow the learner's own voice
+	await page.goto('/practice');
+	await page.waitForSelector('[data-testid=band-own]');
+	check(
+		'a band is suggested from the everyday voice',
+		/Use a band from your own voice: 1[78]\d–2[012]\d Hz/.test(
+			await text(page, '[data-testid=band-own]')
+		),
+		await text(page, '[data-testid=band-own]')
+	);
+	check('the size routine is offered', (await count(page, '[data-testid=start-size]')) === 1);
+
+	// --- practice: size is read against the everyday voice, with a live picture
+	await page.goto('/practice/run?exercise=bright-phrase');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	await page.click('[data-testid=record]');
+	await page.waitForSelector('[data-testid=live-scope]');
+	check(
+		'a size step shows the formants live, without the switch',
+		(await count(page, '[data-testid=live-scope] [data-testid=spectrum-toggle]')) === 0 &&
+			(await count(page, '[data-testid=band-strip]')) === 0
+	);
+	await pause(2);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=rating]');
+	await page.click('[data-testid=comfort-4]');
+	await page.waitForSelector('[data-testid=result] [data-hint=vtl_cm]', { timeout: 30_000 });
+	const size = await text(page, '[data-testid=result] [data-hint=vtl_cm]');
+	check(
+		'its size is shown beside the everyday voice, unjudged',
+		/cm \(hint; your everyday voice: \d+\.\d cm\)/.test(size) &&
+			(await count(page, '[data-testid=verdict]')) === 0,
+		size.replace(/\s+/g, ' ')
+	);
+
+	// --- practice: a miss says which way to go; a band far above the voice is flagged
+	await context.request.post('/api/v1/bands', { data: { low_hz: 200, high_hz: 240 } });
+	await page.goto('/practice');
+	await page.waitForSelector('[data-testid=band-reach]');
+	check('a band well above the everyday voice is pointed out', true);
+	await page.goto('/practice/run?exercise=count-in-band');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	await practiseRep(page, 2);
+	await page.click('[data-testid=comfort-3]');
+	await page.waitForSelector('[data-testid=advice]', { timeout: 30_000 });
+	check(
+		'a miss comes with what to try next',
+		(await text(page, '[data-testid=verdict]')) === 'Not yet' &&
+			(await text(page, '[data-testid=advice]')).startsWith('You were below your band')
+	);
+	await context.request.post('/api/v1/bands', { data: { low_hz: 160, high_hz: 200 } });
 
 	// --- practice takes stay out of the voice's progress
 	await page.goto('/progress');

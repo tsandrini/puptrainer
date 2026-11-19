@@ -13,7 +13,9 @@
 	import type { Feel, TakeMeta, TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, type Recording } from '#lib/audio/capture.js';
-	import { playTone } from '#lib/audio/tone.js';
+	import { playShape, playTone, shapeOf } from '#lib/audio/tone.js';
+	import LiveScope from '#lib/components/audio/LiveScope.svelte';
+	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import BandCard from '#lib/components/app/BandCard.svelte';
 	import BandStrip from '#lib/components/app/BandStrip.svelte';
 	import ComfortPicker from '#lib/components/app/ComfortPicker.svelte';
@@ -64,13 +66,14 @@
 	let clipping = $state(false);
 	let seconds = $state(0);
 	let recording = $state.raw<Recording | null>(null);
-	let playbackUrl = $state<string | null>(null);
+	let listening = $state(false);
 	let problem = $state<string | null>(null);
 
 	/** The note of the current note-matching rep, keyed by step and rep. */
 	let note = $state<{ key: string; hz: number } | null>(null);
 	let lastNote: number | null = null;
 	let playing = $state(false);
+	let scope = $state<LiveScope | null>(null);
 
 	let waitingFor = $state<string | null>(null);
 	let outcome = $state<Outcome | null>(null);
@@ -87,6 +90,7 @@
 		if (frame.clipped) clipping = true;
 		pitchHz = frame.pitchHz;
 		seconds = frame.seconds;
+		scope?.push(frame.samples, frame.sampleRate);
 	});
 
 	$effect(() => {
@@ -114,10 +118,7 @@
 		})
 	);
 
-	onDestroy(() => {
-		recorder.cancel();
-		if (playbackUrl) URL.revokeObjectURL(playbackUrl);
-	});
+	onDestroy(() => recorder.cancel());
 
 	// results take a few seconds: poll the take until it is judged
 	$effect(() => {
@@ -179,8 +180,7 @@
 	}
 
 	function clearRep() {
-		if (playbackUrl) URL.revokeObjectURL(playbackUrl);
-		playbackUrl = null;
+		listening = false;
 		recording = null;
 		result = null;
 		waitingFor = null;
@@ -218,11 +218,6 @@
 			problem = i18n.t.record.failed(e instanceof Error ? e.message : String(e));
 			send({ type: 'cancel' });
 		}
-	}
-
-	function listen() {
-		if (!recording || playbackUrl) return;
-		playbackUrl = URL.createObjectURL(new Blob([recording.wav], { type: 'audio/wav' }));
 	}
 
 	function cancel() {
@@ -269,6 +264,18 @@
 		playing = true;
 		try {
 			await playTone(note.hz);
+		} finally {
+			playing = false;
+		}
+	}
+
+	/** Plays the exercise's pitch pattern as a tone, placed around the band. */
+	async function playDemo() {
+		const shape = exercise && band ? shapeOf(exercise.demo, band.low_hz, band.high_hz) : null;
+		if (!shape || playing) return;
+		playing = true;
+		try {
+			await playShape(shape);
 		} finally {
 			playing = false;
 		}
@@ -376,6 +383,8 @@
 
 			{#if run.phase === 'intro'}
 				<ExerciseDetails {exercise} />
+			{:else if run.phase === 'recording'}
+				<ExerciseDetails {exercise} brief />
 			{/if}
 
 			{#if text && run.phase !== 'result'}
@@ -412,6 +421,16 @@
 				>
 					{problem}
 				</p>
+			{/if}
+
+			{#if run.phase === 'intro' && exercise.demo !== 'none'}
+				<div class="flex flex-wrap items-center gap-3">
+					<Button variant="outline" disabled={playing} onclick={playDemo} data-testid="play-demo">
+						<Volume2Icon class="size-4" />
+						{i18n.t.practice.run.demo}
+					</Button>
+					<span class="text-xs text-muted-foreground">{i18n.t.practice.run.demoHint}</span>
+				</div>
 			{/if}
 
 			{#if run.phase === 'intro'}
@@ -452,7 +471,14 @@
 					<Button variant="ghost" onclick={cancel}>{i18n.t.common.discard}</Button>
 				</div>
 				{#if exercise.live === 'pitch'}
-					<BandStrip low={band.low_hz} high={band.high_hz} pitch={pitchHz} />
+					<BandStrip
+						low={band.low_hz}
+						high={band.high_hz}
+						pitch={pitchHz}
+						note={needsNote && note ? note.hz : null}
+					/>
+				{:else if exercise.live === 'formants'}
+					<LiveScope bind:this={scope} fixed="formants" />
 				{/if}
 				<Meter {peakDb} {clipping} />
 			{:else if run.phase === 'rating'}
@@ -463,8 +489,13 @@
 						<Button variant="ghost" size="sm" onclick={() => void rate(null)}>
 							{i18n.t.practice.run.skip}
 						</Button>
-						{#if !playbackUrl}
-							<Button variant="outline" size="sm" onclick={listen} data-testid="listen">
+						{#if !listening}
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => (listening = true)}
+								data-testid="listen"
+							>
 								<Volume2Icon class="size-4" />
 								{i18n.t.practice.run.listen}
 							</Button>
@@ -473,8 +504,10 @@
 							{i18n.t.common.discard}
 						</Button>
 					</div>
-					{#if playbackUrl}
-						<audio class="mt-2 w-full" controls src={playbackUrl}></audio>
+					{#if listening && recording}
+						<div class="mt-3">
+							<TakePlayer source={recording.wav} name="{exercise.id}.wav" />
+						</div>
 					{/if}
 				</div>
 			{:else if run.phase === 'result'}

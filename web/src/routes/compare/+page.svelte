@@ -5,6 +5,7 @@
 	import { fetchTake, takeAudioUrl } from '#lib/api/index.js';
 	import type { TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
+	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { fmtDateTime, fmtMetric, fmtNumber } from '#lib/format.js';
@@ -88,7 +89,7 @@
 					{fmtDateTime(side.take.recorded_at, i18n.locale)} · {i18n.t.intent[side.take.intent]} ·
 					{side.take.device_name}
 				</p>
-				<audio class="w-full" controls preload="metadata" src={takeAudioUrl(side.take.id)}></audio>
+				<TakePlayer source={takeAudioUrl(side.take.id)} name="{side.take.id}.flac" />
 			</section>
 		{/each}
 	</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Recording: pick the microphone setup, what to record and which voice
-	// it is; watch the level and the live pitch while speaking; listen back,
-	// then save. A saved take goes through the upload queue, so it is never
+	// it is; watch the level, the live pitch and a live spectrogram while
+	// speaking; listen back, then save. A saved take goes through the upload queue, so it is never
 	// lost when the API is away.
 	import { onDestroy, onMount } from 'svelte';
 	import { browser } from '$app/env';
@@ -13,6 +13,8 @@
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, listInputs, type Recording } from '#lib/audio/capture.js';
 	import { TARGET_DB } from '#lib/audio/meter.js';
+	import LiveScope from '#lib/components/audio/LiveScope.svelte';
+	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Meter from '#lib/components/app/Meter.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -49,7 +51,7 @@
 	let pitchHz = $state<number | null>(null);
 	let seconds = $state(0);
 	let recording = $state.raw<Recording | null>(null);
-	let playbackUrl = $state<string | null>(null);
+	let scope = $state<LiveScope | null>(null);
 	let problem = $state<string | null>(null);
 	let outcome = $state<Outcome | null>(null);
 
@@ -59,6 +61,7 @@
 		if (frame.clipped) clipping = true;
 		pitchHz = frame.pitchHz;
 		seconds = frame.seconds;
+		scope?.push(frame.samples, frame.sampleRate);
 	});
 
 	const baseline = $derived(app.content?.protocols.find((p) => p.id === 'baseline') ?? null);
@@ -117,14 +120,9 @@
 		};
 	});
 
-	onDestroy(() => {
-		recorder.cancel();
-		if (playbackUrl) URL.revokeObjectURL(playbackUrl);
-	});
+	onDestroy(() => recorder.cancel());
 
 	function clearReview() {
-		if (playbackUrl) URL.revokeObjectURL(playbackUrl);
-		playbackUrl = null;
 		recording = null;
 	}
 
@@ -157,7 +155,6 @@
 	async function stop() {
 		try {
 			recording = await recorder.stop();
-			playbackUrl = URL.createObjectURL(new Blob([recording.wav], { type: 'audio/wav' }));
 			phase = 'review';
 		} catch (e) {
 			problem = i18n.t.record.failed(e instanceof Error ? e.message : String(e));
@@ -369,9 +366,12 @@
 					<p class="mt-1 text-sm text-warning">{i18n.t.record.tooQuiet}</p>
 				{/if}
 			</div>
+			<div class="mt-4">
+				<LiveScope bind:this={scope} />
+			</div>
 		{:else if recording}
 			<h2 class="mb-2 font-medium">{i18n.t.record.review}</h2>
-			<audio class="w-full" controls src={playbackUrl}></audio>
+			<TakePlayer source={recording.wav} name="{choice?.step?.key ?? choice?.item ?? 'take'}.wav" />
 			<p class="mt-2 text-sm text-muted-foreground" data-testid="review">
 				{fmtDuration(recording.seconds)} · {i18n.t.record.peak(
 					fmtNumber(recording.peakDb, 1, i18n.locale)
