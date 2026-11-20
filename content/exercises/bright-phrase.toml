@@ -1,6 +1,6 @@
 id = "bright-phrase"
 version = 1
-skill = "size"
+skill = "resonance"
 item = "phrase"
 intent = "attempt"
 seconds = 12
@@ -49,8 +49,8 @@ cs = [
 ]
 
 [why]
-en = "Holding a bright “ah” is one thing; keeping it through real words is where size is actually learned, and where most people lose it. Nothing is judged here. Afterwards the app shows the apparent size of this take beside that of your everyday speech; smaller means brighter. Differences under about half a centimetre are within the measure's noise."
-cs = "Podržet jasné „á“ je jedna věc; udržet ho ve skutečných slovech je místo, kde se velikost opravdu učí a kde ji většina lidí ztrácí. Nic se tu nehodnotí. Aplikace potom ukáže zdánlivou velikost této nahrávky vedle velikosti vaší běžné řeči; menší znamená jasnější. Rozdíly pod zhruba půl centimetru jsou v šumu měření."
+en = "Holding a bright “ah” is one thing; keeping it through real words is where resonance is actually learned, and where most people lose it. Nothing is judged here. While you speak, the meter shows how much brighter the last seconds were than your everyday speech; afterwards the app reads the whole take against your everyday voice, on both pitch and resonance, and shows its apparent size in centimetres beside it (smaller means brighter; under about half a centimetre is noise)."
+cs = "Podržet jasné „á“ je jedna věc; udržet ho ve skutečných slovech je místo, kde se rezonance opravdu učí a kde ji většina lidí ztrácí. Nic se tu nehodnotí. Při mluvení ukazatel ukazuje, o kolik jasnější byly poslední sekundy než vaše běžná řeč; potom aplikace přečte celou nahrávku proti vašemu běžnému hlasu, ve výšce i v rezonanci, a ukáže vedle toho její zdánlivou velikost v centimetrech (menší znamená jasnější; rozdíl pod zhruba půl centimetru je šum)."
 
 [safety]
 en = "Stop if your throat feels tight; rest and try a smaller change."

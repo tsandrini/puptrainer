@@ -48,10 +48,10 @@ from puptrainer.api.db import (
     snapshot_if_stale,
 )
 from puptrainer.api.storage import AudioStore, InvalidAudioError
-from puptrainer.core.acoustics import spacing
 from puptrainer.core.content import load_content, load_measures, load_metrics, parse_ref
 from puptrainer.core.evaluation import TakeFacts, evaluate, needs_pitch
 from puptrainer.core.metrics import KEYS
+from puptrainer.core.reading import Voice, comparable, everyday_size_cm, read, reference
 from puptrainer.core.schemas import (
     AnalysisOut,
     BandIn,
@@ -75,6 +75,8 @@ from puptrainer.core.schemas import (
     MetricDef,
     PracticeIn,
     PracticeOut,
+    Reading,
+    Reference,
     Requeued,
     Series,
     SessionOut,
@@ -131,10 +133,39 @@ def decode_series(stored: AnalysisSeries) -> list[float | None]:
     return [None if np.isnan(v) else round(float(v), 2) for v in values]
 
 
+def finished(take: Take) -> AnalysisJob | None:
+    """The newest finished analysis of a take."""
+    return next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
+
+
+def details_of(job: AnalysisJob | None) -> Details:
+    """The structured findings of an analysis; empty without one."""
+    return (
+        Details.model_validate_json(job.details) if job is not None and job.details else Details()
+    )
+
+
+def voice_of(take: Take) -> Voice | None:
+    """A take as a reading sees it; `None` until it is analysed."""
+    done = finished(take)
+    if done is None:
+        return None
+    return Voice(
+        id=take.id,
+        item=Item(take.item),
+        language=take.language,
+        content_ref=take.content_ref,
+        recorded_at=take.recorded_at,
+        metrics={m.key: m.value for m in done.metrics},
+        vowels=details_of(done).vowels,
+    )
+
+
 def take_out(
     take: Take,
     exercises: dict[str, Exercise] | None = None,
     baseline_cm: float | None = None,
+    reading: Reading | None = None,
 ) -> TakeOut:
     """A take as the API returns it: labels, the latest job, the newest finished results.
 
@@ -144,14 +175,11 @@ def take_out(
             take of no exercise, there is no evaluation.
         baseline_cm: The learner's everyday apparent tract length in a comparable kind of
             take on the same setup, for the evaluation to show sizes against.
+        reading: The take read against the learner's everyday voice, if it can be.
     """
     latest = take.jobs[-1] if take.jobs else None
-    done = next((j for j in reversed(take.jobs) if j.status == JobStatus.DONE), None)
-    details = (
-        Details.model_validate_json(done.details)
-        if done is not None and done.details
-        else Details()
-    )
+    done = finished(take)
+    details = details_of(done)
     target = Target.model_validate_json(take.target) if take.target else None
     evaluation = None
     if take.exercise_ref is not None and exercises is not None:
@@ -202,6 +230,7 @@ def take_out(
         target=target,
         comfort=take.comfort,
         evaluation=evaluation,
+        reading=reading,
     )
 
 
@@ -321,49 +350,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "no such take")
         return take
 
-    def baseline_cm(
-        db: Session, take: Take, cache: dict[tuple[int, bool], float | None]
-    ) -> float | None:
-        """The everyday size to read a practice take against: same setup, comparable sound.
+    def everyday(db: Session, device_id: int, cache: dict[int, list[Voice]]) -> list[Voice]:
+        """The learner's analysed everyday lab takes on a microphone setup.
 
-        For held sounds, the "a" of the habitual vowels takes of the lab; for speech, the
-        habitual passages and free speech. The median over those takes.
+        What every other take on the setup is read against: takes labelled as the
+        everyday voice and recorded in the lab, not for an exercise.
         """
-        held = take.item in (Item.SUSTAIN, Item.VOWELS)
-        key = (take.device_id, held)
-        if key in cache:
-            return cache[key]
-        items = [Item.VOWELS] if held else [Item.PASSAGE, Item.FREE]
-        query = (
-            select(Take)
-            .where(
-                Take.device_id == take.device_id,
-                Take.intent == Intent.HABITUAL,
-                Take.exercise_ref.is_(None),
-                Take.item.in_(items),
+        if device_id not in cache:
+            query = (
+                select(Take)
+                .where(
+                    Take.device_id == device_id,
+                    Take.intent == Intent.HABITUAL,
+                    Take.exercise_ref.is_(None),
+                )
+                .options(selectinload(Take.jobs).selectinload(AnalysisJob.metrics))
             )
-            .options(selectinload(Take.jobs).selectinload(AnalysisJob.metrics))
-        )
-        values: list[float] = []
-        for lab in db.scalars(query):
-            done = next((j for j in reversed(lab.jobs) if j.status == JobStatus.DONE), None)
-            if done is None:
-                continue
-            if held:
-                vowels = Details.model_validate_json(done.details).vowels if done.details else []
-                values += [spacing(v.formants_hz)[1] for v in vowels if v.vowel == "a"]
-            else:
-                values += [m.value for m in done.metrics if m.key == "vtl_cm"]
-        cache[key] = float(np.median(values)) if values else None
-        return cache[key]
+            voices = (voice_of(lab) for lab in db.scalars(query))
+            cache[device_id] = [voice for voice in voices if voice is not None]
+        return cache[device_id]
 
-    def out(
-        db: Session, take: Take, cache: dict[tuple[int, bool], float | None] | None = None
-    ) -> TakeOut:
+    def out(db: Session, take: Take, cache: dict[int, list[Voice]] | None = None) -> TakeOut:
+        voices = everyday(db, take.device_id, {} if cache is None else cache)
         size = None
         if take.exercise_ref is not None:
-            size = baseline_cm(db, take, {} if cache is None else cache)
-        return take_out(take, exercises, size)
+            size = everyday_size_cm(Item(take.item), take.language, take.content_ref, voices)
+        voice = None if take.intent == Intent.DRILL else voice_of(take)
+        return take_out(take, exercises, size, None if voice is None else read(voice, voices))
 
     def known(ref: str, kind: str, catalogue: dict[str, Any]) -> None:
         # NOTE: the id must exist; an older version is fine (a take queued offline before
@@ -436,6 +449,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         db.add(band)
         db.commit()
         return BandOut.model_validate(band)
+
+    # --- the everyday voice ---
+
+    @router.get("/reference", operation_id="reference")
+    def get_reference(
+        db: Db,
+        device_id: int,
+        item: Item,
+        language: str | None = None,
+        content_ref: str | None = None,
+    ) -> Reference | None:
+        """The everyday voice a take of this kind on this setup is read against.
+
+        `null` when there is no everyday take to read it against yet.
+        """
+        found = comparable(item, language, content_ref, everyday(db, device_id, {}))
+        return None if found is None else reference(*found)
 
     # --- practice sessions ---
 
@@ -614,7 +644,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if session_id is not None:
             query = query.where(Take.session_id == session_id)
         query = query.order_by(Take.recorded_at.desc(), Take.id).limit(limit).offset(offset)
-        cache: dict[tuple[int, bool], float | None] = {}
+        cache: dict[int, list[Voice]] = {}
         return [out(db, t, cache) for t in db.scalars(query)]
 
     @router.get("/takes/{take_id}", operation_id="getTake")

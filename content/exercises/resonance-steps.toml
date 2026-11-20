@@ -1,6 +1,6 @@
 id = "resonance-steps"
 version = 2
-skill = "size"
+skill = "resonance"
 item = "sustain"
 intent = "drill"
 seconds = 15
@@ -30,8 +30,8 @@ cs = [
 ]
 
 [right]
-en = "All three sit on the same note, yet the first sounds like a bigger body and the last like a smaller one. On the picture, the bands of the bright one sit a little higher than those of the dark one."
-cs = "Všechny tři jsou na stejném tónu, a přece první zní jako větší tělo a poslední jako menší. Na obrázku jsou pásy toho jasného o něco výš než u tmavého."
+en = "All three sit on the same note, yet the first sounds like a bigger body and the last like a smaller one. On the picture, the bands of the bright one sit a little higher than those of the dark one, and the resonance meter, which counts from the first sound of the take, moves to the right with each step."
+cs = "Všechny tři jsou na stejném tónu, a přece první zní jako větší tělo a poslední jako menší. Na obrázku jsou pásy toho jasného o něco výš než u tmavého a ukazatel rezonance, který počítá od prvního zvuku nahrávky, se s každým krokem posune doprava."
 
 [mistakes]
 en = [
@@ -48,8 +48,8 @@ cs = [
 ]
 
 [why]
-en = "This is size, also called resonance: the space above the vocal folds, which makes a voice sound like a larger or a smaller person. For your voice it is probably the biggest lever. Here you learn to move it on purpose, in both directions, without the pitch tagging along. The app checks three held sounds on one note, each brighter than the one before, and shows their apparent size beside your everyday “ah”."
-cs = "Tohle je velikost, jinak také rezonance: prostor nad hlasivkami, díky kterému hlas zní jako větší nebo menší člověk. Pro váš hlas je to nejspíš ta největší páka. Tady se ji učíte vědomě posouvat oběma směry, aniž by se s ní vezla výška. Aplikace kontroluje tři podržené zvuky na jednom tónu, každý jasnější než předchozí, a ukáže jejich zdánlivou velikost vedle vašeho běžného „á“."
+en = "This is resonance: the space above the vocal folds, which makes a voice sound like a larger or a smaller person. For your voice it is probably the biggest lever. Here you learn to move it on purpose, in both directions, without the pitch tagging along. The app checks three held sounds on one note, each brighter than the one before, and shows their apparent size beside your everyday “ah”."
+cs = "Tohle je rezonance: prostor nad hlasivkami, díky kterému hlas zní jako větší nebo menší člověk. Pro váš hlas je to nejspíš ta největší páka. Tady se ji učíte vědomě posouvat oběma směry, aniž by se s ní vezla výška. Aplikace kontroluje tři podržené zvuky na jednom tónu, každý jasnější než předchozí, a ukáže jejich zdánlivou velikost vedle vašeho běžného „á“."
 
 [safety]
 en = "Back off if it turns buzzy or tight, or if you feel it in your throat afterwards."

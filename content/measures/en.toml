@@ -43,3 +43,33 @@ description = "How much the formant spacing rose from the first held sound to th
 [step_drift_st]
 title = "Pitch drift"
 description = "How far apart the held sounds' pitches lie, in semitones."
+
+# --- a take read against your own everyday voice (`puptrainer.core.reading`)
+
+[pitch_shift_st]
+title = "Pitch"
+description = "How far the median pitch lies above your everyday voice, in semitones (twelve are an octave)."
+
+[brightness_pct]
+title = "Brightness"
+description = "How much higher the resonances F2 to F4 sit than in your everyday voice. A shorter, smaller space above the vocal folds raises them all together. For scale: speaker by speaker, women's lie 10 to 23% above the average man's, 16% in the middle, and children's higher still (vowel tables of Hillenbrand and colleagues, 1995). About 4 to 6% is the smallest difference a listener can hear at all. Your everyday voice need not be the average man's, so read the zone as a neighbourhood, not a line; and how a voice is heard depends on pitch as well."
+
+[brightness_pct.zones]
+typical = "where women's voices sit"
+beyond = "children's voices"
+
+[r1_shift_pct]
+title = "First resonance (R1)"
+description = "How much higher the lowest resonance, F1, sits than in your everyday voice. A smaller throat raises it; a closed jaw, a quieter voice and sound through the nose lower it. For scale: women's F1 lies 8 to 29% above the average man's on the same vowel, 17% in the middle. In running speech it follows the jaw as much as the throat, so it says most on a held or whispered vowel."
+
+[r1_shift_pct.zones]
+typical = "where women's voices sit"
+beyond = "children's voices"
+
+[level_shift_db]
+title = "Loudness"
+description = "How much louder the take is than your everyday voice on the same microphone setup."
+
+[clarity_shift_db]
+title = "Clarity"
+description = "How much clearer the tone is than in your everyday voice (CPPS). Breath, strain and a quieter voice all lower it."

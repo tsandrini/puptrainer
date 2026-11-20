@@ -1,0 +1,74 @@
+id = "whisper-slide"
+version = 1
+skill = "resonance"
+item = "sustain"
+intent = "drill"
+seconds = 15
+reps = 2
+live = "whisper"
+
+[titles]
+en = "Whisper, big to small"
+cs = "Šepot od velkého k malému"
+
+[summaries]
+en = "A whispered “eh” that slides from a big sound to a small one and back: resonance without the voice."
+cs = "Šeptané „e“, které klouže od velkého zvuku k malému a zpět: rezonance bez hlasu."
+
+[steps]
+en = [
+  "Whisper a steady “eh”, as in “edge”, for two seconds in your ordinary way. This sets the zero of the meter.",
+  "Keep whispering and let the hiss get smaller and higher, as from fogging up a window to a small dog's panting. The vowel stays an “eh”.",
+  "Slide slowly back to the big sound, then up again. Watch the marker follow you.",
+  "Breathe when you need to; the meter keeps its zero.",
+]
+cs = [
+  "Šeptejte dvě sekundy rovné „e“ svým obvyklým způsobem. Tím se nastaví nula ukazatele.",
+  "Šeptejte dál a nechte šum zmenšit a zvýšit, jako od dýchnutí na okno k funění malého psa. Samohláska zůstává „e“.",
+  "Pomalu sklouzněte zpět k velkému zvuku a pak znovu nahoru. Sledujte, jak vás značka následuje.",
+  "Nadechněte se, kdykoli potřebujete; ukazatel si nulu pamatuje.",
+]
+
+[right]
+en = "The hiss rises and falls like a note although nothing is being sung, and the marker moves to the right as it rises. Nothing in the throat feels held or squeezed: it is as light as panting quietly."
+cs = "Šum stoupá a klesá jako tón, i když se nic nezpívá, a značka se při stoupání posouvá doprava. V hrdle není nic držené ani stažené: je to lehké jako tiché funění."
+
+[mistakes]
+en = [
+  "Sliding the vowel towards “ee” instead of shrinking the space: the brightness goes up but the first resonance (R1) goes down. Keep the jaw loosely open, about a finger wide, and the vowel an “eh”.",
+  "Pushing more air to make it higher: a harsh, loud hiss. Whisper softly; the change is in the shape, not in the breath.",
+  "Holding the whole throat tight to keep the small sound: go only as far as stays easy, hold it for a second, let go.",
+  "Swallowing and holding the larynx where the swallow left it: that uses the swallowing muscles, which squeeze the throat shut, and the teachers' wiki lists it as dangerous. Find the small sound by ear, by imitating the lesson, and let the throat follow.",
+]
+cs = [
+  "Klouzání samohlásky k „i“ místo zmenšování prostoru: jas stoupá, ale první rezonance (R1) klesá. Nechte čelist volně otevřenou, asi na šířku prstu, a samohlásku „e“.",
+  "Tlačení více vzduchu, aby to bylo výš: ostrý, hlasitý šum. Šeptejte tiše; změna je ve tvaru, ne v dechu.",
+  "Držení celého hrdla staženého, aby malý zvuk vydržel: jděte jen tak daleko, kam to jde snadno, vteřinu podržte a pusťte.",
+  "Polknutí a držení hrtanu tam, kde ho polknutí nechalo: pracují při tom polykací svaly, které hrdlo svírají, a wiki učitelů to uvádí jako nebezpečné. Malý zvuk hledejte uchem, napodobováním lekce, a hrdlo nechte následovat.",
+]
+
+[why]
+en = "The first exercise of the lesson this session follows (TransVoiceLessons: learn the movement that makes the space above the vocal folds smaller, with the voice out of the way). A whisper has no pitch, so what you hear rise and fall is the resonance itself, and the app can follow it even where a voiced sound would shoot too high to be measured. Nothing is judged and no number is stored yet: the meter is the feedback. It shows two things, counted from your first two seconds: brightness (the upper resonances) and the first resonance, R1, which the lesson is about."
+cs = "První cvičení z lekce, kterou toto sezení následuje (TransVoiceLessons: naučit se pohyb, který zmenšuje prostor nad hlasivkami, bez hlasu, který by překážel). Šepot nemá výšku, takže to, co slyšíte stoupat a klesat, je sama rezonance, a aplikace ji dokáže sledovat i tam, kde by znělý zvuk vystřelil příliš vysoko na měření. Nic se nehodnotí a žádné číslo se zatím neukládá: zpětnou vazbou je ukazatel. Ukazuje dvě věci, počítané od vašich prvních dvou sekund: jas (horní rezonance) a první rezonanci, R1, o kterou v lekci jde."
+
+[safety]
+en = "Whispering dries the throat: sip water, and keep it to a couple of takes. Stop if it turns scratchy."
+cs = "Šepot vysušuje hrdlo: napijte se a zůstaňte u pár nahrávek. Přestaňte, pokud to začne škrábat."
+
+[rule]
+kind = "none"
+
+[[sources]]
+author = "TransVoiceLessons (Zheanna Erose)"
+title = "The Single Most Powerful Element of Voice Feminization: Meta Resonance (exercise 1, R1 raising on a voiceless “eh”)"
+url = "https://www.youtube.com/watch?v=BW8X2nXexQs"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Resonance: unvoiced exercises"
+url = "https://wiki.sumianvoice.com/wiki/pages/resonance"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Questionable exercises: swallow and hold"
+url = "https://wiki.sumianvoice.com/wiki/pages/other-resources/questionable-exercises.html"

@@ -3,30 +3,36 @@
 [duration_s]
 title = "Duration"
 description = "Length of the recording."
+relates = "About the recording, not the voice: it says how far this take's pitch and resonance numbers can be trusted."
 
 [peak_dbfs]
 title = "Peak level"
 description = "The loudest sample, relative to full scale."
 note = "Aim for −12 to −6 dBFS. At 0 the recording clipped."
+relates = "About the recording, not the voice: it says how far this take's pitch and resonance numbers can be trusted."
 
 [speech_level_dbfs]
 title = "Speech level"
 description = "Level of the louder parts of the take (90th percentile of 20 ms frames)."
+relates = "About the recording, not the voice: it says how far this take's pitch and resonance numbers can be trusted."
 
 [noise_floor_dbfs]
 title = "Noise floor"
 description = "Level of the quietest parts of the take (5th percentile of 20 ms frames): the room and the microphone."
 note = "The further below the speech level, the more the other measures can be trusted; 40 dB or more is comfortable."
+relates = "About the recording, not the voice: it says how far this take's pitch and resonance numbers can be trusted."
 
 [clipped_samples]
 title = "Clipped samples"
 description = "Samples at full scale."
 note = "Anything above zero distorts every other measure: lower the gain and record again."
+relates = "About the recording, not the voice: it says how far this take's pitch and resonance numbers can be trusted."
 
 [voiced_share_pct]
 title = "Voiced share"
 description = "Share of the take in which the vocal folds vibrate."
 note = "Pauses and voiceless consonants lower it; around half is normal for speech."
+relates = "About the recording, not the voice: it says how far this take's pitch and resonance numbers can be trusted."
 
 # --- pitch
 
@@ -34,44 +40,53 @@ note = "Pauses and voiceless consonants lower it; around half is normal for spee
 title = "Median pitch"
 description = "The middle value of the fundamental frequency over the voiced parts."
 note = "Solid on any microphone. Pitch is the strongest single cue to how a voice is heard, and still explains less than half of it."
+relates = "Pitch: the headline. Where the voice sits most of the time."
 
 [pitch_p05_hz]
 title = "Pitch, low end"
 description = "5% of the voiced time is below this pitch."
 note = "Where the voice drops to at the ends of phrases. Training often raises the median before it raises this."
+relates = "Pitch: the floor. Short drops to the old pitch at the ends of phrases stand out to a listener more than the average does."
 
 [pitch_p95_hz]
 title = "Pitch, high end"
 description = "5% of the voiced time is above this pitch."
+relates = "Pitch: the top of the speaking melody. When it climbs much faster than the median, the voice is being pushed up rather than moved up."
 
 [pitch_range_st]
 title = "Pitch range"
 description = "Distance between the low and the high end, in semitones."
 note = "How much the melody of speech moves. Reading is usually flatter than free speech."
+relates = "Pitch, second-hand: the melody of speech. A lively melody is part of how a voice is heard, but it is style, trained after the median has moved."
 
 [pitch_sd_st]
 title = "Pitch variability"
 description = "Standard deviation of pitch around the median, in semitones."
+relates = "Pitch, second-hand: the melody of speech. A lively melody is part of how a voice is heard, but it is style, trained after the median has moved."
 
 [pitch_below_145_pct]
 title = "Time below 145 Hz"
 description = "Share of the voiced time below 145 Hz."
 note = "145 and 185 Hz are the usual limits of the band in which listeners disagree about a voice. They are conventions pooled from small studies, not thresholds."
+relates = "Pitch: the same distribution cut at two conventional lines, to see how much of the time is still spent low."
 
 [pitch_145_185_pct]
 title = "Time at 145–185 Hz"
 description = "Share of the voiced time between 145 and 185 Hz."
 note = "145 and 185 Hz are the usual limits of the band in which listeners disagree about a voice. They are conventions pooled from small studies, not thresholds."
+relates = "Pitch: the same distribution cut at two conventional lines, to see how much of the time is still spent low."
 
 [pitch_above_185_pct]
 title = "Time above 185 Hz"
 description = "Share of the voiced time above 185 Hz."
 note = "145 and 185 Hz are the usual limits of the band in which listeners disagree about a voice. They are conventions pooled from small studies, not thresholds."
+relates = "Pitch: the same distribution cut at two conventional lines, to see how much of the time is still spent low."
 
 [subharmonic_share_pct]
 title = "Creaky share"
 description = "Share of the voiced time in which every second vocal-fold cycle differs (period doubling, creak)."
 note = "A simple pitch tracker reads such stretches an octave low; here they are counted on their own. Common in relaxed speech and at the ends of phrases."
+relates = "Neither target directly: creak is a way the vocal folds vibrate. It touches pitch because creaky moments are heard as low, and it tends to grow when the voice is pressed."
 
 # --- resonance
 
@@ -79,31 +94,37 @@ note = "A simple pitch tracker reads such stretches an octave low; here they are
 title = "F1, median"
 description = "Median of the first vocal-tract resonance over the voiced, louder parts."
 note = "Depends on which vowels the take contains: compare only takes of the same text."
+relates = "Resonance: the lowest one, which teachers call R1. A smaller throat raises it, but so does an open jaw, while a closed jaw or a quiet voice lowers it: read it on the same text, beside F2 to F4."
 
 [f2_median_hz]
 title = "F2, median"
 description = "Median of the second vocal-tract resonance over the voiced, louder parts."
 note = "Depends on which vowels the take contains: compare only takes of the same text."
+relates = "Resonance: mostly the tongue; forward and high raises it. It rises with a brighter voice and is the most text-dependent of the four."
 
 [f3_median_hz]
 title = "F3, median"
 description = "Median of the third vocal-tract resonance over the voiced, louder parts."
 note = "Varies less with the vowel than F1 and F2."
+relates = "Resonance: the steadiest witness. It depends little on which vowel is spoken, so a shift here is the whole tract sounding shorter."
 
 [f4_median_hz]
 title = "F4, median"
 description = "Median of the fourth vocal-tract resonance over the voiced, louder parts."
 note = "Varies less with the vowel than F1 and F2; the least reliable of the four on a noisy recording."
+relates = "Resonance: the steadiest witness. It depends little on which vowel is spoken, so a shift here is the whole tract sounding shorter."
 
 [formant_spacing_hz]
 title = "Formant spacing"
 description = "Average distance between neighbouring resonances, fitted to F1–F4."
 note = "Wider spacing means a shorter, brighter-sounding vocal tract. A trend measure: compare takes of the same kind on the same microphone setup."
+relates = "Resonance: all four in one number. The wider apart they lie, the shorter the tube sounds."
 
 [vtl_cm]
 title = "Apparent tract length"
 description = "The length of a uniform tube that would resonate with this formant spacing."
 note = "An estimate of resonance, not an anatomical length. On one setup it repeated within about ±0.3 cm between takes; moving the microphone shifted it by 0.5 cm. Textbook averages are about 17 cm for men and 14.5–15 cm for women. Not measured above 300 Hz of pitch: the harmonics lie too far apart there to show the resonances. It also moves with the vowel (an “ee” reads shorter than an “oo”), so compare the same vowel."
+relates = "Resonance: the same number as a length. Smaller is brighter; read it against your own everyday voice, not against a table."
 
 # --- voice quality
 
@@ -111,16 +132,19 @@ note = "An estimate of resonance, not an anatomical length. On one setup it repe
 title = "CPPS"
 description = "Smoothed cepstral peak prominence of the voiced parts: how clearly periodic the voice is."
 note = "Higher is clearer; breathiness and roughness lower it. Fairly robust across microphones. Sustained vowels read higher than speech."
+relates = "Neither target: a condition on both. A tone that stays clear while pitch and resonance move shows the change is not bought with breath or strain."
 
 [hnr_db]
 title = "Harmonics-to-noise ratio"
 description = "How much of the voiced sound is harmonic rather than noise."
 note = "Breathiness and background noise both lower it, so it needs a quiet recording."
+relates = "Neither target: a condition on both. A tone that stays clear while pitch and resonance move shows the change is not bought with breath or strain."
 
 [spectral_slope_db]
 title = "Spectral slope"
 description = "Energy from 1 to 4 kHz relative to the energy below 1 kHz, over the voiced parts."
 note = "More negative means more of the energy sits low. It moves with vocal weight, and also with the microphone, its distance and loudness: only compare on the same setup."
+relates = "Neither target: a rough hint at weight, the third property of a voice. A lighter sound has less energy high up, but this number follows the vowel and the loudness more than the weight."
 
 # --- range
 
@@ -128,17 +152,21 @@ note = "More negative means more of the energy sits low. It moves with vocal wei
 title = "Lowest note"
 description = "The low end of the glide (2nd percentile of the clearly periodic frames)."
 note = "Uncertain when the bottom of the glide is creaky."
+relates = "Pitch, the room for it: the notes your voice reaches at all. The band you practise in should sit well inside, clear of both ends."
 
 [glide_high_hz]
 title = "Highest note"
 description = "The high end of the glide (98th percentile of the clearly periodic frames)."
+relates = "Pitch, the room for it: the notes your voice reaches at all. The band you practise in should sit well inside, clear of both ends."
 
 [glide_range_st]
 title = "Range"
 description = "Distance between the lowest and the highest note, in semitones."
 note = "Twelve semitones are one octave."
+relates = "Pitch, the room for it: the notes your voice reaches at all. The band you practise in should sit well inside, clear of both ends."
 
 [glide_breaks]
 title = "Breaks"
 description = "Sudden jumps of three semitones or more in the glide: a flip between the low and the high voice, a yodel."
 note = "Zero is a smooth glide. Jumps of about an octave are left out (the tracker's errors at a creaky bottom), so a real octave flip is missed too."
+relates = "Pitch, the room for it: a break is where the voice flips between its low and its high mechanism. A band that sits right on one is harder to hold."

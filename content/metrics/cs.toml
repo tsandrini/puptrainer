@@ -3,30 +3,36 @@
 [duration_s]
 title = "Délka"
 description = "Délka nahrávky."
+relates = "O nahrávce, ne o hlasu: říká, nakolik se dá věřit číslům výšky a rezonance z této nahrávky."
 
 [peak_dbfs]
 title = "Špičková úroveň"
 description = "Nejhlasitější vzorek vůči plnému rozsahu."
 note = "Cílem je −12 až −6 dBFS. Při 0 byla nahrávka přebuzená."
+relates = "O nahrávce, ne o hlasu: říká, nakolik se dá věřit číslům výšky a rezonance z této nahrávky."
 
 [speech_level_dbfs]
 title = "Úroveň řeči"
 description = "Úroveň hlasitějších částí nahrávky (90. percentil 20ms rámců)."
+relates = "O nahrávce, ne o hlasu: říká, nakolik se dá věřit číslům výšky a rezonance z této nahrávky."
 
 [noise_floor_dbfs]
 title = "Šumové pozadí"
 description = "Úroveň nejtišších částí nahrávky (5. percentil 20ms rámců): místnost a mikrofon."
 note = "Čím hlouběji pod úrovní řeči, tím víc se dá věřit ostatním měřením; 40 dB a více je pohodlná rezerva."
+relates = "O nahrávce, ne o hlasu: říká, nakolik se dá věřit číslům výšky a rezonance z této nahrávky."
 
 [clipped_samples]
 title = "Přebuzené vzorky"
 description = "Vzorky na plném rozsahu."
 note = "Cokoli nad nulou zkresluje všechna ostatní měření: snižte zisk a nahrajte znovu."
+relates = "O nahrávce, ne o hlasu: říká, nakolik se dá věřit číslům výšky a rezonance z této nahrávky."
 
 [voiced_share_pct]
 title = "Podíl znělých úseků"
 description = "Podíl nahrávky, ve kterém kmitají hlasivky."
 note = "Pauzy a neznělé souhlásky ho snižují; u řeči je běžná zhruba polovina."
+relates = "O nahrávce, ne o hlasu: říká, nakolik se dá věřit číslům výšky a rezonance z této nahrávky."
 
 # --- výška hlasu
 
@@ -34,44 +40,53 @@ note = "Pauzy a neznělé souhlásky ho snižují; u řeči je běžná zhruba p
 title = "Medián výšky hlasu"
 description = "Prostřední hodnota základní frekvence ve znělých úsecích."
 note = "Spolehlivé na jakémkoli mikrofonu. Výška je nejsilnější jednotlivé vodítko pro to, jak hlas zní, a přesto vysvětluje méně než polovinu."
+relates = "Výška: hlavní číslo. Kde hlas většinu času leží."
 
 [pitch_p05_hz]
 title = "Výška, dolní konec"
 description = "5 % znělého času je pod touto výškou."
 note = "Kam hlas klesá na koncích frází. Trénink často zvedne medián dřív než tuto hodnotu."
+relates = "Výška: dno. Krátké propady ke staré výšce na koncích vět posluchač zaznamená víc než průměr."
 
 [pitch_p95_hz]
 title = "Výška, horní konec"
 description = "5 % znělého času je nad touto výškou."
+relates = "Výška: strop melodie řeči. Když stoupá mnohem rychleji než medián, hlas je nahoru tlačen, ne posouván."
 
 [pitch_range_st]
 title = "Rozsah výšky"
 description = "Vzdálenost mezi dolním a horním koncem v půltónech."
 note = "Jak moc se pohybuje melodie řeči. Čtení bývá plošší než volná řeč."
+relates = "Výška z druhé ruky: melodie řeči. Živá melodie patří k tomu, jak hlas působí, ale je to styl, který se trénuje, až když se pohne medián."
 
 [pitch_sd_st]
 title = "Proměnlivost výšky"
 description = "Směrodatná odchylka výšky kolem mediánu v půltónech."
+relates = "Výška z druhé ruky: melodie řeči. Živá melodie patří k tomu, jak hlas působí, ale je to styl, který se trénuje, až když se pohne medián."
 
 [pitch_below_145_pct]
 title = "Čas pod 145 Hz"
 description = "Podíl znělého času pod 145 Hz."
 note = "145 a 185 Hz jsou obvyklé hranice pásma, ve kterém se posluchači o hlasu neshodnou. Jsou to konvence složené z malých studií, ne prahy."
+relates = "Výška: totéž rozložení rozříznuté dvěma konvenčními hranicemi, aby bylo vidět, kolik času hlas ještě tráví dole."
 
 [pitch_145_185_pct]
 title = "Čas v pásmu 145–185 Hz"
 description = "Podíl znělého času mezi 145 a 185 Hz."
 note = "145 a 185 Hz jsou obvyklé hranice pásma, ve kterém se posluchači o hlasu neshodnou. Jsou to konvence složené z malých studií, ne prahy."
+relates = "Výška: totéž rozložení rozříznuté dvěma konvenčními hranicemi, aby bylo vidět, kolik času hlas ještě tráví dole."
 
 [pitch_above_185_pct]
 title = "Čas nad 185 Hz"
 description = "Podíl znělého času nad 185 Hz."
 note = "145 a 185 Hz jsou obvyklé hranice pásma, ve kterém se posluchači o hlasu neshodnou. Jsou to konvence složené z malých studií, ne prahy."
+relates = "Výška: totéž rozložení rozříznuté dvěma konvenčními hranicemi, aby bylo vidět, kolik času hlas ještě tráví dole."
 
 [subharmonic_share_pct]
 title = "Podíl skřípavých úseků"
 description = "Podíl znělého času, ve kterém se každý druhý kmit hlasivek liší (zdvojení periody, skřípavý hlas)."
 note = "Jednoduché měření výšky čte takové úseky o oktávu níž; tady se počítají zvlášť. Běžné v uvolněné řeči a na koncích frází."
+relates = "Přímo ani jeden cíl: skřípání je způsob, jakým hlasivky kmitají. Výšky se týká tím, že skřípavé chvíle znějí nízko, a přibývá ho, když je hlas tlačený."
 
 # --- rezonance
 
@@ -79,31 +94,37 @@ note = "Jednoduché měření výšky čte takové úseky o oktávu níž; tady 
 title = "F1, medián"
 description = "Medián první rezonance hlasového traktu ve znělých, hlasitějších částech."
 note = "Závisí na tom, které samohlásky nahrávka obsahuje: porovnávejte jen nahrávky stejného textu."
+relates = "Rezonance: ta nejnižší, které učitelé říkají R1. Menší hrdlo ji zvedá, ale otevřená čelist také, kdežto zavřená čelist nebo tichý hlas ji snižují: čtěte ji na stejném textu a vedle F2 až F4."
 
 [f2_median_hz]
 title = "F2, medián"
 description = "Medián druhé rezonance hlasového traktu ve znělých, hlasitějších částech."
 note = "Závisí na tom, které samohlásky nahrávka obsahuje: porovnávejte jen nahrávky stejného textu."
+relates = "Rezonance: hlavně jazyk; vpředu a nahoře ji zvedá. S jasnějším hlasem stoupá a ze všech čtyř nejvíc závisí na textu."
 
 [f3_median_hz]
 title = "F3, medián"
 description = "Medián třetí rezonance hlasového traktu ve znělých, hlasitějších částech."
 note = "Mění se se samohláskou méně než F1 a F2."
+relates = "Rezonance: nejspolehlivější svědek. Málo závisí na tom, která samohláska zní, takže posun tady znamená, že celý trakt zní kratší."
 
 [f4_median_hz]
 title = "F4, medián"
 description = "Medián čtvrté rezonance hlasového traktu ve znělých, hlasitějších částech."
 note = "Mění se se samohláskou méně než F1 a F2; na zašuměné nahrávce nejméně spolehlivá ze čtyř."
+relates = "Rezonance: nejspolehlivější svědek. Málo závisí na tom, která samohláska zní, takže posun tady znamená, že celý trakt zní kratší."
 
 [formant_spacing_hz]
 title = "Rozestup formantů"
 description = "Průměrná vzdálenost sousedních rezonancí, proložená přes F1–F4."
 note = "Větší rozestup znamená kratší, jasněji znějící hlasový trakt. Měřítko trendu: porovnávejte nahrávky stejného druhu na stejném nastavení mikrofonu."
+relates = "Rezonance: všechny čtyři v jednom čísle. Čím dál od sebe leží, tím kratší trubice zní."
 
 [vtl_cm]
 title = "Zdánlivá délka traktu"
 description = "Délka rovnoměrné trubice, která by rezonovala s tímto rozestupem formantů."
 note = "Odhad rezonance, ne anatomická délka. Na jednom nastavení se mezi nahrávkami opakovala s přesností asi ±0,3 cm; posunutí mikrofonu ji změnilo o 0,5 cm. Učebnicové průměry jsou asi 17 cm u mužů a 14,5–15 cm u žen. Nad 300 Hz výšky se neměří: harmonické jsou tam od sebe moc daleko, než aby rezonance ukázaly. Mění se také se samohláskou („í“ vyjde kratší než „ú“), takže porovnávejte stejnou samohlásku."
+relates = "Rezonance: totéž číslo jako délka. Menší znamená jasnější; čtěte ho proti svému běžnému hlasu, ne proti tabulce."
 
 # --- kvalita hlasu
 
@@ -111,16 +132,19 @@ note = "Odhad rezonance, ne anatomická délka. Na jednom nastavení se mezi nah
 title = "CPPS"
 description = "Vyhlazená výraznost kepstrálního vrcholu ve znělých částech: jak zřetelně periodický hlas je."
 note = "Vyšší znamená čistší; dyšnost a chraplavost ji snižují. Mezi mikrofony poměrně stálá. Držené samohlásky vycházejí výš než řeč."
+relates = "Ani jeden cíl: podmínka pro oba. Tón, který zůstává čistý, když se výška a rezonance hýbou, ukazuje, že změna není vykoupena dechem ani tlakem."
 
 [hnr_db]
 title = "Poměr harmonických složek k šumu"
 description = "Kolik ze znělého zvuku tvoří harmonické složky a kolik šum."
 note = "Snižuje ho dyšnost i šum v pozadí, takže potřebuje tichou nahrávku."
+relates = "Ani jeden cíl: podmínka pro oba. Tón, který zůstává čistý, když se výška a rezonance hýbou, ukazuje, že změna není vykoupena dechem ani tlakem."
 
 [spectral_slope_db]
 title = "Sklon spektra"
 description = "Energie od 1 do 4 kHz vůči energii pod 1 kHz ve znělých částech."
 note = "Zápornější hodnota znamená víc energie dole. Mění se s váhou hlasu, ale také s mikrofonem, jeho vzdáleností a hlasitostí: porovnávejte jen na stejném nastavení."
+relates = "Ani jeden cíl: hrubá nápověda k váze, třetí vlastnosti hlasu. Lehčí zvuk má nahoře méně energie, jenže tohle číslo sleduje samohlásku a hlasitost víc než váhu."
 
 # --- rozsah
 
@@ -128,17 +152,21 @@ note = "Zápornější hodnota znamená víc energie dole. Mění se s váhou hl
 title = "Nejnižší tón"
 description = "Dolní konec klouzání (2. percentil zřetelně periodických rámců)."
 note = "Nejistý, pokud je spodek klouzání skřípavý."
+relates = "Výška, prostor pro ni: tóny, na které hlas vůbec dosáhne. Pásmo, ve kterém cvičíte, má ležet pohodlně uvnitř, daleko od obou konců."
 
 [glide_high_hz]
 title = "Nejvyšší tón"
 description = "Horní konec klouzání (98. percentil zřetelně periodických rámců)."
+relates = "Výška, prostor pro ni: tóny, na které hlas vůbec dosáhne. Pásmo, ve kterém cvičíte, má ležet pohodlně uvnitř, daleko od obou konců."
 
 [glide_range_st]
 title = "Rozsah"
 description = "Vzdálenost mezi nejnižším a nejvyšším tónem v půltónech."
 note = "Dvanáct půltónů je jedna oktáva."
+relates = "Výška, prostor pro ni: tóny, na které hlas vůbec dosáhne. Pásmo, ve kterém cvičíte, má ležet pohodlně uvnitř, daleko od obou konců."
 
 [glide_breaks]
 title = "Zlomy"
 description = "Náhlé skoky o tři půltóny a víc: přeskok mezi nízkým a vysokým hlasem, jódlování."
 note = "Nula je plynulé klouzání. Skoky zhruba o oktávu se nepočítají (chyby měření na skřípavém spodku), takže skutečný přeskok o oktávu se také nezapočítá."
+relates = "Výška, prostor pro ni: zlom je místo, kde hlas přeskakuje mezi nízkým a vysokým mechanismem. Pásmo přímo na něm se drží hůř."

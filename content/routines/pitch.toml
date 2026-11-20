@@ -1,30 +1,29 @@
-id = "starter"
+id = "pitch"
 version = 1
-minutes = 7
+minutes = 5
 
 [titles]
-en = "Light and in band"
-cs = "Lehce a v pásmu"
+en = "Pitch"
+cs = "Výška"
 
 [summaries]
-en = "Warm up, find a lighter voice from above, match notes, and carry it into speech."
-cs = "Rozcvičit se, najít lehčí hlas shora, trefovat tóny a přenést to do řeči."
+en = "Pitch, with a light voice: warm up, find your band from above, match notes, then speak."
+cs = "Výška, lehkým hlasem: rozcvičit se, najít pásmo shora, trefovat tóny a pak mluvit."
 
 [[steps]]
 exercise = "trill-glide"
+reps = 1
 
 [[steps]]
 exercise = "light-hum"
 
 [[steps]]
 exercise = "slide-down-hold"
+reps = 2
 
 [[steps]]
 exercise = "note-match"
-
-[[steps]]
-exercise = "awww-phrase"
-reps = 1
+reps = 2
 
 [[steps]]
 exercise = "count-in-band"

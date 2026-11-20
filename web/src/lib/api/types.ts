@@ -26,6 +26,9 @@ export type BandOut = {
 	created_at: string;
 };
 
+/** Which everyday takes a take is read against: how alike they are to it. */
+export type Basis = 'same-text' | 'same-kind' | 'speech' | 'vowels';
+
 /** Everything under `content/` the web app needs. */
 export type Content = {
 	passages: Passage[];
@@ -129,7 +132,7 @@ export type Item = 'vowels' | 'glide' | 'sustain' | 'phrase' | 'passage' | 'free
 export type JobStatus = 'pending' | 'claimed' | 'done' | 'failed';
 
 /** What the recording screen shows while an exercise is recorded. */
-export type Live = 'none' | 'pitch' | 'formants';
+export type Live = 'none' | 'pitch' | 'formants' | 'whisper';
 
 /** What the web app sends to sign in. */
 export type Login = {
@@ -146,13 +149,14 @@ export type Measure = {
 	baseline: number | null;
 };
 
-/** A measure of the evaluation, with its texts. */
+/** A measure of the evaluation or of a reading, with its texts. */
 export type MeasureDef = {
 	key: string;
 	unit: string;
 	decimals: number;
 	titles: Record<string, string>;
 	descriptions: Record<string, string>;
+	zones: Zone[];
 };
 
 /** One metric of the registry. */
@@ -165,6 +169,7 @@ export type MetricDef = {
 	titles: Record<string, string>;
 	descriptions: Record<string, string>;
 	notes: Record<string, string>;
+	relates: Record<string, string>;
 };
 
 /** What a metric is about. */
@@ -253,6 +258,26 @@ export type ProtocolItem = {
 	seconds: number;
 };
 
+/** A take read against the learner's own everyday voice. Computed, never stored. */
+export type Reading = {
+	basis: Basis;
+	takes: number;
+	shifts: Shift[];
+	notes: ReadingNote[];
+};
+
+/** What a reading says in words: where the resonance sits, and what it cost. */
+export type ReadingNote = 'everyday' | 'darker' | 'brighter' | 'typical' | 'beyond' | 'r1-fell' | 'quieter' | 'less-clear';
+
+/** The learner's everyday voice for one kind of take on one microphone setup. */
+export type Reference = {
+	basis: Basis;
+	take_ids: string[];
+	pitch_hz: number | null;
+	formants_hz: number[];
+	vowels: Record<string, number[]>;
+};
+
 /** Answer to a request to analyse takes again. */
 export type Requeued = {
 	queued: number;
@@ -288,8 +313,16 @@ export type SessionOut = {
 	signed_in: boolean;
 };
 
+/** One number of a take against the learner's own everyday voice. */
+export type Shift = {
+	key: string;
+	value: number;
+	everyday: number | null;
+	wobble: number | null;
+};
+
 /** What an exercise trains, on the curriculum's spine. */
-export type Skill = 'warm-up' | 'pitch-weight' | 'size' | 'clarity' | 'carry-over';
+export type Skill = 'warm-up' | 'pitch-weight' | 'resonance' | 'clarity' | 'carry-over';
 
 /** A skill as the app explains it. */
 export type SkillDef = {
@@ -356,6 +389,7 @@ export type TakeOut = {
 	target: Target | null;
 	comfort: number | null;
 	evaluation: Evaluation | null;
+	reading: Reading | null;
 };
 
 /** Labels of a take to change; unset fields stay as they are. */
@@ -386,4 +420,12 @@ export type VowelSegment = {
 	formants_hz: number[];
 	cpps_db: number;
 	hnr_db: number;
+};
+
+/** A stretch of a measure's scale with a meaning, drawn on its strip. */
+export type Zone = {
+	key: string;
+	low: number | null;
+	high: number | null;
+	titles: Record<string, string>;
 };

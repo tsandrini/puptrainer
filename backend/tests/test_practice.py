@@ -27,13 +27,13 @@ def test_bands_are_a_history(client: TestClient) -> None:
 
 
 def test_practice_session_is_written_idempotently(client: TestClient) -> None:
-    created = practice(client, routine_ref="routine:starter@1", language="en", feel_start="fresh")
+    created = practice(client, routine_ref="routine:pitch@1", language="en", feel_start="fresh")
     assert created.status_code == 200, created.text
-    again = practice(client, routine_ref="routine:starter@1", language="en", feel_start="fresh")
+    again = practice(client, routine_ref="routine:pitch@1", language="en", feel_start="fresh")
     assert again.json() == created.json()
     ended = practice(
         client,
-        routine_ref="routine:starter@1",
+        routine_ref="routine:pitch@1",
         language="en",
         ended_at="2026-11-18T08:07:00Z",
         comfort_end=4,
@@ -49,9 +49,9 @@ def test_practice_session_is_written_idempotently(client: TestClient) -> None:
 @pytest.mark.parametrize(
     ("session", "body", "status"),
     [
-        (SESSION, {"routine_ref": "routine:starter@9"}, 422),
+        (SESSION, {"routine_ref": "routine:pitch@9"}, 422),
         (SESSION, {"routine_ref": "routine:marathon@1"}, 422),
-        (SESSION, {"routine_ref": "starter"}, 422),
+        (SESSION, {"routine_ref": "pitch"}, 422),
         (SESSION, {"comfort_end": 6}, 422),
         (SESSION, {"feel_start": "grumpy"}, 422),
         ("short", {}, 422),
@@ -75,7 +75,7 @@ def test_practice_takes_are_labelled_and_judged(client: TestClient, device_id: i
     held = wav_bytes(tone(f0=190.0, seconds=3.0))
     # the session is written before its takes; a take of an unknown one is refused
     assert upload(client, device_id, held, session_id=SESSION, **labels).status_code == 422
-    practice(client, routine_ref="routine:quick@1")
+    practice(client, routine_ref="routine:resonance@1")
     take = upload(
         client, device_id, held, session_id=SESSION, client_id="rep-0000-0001", **labels
     ).json()
@@ -147,7 +147,7 @@ def test_measures_have_texts(client: TestClient) -> None:
 
 def test_content_has_the_catalogue(client: TestClient) -> None:
     content = client.get("/api/v1/content").json()
-    assert {r["id"] for r in content["routines"]} == {"starter", "quick", "size"}
+    assert {r["id"] for r in content["routines"]} == {"pitch", "resonance"}
     note = next(e for e in content["exercises"] if e["id"] == "note-match")
     assert note["rule"] == {
         "kind": "pitch_hold",

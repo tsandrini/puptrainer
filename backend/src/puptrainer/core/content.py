@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from puptrainer.core.evaluation import MEASURES
 from puptrainer.core.metrics import REGISTRY
+from puptrainer.core.reading import READING_MEASURES
 from puptrainer.core.schemas import (
     Content,
     Exercise,
@@ -177,15 +178,17 @@ def parse_ref(ref: str, kind: str) -> tuple[str, int] | None:
 
 
 def load_measures(content_dir: Path) -> list[MeasureDef]:
-    """The evaluation's measures with the texts of `measures/<lang>.toml` merged in.
+    """The measures of the evaluation and of a reading, with their texts merged in.
 
     Args:
         content_dir: The repository's `content/` directory.
 
     Returns:
-        One definition per measure; texts are empty for languages without a file.
+        One definition per measure, with the titles and descriptions of
+        `measures/<lang>.toml` and the titles of its zones (`zones.<key>` there); texts
+        are empty for languages without a file.
     """
-    texts: dict[str, dict[str, dict[str, str]]] = {}
+    texts: dict[str, dict[str, dict[str, Any]]] = {}
     for path in sorted((content_dir / "measures").glob("*.toml")):
         texts[path.stem] = _read(path)
     return [
@@ -199,9 +202,21 @@ def load_measures(content_dir: Path) -> list[MeasureDef]:
                     for k, t in texts.items()
                     if measure.key in t
                 },
+                "zones": [
+                    zone.model_copy(
+                        update={
+                            "titles": {
+                                k: t[measure.key]["zones"][zone.key]
+                                for k, t in texts.items()
+                                if zone.key in t.get(measure.key, {}).get("zones", {})
+                            }
+                        }
+                    )
+                    for zone in measure.zones
+                ],
             }
         )
-        for measure in MEASURES
+        for measure in (*MEASURES, *READING_MEASURES)
     ]
 
 
@@ -212,7 +227,8 @@ def load_metrics(content_dir: Path) -> list[MetricDef]:
         content_dir: The repository's `content/` directory.
 
     Returns:
-        One definition per registry entry; texts are empty for languages without a file.
+        One definition per registry entry, with its title, description, reliability note
+        and how it relates to the two targets; texts are empty for languages without a file.
     """
     texts: dict[str, dict[str, dict[str, str]]] = {}
     for path in sorted((content_dir / "metrics").glob("*.toml")):
@@ -225,14 +241,22 @@ def load_metrics(content_dir: Path) -> list[MetricDef]:
             for lang, t in texts.items()
             if metric.key in t
         }
-        notes = {
-            lang: t[metric.key]["note"]
-            for lang, t in texts.items()
-            if metric.key in t and "note" in t[metric.key]
-        }
+        notes, relates = (
+            {
+                lang: t[metric.key][field]
+                for lang, t in texts.items()
+                if metric.key in t and field in t[metric.key]
+            }
+            for field in ("note", "relates")
+        )
         out.append(
             metric.model_copy(
-                update={"titles": titles, "descriptions": descriptions, "notes": notes}
+                update={
+                    "titles": titles,
+                    "descriptions": descriptions,
+                    "notes": notes,
+                    "relates": relates,
+                }
             )
         )
     return out

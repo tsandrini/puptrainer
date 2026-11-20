@@ -259,15 +259,32 @@ class Evaluation(Schema):
     advice: list[Advice] = []
 
 
-class MeasureDef(Schema):
-    """A measure of the evaluation, with its texts.
+class Zone(Schema):
+    """A stretch of a measure's scale with a meaning, drawn on its strip.
 
     Attributes:
-        key: Identifier used in `Measure.key`.
+        key: Identifier (`typical`, `beyond`).
+        low: Where it starts; unset for no lower end.
+        high: Where it ends; unset for no upper end.
+        titles: What it stands for, per language.
+    """
+
+    key: str
+    low: float | None = None
+    high: float | None = None
+    titles: dict[str, str] = {}
+
+
+class MeasureDef(Schema):
+    """A measure of the evaluation or of a reading, with its texts.
+
+    Attributes:
+        key: Identifier used in `Measure.key` and `Shift.key`.
         unit: Unit of the value.
         decimals: Decimals worth showing.
         titles: Short name per language.
         descriptions: What it is, per language.
+        zones: Stretches of its scale that carry a meaning (conventions, not limits).
     """
 
     key: str
@@ -275,6 +292,81 @@ class MeasureDef(Schema):
     decimals: int
     titles: dict[str, str] = {}
     descriptions: dict[str, str] = {}
+    zones: list[Zone] = []
+
+
+class Basis(StrEnum):
+    """Which everyday takes a take is read against: how alike they are to it."""
+
+    SAME_TEXT = "same-text"
+    SAME_KIND = "same-kind"
+    SPEECH = "speech"
+    VOWELS = "vowels"
+
+
+class ReadingNote(StrEnum):
+    """What a reading says in words: where the resonance sits, and what it cost."""
+
+    EVERYDAY = "everyday"
+    DARKER = "darker"
+    BRIGHTER = "brighter"
+    TYPICAL = "typical"
+    BEYOND = "beyond"
+    R1_FELL = "r1-fell"
+    QUIETER = "quieter"
+    LESS_CLEAR = "less-clear"
+
+
+class Shift(Schema):
+    """One number of a take against the learner's own everyday voice.
+
+    Attributes:
+        key: The measure (`pitch_shift_st`, `brightness_pct`, …).
+        value: How far the take lies from the everyday voice.
+        everyday: The everyday value the shift is counted from, in the unit of the metric
+            behind it (Hz, dB); unset for a number made of several metrics.
+        wobble: How far the everyday takes themselves scatter around their mean (their
+            standard deviation, in the unit of `value`); unset with fewer than three.
+    """
+
+    key: str
+    value: float
+    everyday: float | None = None
+    wobble: float | None = None
+
+
+class Reading(Schema):
+    """A take read against the learner's own everyday voice. Computed, never stored.
+
+    Attributes:
+        basis: Which everyday takes it was read against.
+        takes: How many of them.
+        shifts: The numbers: pitch, then resonance, then what it cost.
+        notes: The same in words.
+    """
+
+    basis: Basis
+    takes: int
+    shifts: list[Shift]
+    notes: list[ReadingNote] = []
+
+
+class Reference(Schema):
+    """The learner's everyday voice for one kind of take on one microphone setup.
+
+    Attributes:
+        basis: How alike its takes are to the kind asked for.
+        take_ids: The everyday takes it is made of, oldest first.
+        pitch_hz: Their median pitch (geometric mean over the takes); unset if unmeasured.
+        formants_hz: F1 to F4 of speech (geometric mean over the takes); empty for vowels.
+        vowels: F1 to F4 per sustained vowel (`a`, `i`, `u`); empty for speech.
+    """
+
+    basis: Basis
+    take_ids: list[str]
+    pitch_hz: float | None
+    formants_hz: list[float]
+    vowels: dict[str, list[float]]
 
 
 class TakeMeta(Schema):
@@ -393,7 +485,8 @@ class TakeOut(Schema):
     """A stored take with its labels, its analysis state and its metrics.
 
     `metrics`, `details` and `series` come from the newest finished analysis; the
-    `evaluation` of a practice take is computed from them when the take is read.
+    `evaluation` of a practice take and the `reading` of a voice against the learner's
+    everyday takes are computed from them when the take is read.
     """
 
     id: str
@@ -421,6 +514,7 @@ class TakeOut(Schema):
     target: Target | None
     comfort: int | None
     evaluation: Evaluation | None
+    reading: Reading | None
 
 
 class JobClaim(Schema):
@@ -504,6 +598,7 @@ class MetricDef(Schema):
         titles: Short name per language.
         descriptions: What it measures, per language.
         notes: How far to trust it and how to read it, per language.
+        relates: What it says about pitch or resonance, the two targets, per language.
     """
 
     key: str
@@ -514,6 +609,7 @@ class MetricDef(Schema):
     titles: dict[str, str] = {}
     descriptions: dict[str, str] = {}
     notes: dict[str, str] = {}
+    relates: dict[str, str] = {}
 
 
 class Passage(Schema):
@@ -561,7 +657,7 @@ class Skill(StrEnum):
 
     WARM_UP = "warm-up"
     PITCH_WEIGHT = "pitch-weight"
-    SIZE = "size"
+    RESONANCE = "resonance"
     CLARITY = "clarity"
     CARRY_OVER = "carry-over"
 
@@ -572,6 +668,7 @@ class Live(StrEnum):
     NONE = "none"
     PITCH = "pitch"
     FORMANTS = "formants"
+    WHISPER = "whisper"
 
 
 class Demo(StrEnum):

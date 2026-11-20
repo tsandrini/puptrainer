@@ -1,0 +1,34 @@
+id = "resonance"
+version = 1
+minutes = 6
+
+[titles]
+en = "Resonance"
+cs = "Rezonance"
+
+[summaries]
+en = "Resonance, at an easy pitch: find the smaller sound in a whisper, hold it on one note, then keep it in a phrase."
+cs = "Rezonance, ve snadné výšce: najít menší zvuk v šepotu, podržet ho na jednom tónu a pak ho udržet ve větě."
+
+[[steps]]
+exercise = "trill-glide"
+reps = 1
+
+[[steps]]
+exercise = "whisper-slide"
+
+[[steps]]
+exercise = "resonance-steps"
+
+[[steps]]
+exercise = "bright-phrase"
+
+[[sources]]
+author = "TransVoiceLessons (Zheanna Erose)"
+title = "The Single Most Powerful Element of Voice Feminization: Meta Resonance (voiceless first, then voiced, then speech)"
+url = "https://www.youtube.com/watch?v=BW8X2nXexQs"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Resonance: voiced exercises"
+url = "https://wiki.sumianvoice.com/wiki/pages/resonance"

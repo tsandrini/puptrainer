@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from puptrainer.core.content import exercise_ref, load_content, routine_ref
+from puptrainer.core.content import (
+    exercise_ref,
+    load_content,
+    load_measures,
+    load_metrics,
+    routine_ref,
+)
 
 from .conftest import CONTENT
 
@@ -24,7 +30,7 @@ def content_copy(tmp_path: Path) -> Path:
 def test_catalogue_loads_with_every_text_in_both_languages() -> None:
     content = load_content(CONTENT)
     assert {e.id for e in content.exercises} >= {"slide-down-hold", "note-match", "count-in-band"}
-    assert {r.id for r in content.routines} == {"starter", "quick", "size"}
+    assert {r.id for r in content.routines} == {"pitch", "resonance"}
     for exercise in content.exercises:
         for field in ("titles", "summaries", "steps", "right", "why"):
             assert set(getattr(exercise, field)) == LANGUAGES, (exercise.id, field)
@@ -38,10 +44,22 @@ def test_catalogue_loads_with_every_text_in_both_languages() -> None:
     assert routine_ref(content.routines[0]).startswith("routine:")
 
 
+def test_every_number_says_what_it_is_for() -> None:
+    for metric in load_metrics(CONTENT):
+        assert set(metric.titles) == set(metric.relates) == LANGUAGES, metric.key
+    measures = {m.key: m for m in load_measures(CONTENT)}
+    for key in ("pitch_shift_st", "brightness_pct", "r1_shift_pct", "clarity_shift_db"):
+        assert set(measures[key].titles) == set(measures[key].descriptions) == LANGUAGES, key
+    zones = measures["brightness_pct"].zones
+    assert [z.key for z in zones] == ["typical", "beyond"]
+    assert all(set(z.titles) == LANGUAGES for z in zones)
+    assert zones[0].high == zones[1].low and zones[1].high is None
+
+
 @pytest.mark.parametrize(
     ("path", "old", "new", "message"),
     [
-        ("routines/quick.toml", '"count-in-band"', '"count-to-eleven"', "unknown exercise"),
+        ("routines/pitch.toml", '"count-in-band"', '"count-to-eleven"', "unknown exercise"),
         ("exercises/anchor-phrases.toml", "anchors-cs@1", "anchors-cs@9", "unknown passage"),
         (
             "exercises/anchor-phrases.toml",
@@ -99,11 +117,11 @@ def test_loader_refuses_broken_content(
 def test_an_exercise_needs_its_skill_described(content_copy: Path) -> None:
     skills = content_copy / "skills.toml"
     text = skills.read_text(encoding="utf-8")
-    skills.write_text(text.replace('key = "size"', 'key = "warm-up"'), encoding="utf-8")
+    skills.write_text(text.replace('key = "resonance"', 'key = "warm-up"'), encoding="utf-8")
     with pytest.raises(ValueError, match="defined twice"):
         load_content(content_copy)
-    head, _, _ = text.partition('[[skills]]\nkey = "size"')
+    head, _, _ = text.partition('[[skills]]\nkey = "resonance"')
     rest = text.split('[[skills]]\nkey = "clarity"', 1)[1]
     skills.write_text(head + '[[skills]]\nkey = "clarity"' + rest, encoding="utf-8")
-    with pytest.raises(ValueError, match="skill size is not described"):
+    with pytest.raises(ValueError, match="skill resonance is not described"):
         load_content(content_copy)

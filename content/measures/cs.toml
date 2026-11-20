@@ -43,3 +43,33 @@ description = "O kolik vzrostla vzdálenost formantů od prvního podrženého z
 [step_drift_st]
 title = "Posun výšky"
 description = "Jak daleko od sebe jsou výšky podržených zvuků, v půltónech."
+
+# --- nahrávka přečtená proti vlastnímu běžnému hlasu (`puptrainer.core.reading`)
+
+[pitch_shift_st]
+title = "Výška"
+description = "O kolik leží medián výšky nad vaším běžným hlasem, v půltónech (dvanáct je oktáva)."
+
+[brightness_pct]
+title = "Jas"
+description = "O kolik výš leží rezonance F2 až F4 než ve vašem běžném hlasu. Kratší a menší prostor nad hlasivkami je zvedá všechny najednou. Pro měřítko: u jednotlivých mluvčích leží ženské hlasy 10 až 23 % nad průměrným mužským, uprostřed 16 %, a dětské ještě výš (tabulky samohlásek Hillenbranda a kol., 1995). Zhruba 4 až 6 % je nejmenší rozdíl, který posluchač vůbec uslyší. Váš běžný hlas nemusí být průměrný mužský, takže zónu berte jako okolí, ne jako čáru; a to, jak hlas působí, závisí i na výšce."
+
+[brightness_pct.zones]
+typical = "kde leží ženské hlasy"
+beyond = "dětské hlasy"
+
+[r1_shift_pct]
+title = "První rezonance (R1)"
+description = "O kolik výš leží nejnižší rezonance, F1, než ve vašem běžném hlasu. Menší hrdlo ji zvedá; zavřená čelist, tišší hlas a zvuk jdoucí nosem ji snižují. Pro měřítko: ženské F1 leží na stejné samohlásce 8 až 29 % nad průměrným mužským, uprostřed 17 %. V souvislé řeči sleduje čelist stejně jako hrdlo, takže nejvíc říká na držené nebo šeptané samohlásce."
+
+[r1_shift_pct.zones]
+typical = "kde leží ženské hlasy"
+beyond = "dětské hlasy"
+
+[level_shift_db]
+title = "Hlasitost"
+description = "O kolik je nahrávka hlasitější než váš běžný hlas ve stejné sestavě mikrofonu."
+
+[clarity_shift_db]
+title = "Čistota"
+description = "O kolik je tón čistší než ve vašem běžném hlasu (CPPS). Dech, tlak i tišší hlas ji snižují."

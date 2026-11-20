@@ -22,20 +22,20 @@ en = "Pitch and weight"
 cs = "Výška a váha"
 
 [skills.descriptions]
-en = "Pitch is how high or low a voice is: how many times a second the vocal folds vibrate (Hz). Weight is how heavy or light it sounds: a thick, rumbling sound against a thin, light, floaty one. Weight is not loudness and not breathiness. Teachers train the two together: going higher with a lighter voice changes a lot already, while pushing pitch up with a heavy voice strains."
-cs = "Výška je to, jak vysoko nebo nízko hlas zní: kolikrát za sekundu hlasivky kmitnou (Hz). Váha je to, jak těžce nebo lehce zní: hutný, hřmotný zvuk proti tenkému, lehkému, vznášivému. Váha není hlasitost ani dechovost. Učitelé trénují obojí najednou: jít výš s lehčím hlasem změní hodně, zatímco tlačit výšku nahoru těžkým hlasem namáhá."
+en = "Pitch is how high or low a voice is: how many times a second the vocal folds open and close (Hz). Weight is the other property of the same vibration, its shape. Folds that meet thick and firmly make a buzzy wave with strong overtones far up the spectrum: a heavy sound. Folds that meet thin and briefly make a rounder wave whose overtones fade quickly: a light sound. The same note at the same loudness can be either, as a sawtooth and a sine can. Weight is not loudness and not breathiness. Teachers train the two together: going higher with a lighter voice changes a lot already, while pushing pitch up with a heavy voice strains. The app measures pitch; it has no honest number for weight yet, so how each rep felt is the guide."
+cs = "Výška je to, jak vysoko nebo nízko hlas zní: kolikrát za sekundu se hlasivky otevřou a zavřou (Hz). Váha je druhá vlastnost téhož kmitání, jeho tvar. Hlasivky, které se setkávají tlusté a pevně, dělají bzučivou vlnu se silnými vyššími harmonickými daleko ve spektru: těžký zvuk. Hlasivky, které se setkávají tenké a krátce, dělají oblejší vlnu, jejíž harmonické rychle slábnou: lehký zvuk. Stejný tón při stejné hlasitosti může být obojí, jako pila a sinus. Váha není hlasitost ani dechovost. Učitelé trénují obojí najednou: jít výš s lehčím hlasem změní hodně, zatímco tlačit výšku nahoru těžkým hlasem namáhá. Aplikace měří výšku; pro váhu zatím poctivé číslo nemá, takže vodítkem je, jaký byl z každého opakování pocit."
 
 [[skills]]
-key = "size"
-aliases = ["resonance", "brightness", "R1", "larynx height", "vocal tract length", "formants (F1, F2)"]
+key = "resonance"
+aliases = ["size", "brightness", "R1, R2", "meta resonance", "larynx height", "vocal tract length", "formants (F1, F2)"]
 
 [skills.titles]
-en = "Size"
-cs = "Velikost"
+en = "Resonance"
+cs = "Rezonance"
 
 [skills.descriptions]
-en = "Size is how large or small the speaker sounds. It comes from the space above the vocal folds: how high the larynx sits, how much room the mouth and throat leave, the lips. A smaller space sounds brighter. On a recording it shows in the formants, which the lab's resonance numbers follow."
-cs = "Velikost je to, jak velký nebo malý mluvčí zní. Určuje ji prostor nad hlasivkami: jak vysoko je hrtan, kolik místa nechávají ústa a hrdlo, rty. Menší prostor zní jasněji. V nahrávce se projevuje ve formantech, a právě ty sledují čísla rezonance v laboratoři."
+en = "Resonance is what the space above the vocal folds does to their sound. The throat and the mouth are a tube with natural frequencies of its own (the formants; teachers call the lowest one R1), and it strengthens the overtones that fall near them. A shorter, narrower space has higher natural frequencies and sounds like a smaller person: brighter. It moves with how high the larynx sits, how much room the throat and the back of the tongue leave, the jaw and the lips. Pitch does not change it: the same note can sound big or small. The app follows it in the formants and shows it against your own everyday voice, in percent."
+cs = "Rezonance je to, co se zvukem hlasivek udělá prostor nad nimi. Hrdlo a ústa jsou trubice s vlastními frekvencemi (formanty; té nejnižší říkají učitelé R1) a zesilují harmonické, které leží poblíž. Kratší a užší prostor má vlastní frekvence výš a zní jako menší člověk: jasněji. Hýbe s ní to, jak vysoko je hrtan, kolik místa nechává hrdlo a kořen jazyka, čelist a rty. Výška ji nemění: stejný tón může znít velký i malý. Aplikace ji sleduje ve formantech a ukazuje ji proti vašemu běžnému hlasu, v procentech."
 
 [[skills]]
 key = "clarity"
