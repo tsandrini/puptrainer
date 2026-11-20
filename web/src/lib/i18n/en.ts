@@ -97,9 +97,10 @@ export const en = {
 			`Setting the zero from your first sound: ${heard} of ${need} s.`,
 		fromStart: 'Counted from the first sound of this take.',
 		fromEveryday: 'Counted from your everyday takes of this text.',
-		rough: 'Counted from your everyday speech, which is other words: a rough guide only.',
+		fromKind:
+			'Counted from your everyday free speech: other words, so it moves more than on a text.',
 		preparing: 'Measuring your everyday takes for the live reference…',
-		none: 'No everyday take of this kind yet, so there is nothing to count from: record it once in your everyday voice.',
+		none: 'No everyday take of this text yet (or, for free speech, of free speech), so there is nothing to count from: record it once in your everyday voice.',
 		waiting: 'Waiting for sound…',
 		tooHigh: 'Above 300 Hz the resonance cannot be read: bring the pitch down.'
 	},
@@ -253,7 +254,12 @@ export const en = {
 		failed: (why: string) => `Recording failed: ${why}`,
 		baseline: 'Baseline',
 		baselineToday: (done: number, total: number) => `${done} of ${total} recorded today`,
-		recordedToday: 'recorded today'
+		recordedToday: 'recorded today',
+		texts: 'Exercise texts',
+		textsHint:
+			'Read each in your everyday voice, on three days if you can: then every take of it is read on resonance too.',
+		textTaken: (n: number) =>
+			n === 1 ? 'in your everyday voice: 1 take' : `in your everyday voice: ${n} takes`
 	},
 	import: {
 		title: 'Import recordings',

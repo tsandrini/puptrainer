@@ -57,6 +57,8 @@
 	let note = $state('');
 	let inputs = $state.raw<MediaDeviceInfo[]>([]);
 	let today = $state.raw<TakeOut[]>([]);
+	/** Phrases already recorded in the everyday voice: the exercise texts among them. */
+	let phrases = $state.raw<TakeOut[]>([]);
 
 	let phase = $state<'idle' | 'recording' | 'review'>('idle');
 	let peakDb = $state(-120);
@@ -85,9 +87,10 @@
 	const baseline = $derived(app.content?.protocols.find((p) => p.id === 'baseline') ?? null);
 	/** The texts of the exercises: read once in the everyday voice, they can be compared too. */
 	const texts = $derived(
-		(app.content?.passages ?? []).filter(
-			(p) => !baseline?.items.some((step) => step.content_ref === passageRef(p))
-		)
+		(app.content?.passages ?? [])
+			.filter((p) => !baseline?.items.some((step) => step.content_ref === passageRef(p)))
+			// the interface language's texts come first
+			.sort((a, b) => Number(a.language !== i18n.locale) - Number(b.language !== i18n.locale))
 	);
 	const choices = $derived<Choice[]>([
 		...(baseline?.items ?? []).map((step) => ({
@@ -172,10 +175,17 @@
 		const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 		try {
 			today = (await fetchTakes()).filter((t) => Date.parse(t.recorded_at) >= midnight);
+			phrases = await fetchTakes({ item: 'phrase', intent: 'habitual' });
 		} catch {
-			// NOTE: without the API the strip simply shows nothing as done
+			// NOTE: without the API the strips simply show nothing as done
 		}
 	}
+
+	/** How many everyday lab takes of a text there are on this setup. */
+	const everydayTakes = (ref: string) =>
+		phrases.filter(
+			(t) => t.device_id === device?.id && t.exercise_ref === null && t.content_ref === ref
+		).length;
 
 	onMount(() => {
 		void refreshInputs();
@@ -301,6 +311,35 @@
 					</button>
 				{/each}
 			</div>
+			{#if texts.length}
+				<div class="mt-4 mb-2 flex flex-wrap items-baseline justify-between gap-x-2">
+					<h2 class="text-base">{i18n.t.record.texts}</h2>
+					<span class="text-xs text-muted-foreground">{i18n.t.record.textsHint}</span>
+				</div>
+				<div class="flex flex-wrap gap-1.5" data-testid="texts">
+					{#each texts as text (text.id)}
+						{@const taken = everydayTakes(passageRef(text))}
+						<button
+							type="button"
+							disabled={phase !== 'idle'}
+							class={cn(
+								'flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold transition-colors',
+								choice?.key === `text:${text.id}`
+									? 'border-primary bg-primary text-primary-foreground'
+									: 'bg-card hover:bg-accent',
+								taken > 0 && choice?.key !== `text:${text.id}` && 'text-muted-foreground'
+							)}
+							title={taken ? i18n.t.record.textTaken(taken) : undefined}
+							data-text={text.id}
+							data-taken={taken}
+							onclick={() => (choiceKey = `text:${text.id}`)}
+						>
+							{#if taken}<CheckIcon class="size-3.5" />{/if}
+							{text.title} ({i18n.language(text.language)})
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</section>
 	{/if}
 

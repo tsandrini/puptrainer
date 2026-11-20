@@ -865,6 +865,28 @@ try {
 		'the texts of the exercises can be recorded in the everyday voice',
 		(await text(page, '[data-testid=what]')).includes('Anchor phrases (English)')
 	);
+	check(
+		'they have buttons of their own beside the baseline, none read yet',
+		(await count(page, '[data-testid=texts] [data-text]')) === 2 &&
+			(await page.getAttribute('[data-text=anchors-en]', 'data-taken')) === '0'
+	);
+	await page.click('[data-text=anchors-en]');
+	check(
+		'a button picks its text',
+		(await page.inputValue('[data-testid=what]')) === 'text:anchors-en' &&
+			(await text(page, '[data-testid=passage]')).startsWith('Hey, how')
+	);
+	await record(page, 2);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=review]');
+	await page.click('[data-testid=save]');
+	await page.waitForSelector('[data-testid=outcome]');
+	const taken = await until(
+		() => page.getAttribute('[data-text=anchors-en]', 'data-taken'),
+		(v) => v === '1',
+		15_000
+	);
+	check('a text read in the everyday voice is ticked', taken === '1', `${taken} takes`);
 
 	// --- practice: a whisper is followed live, from its own start
 	await page.goto('/practice/run?exercise=whisper-slide');
@@ -890,7 +912,7 @@ try {
 			(await count(page, '[data-testid=band-strip]')) === 1
 	);
 	check(
-		'and the live resonance, counted from everyday speech',
+		'and the live resonance, counted from the everyday takes of its text',
 		(await page.getAttribute('[data-testid=live-resonance]', 'data-from')) === 'everyday'
 	);
 	await pause(2);
@@ -906,11 +928,11 @@ try {
 		size.replace(/\s+/g, ' ')
 	);
 	check(
-		'other words than the everyday takes are read on pitch, not on resonance',
+		'a text read in the everyday voice before is read on resonance too',
 		(await page.getAttribute('[data-testid=result] [data-testid=reading]', 'data-basis')) ===
-			'speech' &&
-			(await count(page, '[data-testid=result] [data-shift=pitch_shift_st]')) === 1 &&
-			(await count(page, '[data-testid=result] [data-testid=no-resonance]')) === 1
+			'same-text' &&
+			(await count(page, '[data-testid=result] [data-shift=brightness_pct]')) === 1 &&
+			(await count(page, '[data-testid=result] [data-testid=shift-strip]')) === 1
 	);
 
 	// --- practice: a miss says which way to go; a band far above the voice is flagged
@@ -927,6 +949,14 @@ try {
 		'a miss comes with what to try next',
 		(await text(page, '[data-testid=verdict]')) === 'Not yet' &&
 			(await text(page, '[data-testid=advice]')).startsWith('You were below your band')
+	);
+	check(
+		'other words than the everyday takes are read on pitch, not on resonance',
+		(await page.getAttribute('[data-testid=result] [data-testid=reading]', 'data-basis')) ===
+			'speech' &&
+			(await count(page, '[data-testid=result] [data-shift=pitch_shift_st]')) === 1 &&
+			(await count(page, '[data-testid=result] [data-shift=brightness_pct]')) === 0 &&
+			!(await text(page, '[data-testid=result] [data-testid=no-resonance]')).includes('Record')
 	);
 	await context.request.post('/api/v1/bands', { data: { low_hz: 160, high_hz: 200 } });
 

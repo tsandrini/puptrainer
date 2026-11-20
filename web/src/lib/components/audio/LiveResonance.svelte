@@ -89,8 +89,8 @@
 	const counted = $derived(
 		zero.from === 'start'
 			? i18n.t.live.fromStart
-			: zero.reference?.basis === 'speech'
-				? i18n.t.live.rough
+			: zero.reference?.basis === 'same-kind'
+				? i18n.t.live.fromKind
 				: zero.reference
 					? i18n.t.live.fromEveryday
 					: ''

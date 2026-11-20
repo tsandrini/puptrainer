@@ -100,9 +100,9 @@ export const cs: Messages = {
 		settingZero: (heard, need) => `Nastavuje se nula z prvního zvuku: ${heard} z ${need} s.`,
 		fromStart: 'Počítáno od prvního zvuku této nahrávky.',
 		fromEveryday: 'Počítáno od vašich běžných nahrávek tohoto textu.',
-		rough: 'Počítáno od vaší běžné řeči, což jsou jiná slova: jen hrubé vodítko.',
+		fromKind: 'Počítáno od vaší běžné volné řeči: jiná slova, takže se hýbe víc než u textu.',
 		preparing: 'Měří se vaše běžné nahrávky pro živé srovnání…',
-		none: 'Zatím není žádná běžná nahrávka tohoto druhu, takže není od čeho počítat: nahrajte ji jednou běžným hlasem.',
+		none: 'Zatím není žádná běžná nahrávka tohoto textu (nebo, u volné řeči, volné řeči), takže není od čeho počítat: nahrajte ji jednou běžným hlasem.',
 		waiting: 'Čeká se na zvuk…',
 		tooHigh: 'Nad 300 Hz se rezonance nedá přečíst: jděte s výškou dolů.'
 	},
@@ -256,7 +256,11 @@ export const cs: Messages = {
 		failed: (why) => `Nahrávání selhalo: ${why}`,
 		baseline: 'Výchozí stav',
 		baselineToday: (done, total) => `dnes nahráno ${done} z ${total}`,
-		recordedToday: 'dnes nahráno'
+		recordedToday: 'dnes nahráno',
+		texts: 'Texty cvičení',
+		textsHint:
+			'Přečtěte každý běžným hlasem, pokud možno ve třech dnech: pak se každá jeho nahrávka čte i v rezonanci.',
+		textTaken: (n) => `běžným hlasem: ${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}`
 	},
 	import: {
 		title: 'Import nahrávek',

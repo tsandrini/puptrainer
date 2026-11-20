@@ -58,7 +58,7 @@ function measured(takeId: string): Promise<Formants | null> {
  *
  * @param kind the microphone setup and what is about to be recorded
  * @returns the geometric mean of the everyday takes' formants by the live method, or null
- *   when there is no everyday speech to count from
+ *   when there is no everyday take of the same text, or of free speech for free speech
  * @throws when the API or a recording cannot be reached or decoded
  */
 export async function liveReference(kind: {
@@ -68,7 +68,9 @@ export async function liveReference(kind: {
 	content_ref?: string | null;
 }): Promise<LiveReference | null> {
 	const voice = await fetchReference(kind);
-	if (!voice || voice.basis === 'vowels') return null;
+	// NOTE: formants follow the words: against other words there is nothing to count from,
+	// as for a saved take (`puptrainer.core.reading`)
+	if (!voice || voice.basis === 'vowels' || voice.basis === 'speech') return null;
 	const found: Formants[] = [];
 	for (const takeId of voice.take_ids) {
 		const formants = await measured(takeId);
