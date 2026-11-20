@@ -177,6 +177,13 @@ def test_other_words_are_read_on_pitch_only() -> None:
     again = read(phrase, [*EVERYDAY, same])
     assert again is not None and again.basis == Basis.SAME_TEXT
     assert {s.key: s.value for s in again.shifts}["brightness_pct"] == pytest.approx(0.0)
+    # and they say nothing about the resonance of a phrase of other words, or of none
+    for ref in ("passage:anchors-cs@1", None):
+        other = read(voice("try", 5, item=Item.PHRASE, ref=ref, bright=1.1), [*EVERYDAY, same])
+        assert other is not None and other.basis == Basis.SPEECH
+        assert "brightness_pct" not in {s.key for s in other.shifts}
+    unnamed = read(voice("try", 5, ref=None, bright=1.1), EVERYDAY)
+    assert unnamed is not None and unnamed.basis == Basis.SPEECH
 
 
 def test_what_is_not_read() -> None:

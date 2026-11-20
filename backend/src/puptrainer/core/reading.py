@@ -103,11 +103,13 @@ def comparable(
 ) -> tuple[Basis, list[Voice]] | None:
     """The everyday takes a take of this kind is read against.
 
-    Speech is held against everyday takes of the same text, else of the same kind and
-    language, else against everyday speech in general (in its language when there is
-    any); held sounds against the everyday sustained vowels. The earliest five count.
-    Formants follow the vowels a text contains, so against speech in general only pitch,
-    level and clarity are read (see `read`).
+    Speech is held against everyday takes of the same text; free speech, long enough to
+    average over its words, against everyday free speech in its language; anything else
+    against everyday speech in general (in its language when there is any). Held sounds
+    are held against the everyday sustained vowels. The earliest five count. Formants
+    follow the vowels a text contains, so against speech in general only pitch, level and
+    clarity are read (see `read`): a phrase is never read on resonance against another
+    phrase.
 
     Args:
         item: What the take contains.
@@ -132,7 +134,7 @@ def comparable(
         same_text = [v for v in alike if content_ref is not None and v.content_ref == content_ref]
         if same_text:
             basis, pool = Basis.SAME_TEXT, same_text
-        elif alike and item != Item.PASSAGE:
+        elif alike and item == Item.FREE:
             basis, pool = Basis.SAME_KIND, alike
         else:
             basis = Basis.SPEECH
