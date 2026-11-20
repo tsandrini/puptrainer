@@ -21,11 +21,14 @@ measured on it, a missing English text.
 
 ## The curriculum spine
 
-The order follows the current community model (Sumi's wiki, Selene's
-guide): pitch and weight together first, size after, clarity as a gate on
-every step rather than a unit of its own, and every session ending in
-speech. The vocabulary is the perceptual one (weight, size, clarity); the
-aliases in `skills.toml` map the other teachers' terms onto it.
+There are two targets, pitch and resonance, and one session for each. A
+voice is a source and a filter: pitch is how fast the source vibrates,
+weight is the shape of that vibration (trained with pitch, and without an
+honest measure so far), resonance is the filter. Clarity and ease are a
+condition on every step rather than a unit of their own, and every session
+ends in speech. The exercises follow the current community model (Sumi's
+wiki, Selene's guide, TransVoiceLessons); the aliases in `skills.toml` map
+the teachers' terms (size, R1, brightness) onto the app's.
 
 ## An exercise
 
@@ -95,8 +98,11 @@ are doing it right, so every exercise says what it is for and what the app
 checks (`why`), fixes the vowel where the numbers depend on it ("ah"), and
 describes success in sensations (`right`). `live = "pitch"` shows the band,
 the note to match and the learner's pitch while recording; `formants` shows
-the live spectrogram for size work. Live guidance is on while skills are
-new; fading it is the curriculum's job later (M4).
+the pitch strip, the live resonance meter and the formants spectrogram;
+`whisper` shows the meter for sound without a pitch. The meter counts a
+held sound or a whisper from the first sound of the take, and speech from
+the learner's everyday takes. Live guidance is on while skills are new;
+fading it is the curriculum's job later (M4).
 
 **Czech texts** address the reader without grammatical gender: imperatives
 and the present tense, no past participles (`zkuste`, not `zkusil(a) jste`).
@@ -141,15 +147,15 @@ conventions, never "male" or "female" targets.
 ## Routines
 
 ```toml
-id = "quick"
+id = "pitch"
 version = 1
-minutes = 2
+minutes = 5
 
 [titles]
-en = "Quick one"
+en = "Pitch"
 
 [summaries]
-en = "Two minutes, several times a day: slide into your band and count."
+en = "Pitch, with a light voice: warm up, find your band, then speak."
 
 [[steps]]
 exercise = "slide-down-hold"
@@ -162,7 +168,33 @@ url = "https://…"
 ```
 
 A session stores `routine:<id>@<version>`; the Practice page lists each
-skill's exercises in the order the routines first use them.
+skill's exercises in the order the routines first use them. A session of a
+routine that is no longer in the catalogue stays in the log as "an earlier
+routine".
+
+## Readings
+
+Beside the judgement of a practice take, every voice (an everyday take or
+an attempt, not a drill) is read against the learner's own everyday voice
+by `puptrainer.core.reading`, whenever it is served:
+
+| Number             | What                                              |
+| ------------------ | ------------------------------------------------- |
+| `pitch_shift_st`   | Median pitch above the everyday voice             |
+| `brightness_pct`   | F2 to F4 above the everyday voice, geometric mean |
+| `r1_shift_pct`     | F1 above the everyday voice                       |
+| `level_shift_db`   | Speech level against the everyday voice           |
+| `clarity_shift_db` | CPPS against the everyday voice                   |
+
+The everyday voice is the mean of the earliest five everyday lab takes of
+the most alike kind on the same microphone setup: the same text, else the
+same kind and language, else speech in general; sustained vowels are read
+vowel by vowel. Formants follow the words, so against speech in general
+only pitch, level and clarity are read. Each number carries the scatter of
+the everyday takes themselves. The zones on the resonance strip are
+conventions computed from the vowel tables of Hillenbrand et al. (1995)
+(`TYPICAL_PCT`), named as such in `content/measures/<lang>.toml`; their
+keys and the measures' are `READING_MEASURES`.
 
 ## Adding a rule or a measure
 
@@ -170,4 +202,6 @@ A rule is a pydantic model in `puptrainer.core.schemas` (a member of the
 `Rule` union) and a function in `puptrainer.core.evaluation`; the kinds of
 take it can judge go into `RULE_ITEMS` in `puptrainer.core.content`. A new
 number a rule reports goes into `MEASURES` in `puptrainer.core.evaluation`
-with its texts in `content/measures/<lang>.toml`.
+with its texts in `content/measures/<lang>.toml`. A metric's texts in
+`content/metrics/<lang>.toml` include `relates`: what it says about pitch
+or resonance, shown with every number and chart.

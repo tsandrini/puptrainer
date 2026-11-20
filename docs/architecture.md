@@ -38,10 +38,20 @@ than the API and its storage.
   and playing are computed in the browser as a guide and are never stored.
 - **Live guidance while a skill is new.** A learner without a teacher cannot
   tell whether a drill is going right, so pitch steps show the band, the
-  note and the live pitch while recording, and size steps the formants
-  spectrogram; other steps show the level only. Always-on displays help the
-  session and hurt what is kept, so fading them as skills settle belongs to
-  the curriculum (M4).
+  note and the live pitch while recording, and resonance steps the live
+  resonance meter with the formants spectrogram; other steps show the level
+  only. Always-on displays help the session and hurt what is kept, so
+  fading them as skills settle belongs to the curriculum (M4).
+- **Two targets, read against the learner's own voice.** Pitch and
+  resonance are what the training is about; every other number is a
+  condition on them (clarity, loudness) or about the recording. The API
+  reads each voice against the learner's earliest everyday takes of the
+  most alike kind when it serves it (`core.reading`), like a judgement
+  never stored. The live resonance meter measures those same everyday
+  takes in the browser by its own method (`audio/formants.ts`, Burg at a
+  fixed ceiling) and remembers the result on the device, so its zero is
+  its own; it reads a brighter voice lower than the pipeline, which fits
+  its analysis range to each take, and says so.
 - **Every take carries its context**: the microphone setup, what was spoken,
   the language, the text that was read (with its version), and the intent
   (`habitual`, `attempt`, or `drill` for a sound made for an exercise).

@@ -41,12 +41,22 @@ every rep, and a practice log. Voice exploration and lessons come next
   (through Parselmouth): the pitch and how it moves, an estimate of
   resonance (formants, apparent vocal-tract length), voice quality, the range
   of a glide. Every number comes with what it means and how far to trust it.
-- **Shows progress**: each measurement over time, per microphone setup and
-  kind of take, and any two takes side by side.
-- **Guides practice**: short sessions of drills that end in speech, after
-  the teachers of the trans voice community, each rep judged on the one or
-  two numbers it is about, against a pitch band you choose. Comfort comes
-  first: it is asked before any number, and a strained rep never counts.
+- **Reads every take against your own everyday voice**, on the two things
+  the training is about: pitch (semitones above it) and resonance (how much
+  higher the formants sit, in percent, on a strip with the scatter of your
+  own everyday takes and the range where voices usually lie), and what
+  that cost in loudness and clarity.
+- **Shows resonance while you speak**: a live meter on the same strip,
+  counted from your everyday takes or, for a held sound or a whisper, from
+  the first sound of the take.
+- **Shows progress** by target: the distance from your everyday voice over
+  time, then each measurement behind it, per microphone setup and kind of
+  take; and any two takes side by side.
+- **Guides practice**: two short sessions, one for pitch and one for
+  resonance, of drills that end in speech, after the teachers of the trans
+  voice community, each rep judged on the one or two numbers it is about.
+  Comfort comes first: it is asked before any number, and a strained rep
+  never counts.
 - **Never loses a recording.** A take is kept in the browser until the
   server has confirmed it, also across reloads and while the server is away.
 - **English and Czech**, including reading passages written for both.
@@ -131,11 +141,17 @@ listening does not. `services.puptrainer.api.enable` and
    sustained vowels, a pitch glide, a reading passage and free speech in
    each language.
 3. Watch the level: the loudest parts should land in the marked zone
-   (−12 to −6 dBFS). The spectrogram under it is a picture to look at, not
-   a measurement. Listen back, then save.
-4. **Takes** lists everything; a take's page has the player, its pitch over
-   time, its numbers and its labels. Tick two takes to compare them.
-5. **Progress** charts each measurement over time.
+   (−12 to −6 dBFS). The resonance meter and the spectrogram under it are
+   guides, not measurements. Listen back, then save.
+4. **Takes** lists everything; a take's page has the player, the take read
+   against your everyday voice, its pitch over time, its numbers and its
+   labels. Tick two takes to compare them.
+5. **Progress** charts pitch and resonance over time, each against your
+   everyday voice first, then measurement by measurement.
+
+The texts of the exercises ("Anchor phrases") can be recorded here too:
+read one once in your everyday voice, and every later take of it is read
+on resonance as well.
 
 Record a baseline in your everyday voice before you start training: it
 cannot be recreated later.
@@ -145,9 +161,8 @@ cannot be recreated later.
 1. **Practice → Your band**: set the pitch range you practise in, or take
    the common starting band (F3–A3). It is a tool you can move at any time,
    not a goal.
-2. **Start a session**: "Quick one" (about 2 minutes, a few times a day) or
-   "Light and in band" (about 7 minutes). Say how your voice feels; a
-   hoarse voice is told to rest.
+2. **Start a session**: "Pitch" (about 5 minutes) or "Resonance" (about
+   6 minutes). Say how your voice feels; a hoarse voice is told to rest.
 3. Each step explains what to do, why, when to stop, and links to the
    teacher's own material. Record a rep, stop, then rate how it felt. The
    result follows a few seconds later: met or not yet, with the numbers.
