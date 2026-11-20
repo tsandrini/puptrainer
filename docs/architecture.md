@@ -51,7 +51,10 @@ than the API and its storage.
   takes in the browser by its own method (`audio/formants.ts`, Burg at a
   fixed ceiling) and remembers the result on the device, so its zero is
   its own; it reads a brighter voice lower than the pipeline, which fits
-  its analysis range to each take, and says so.
+  its analysis range to each take, and says so. A held sound or a whisper
+  is counted from its own first moments instead, with a wider gate than
+  speech: it is one sound, also when a quiet part follows a loud one or
+  it comes in short puffs.
 - **Every take carries its context**: the microphone setup, what was spoken,
   the language, the text that was read (with its version), and the intent
   (`habitual`, `attempt`, or `drill` for a sound made for an exercise).

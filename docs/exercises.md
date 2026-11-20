@@ -40,7 +40,7 @@ item = "sustain"               # the kind of take a rep is
 intent = "drill"               # drill (a sound) or attempt (speech in the voice)
 seconds = 12                   # rough length of one rep
 reps = 3                       # unless a routine says otherwise
-live = "pitch"                 # while recording: "pitch" (tuner strip), "formants", "none"
+live = "pitch"                 # while recording: "pitch", "formants", "whisper", "none"
 demo = "slide-down"            # a tone that plays the pitch pattern: "slide-down", "glide"
 hints = ["hnr_db"]             # registry metrics shown beside the result
 
@@ -55,6 +55,13 @@ en = "Start high and light, slide down into your band and hold it there."
 
 [steps]                        # what to do, one action per step
 en = ["…", "…"]
+
+[[sequence]]                   # optional: the parts of one take, in order
+seconds = 3                    # optional: how long the part lasts
+labels = { en = "Ordinary “ah”", cs = "Obyčejné „á“" }
+
+[[sequence]]
+pause = true                   # a silence between two parts; it has no labels
 
 [right]                        # what it sounds and feels like when it goes right
 en = "…"
@@ -96,8 +103,16 @@ always judged by the current rule.
 **Write for someone with no teacher.** The reader cannot tell whether they
 are doing it right, so every exercise says what it is for and what the app
 checks (`why`), fixes the vowel where the numbers depend on it ("ah"), and
-describes success in sensations (`right`). `live = "pitch"` shows the band,
-the note to match and the learner's pitch while recording; `formants` shows
+describes success in sensations (`right`). A sound that words cannot pin
+down (a lip trill) is not an exercise: use one the reader already makes (a
+hum), or one a named lesson demonstrates. An exercise with more than one
+part gets a `sequence`, drawn as a row of labels before and while
+recording, and the recording screen has "Try it first": the live guides
+without a take. What is done to find the voice (a slide, a held "ah")
+happens before recording, so a spoken take holds only its text.
+
+`live = "pitch"` shows the band, the note to match and the learner's pitch
+while recording; `formants` shows
 the pitch strip, the live resonance meter and the formants spectrogram;
 `whisper` shows the meter for sound without a pitch. The meter counts a
 held sound or a whisper from the first sound of the take, and speech from
@@ -116,10 +131,10 @@ rated strained (comfort 1) is never met, whatever the numbers; one rated
 effortful (2) counts, with the advice to go lower or lighter. A miss says
 which way to go (above or below the band or the note, or not held).
 `pitch_band` with `above_ok = true` only minds the band's lower edge, for
-sounds meant to be light and high. Sizes (`vtl_cm` as a hint, the first and
-last sound of `steps`) are shown beside the learner's everyday voice on the
-same microphone setup: the "a" of the lab's habitual vowels takes for held
-sounds, the habitual passages and free speech for phrases.
+sounds meant to be light and high. The held sounds of `steps` are read
+against the first of them, the learner's ordinary one, in the same take:
+brightness and R1 of the last, and of the darkest in between. Spoken
+exercises are read against the everyday take of their text (see Readings).
 
 | `kind`       | Takes         | Met when                                                                                                                           |
 | ------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -127,7 +142,7 @@ sounds, the habitual passages and free speech for phrases.
 | `pitch_band` | speech, held  | the share of voiced time inside the band is at least `min_share_pct`                                                               |
 | `pitch_hold` | `sustain`     | a steady stretch lasts `min_hold_s` inside the band (`at = "band"`) or within `tolerance_cents` of the played note (`at = "note"`) |
 | `metric`     | as the metric | a registry metric is at most `below`, or at least `above`                                                                          |
-| `steps`      | `sustain`     | `count` held sounds whose formant spacing rises step by step while their pitches stay within `max_drift_st`                        |
+| `steps`      | `sustain`     | `count` held sounds, the last brighter than the first by `min_bright_pct` (F2 to F4), all pitches within `max_drift_st`            |
 
 A **steady stretch** stays within `spread_cents` (default 50) either side of
 its middle; dropouts under 50 ms do not end it. When a take has more held

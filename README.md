@@ -164,8 +164,10 @@ cannot be recreated later.
 2. **Start a session**: "Pitch" (about 5 minutes) or "Resonance" (about
    6 minutes). Say how your voice feels; a hoarse voice is told to rest.
 3. Each step explains what to do, why, when to stop, and links to the
-   teacher's own material. Record a rep, stop, then rate how it felt. The
-   result follows a few seconds later: met or not yet, with the numbers.
+   teacher's own material; one with several parts shows their order as a
+   small diagram. "Try it first" runs the live guides without recording.
+   Record a rep, stop, then rate how it felt. The result follows a few
+   seconds later: met or not yet, with the numbers.
 4. At the end, rate the session and note whether any tension lasted. The
    **practice log** keeps every session with its takes.
 
