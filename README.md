@@ -149,9 +149,9 @@ listening does not. `services.puptrainer.api.enable` and
 5. **Progress** charts pitch and resonance over time, each against your
    everyday voice first, then measurement by measurement.
 
-The texts of the exercises ("Anchor phrases") can be recorded here too:
-read one once in your everyday voice, and every later take of it is read
-on resonance as well.
+The texts of the exercises ("Anchor phrases") have buttons of their own
+under the baseline: read one in your everyday voice, and every take of it
+is read on resonance as well (three everyday takes also give its scatter).
 
 Record a baseline in your everyday voice before you start training: it
 cannot be recreated later.

@@ -101,8 +101,9 @@ the note to match and the learner's pitch while recording; `formants` shows
 the pitch strip, the live resonance meter and the formants spectrogram;
 `whisper` shows the meter for sound without a pitch. The meter counts a
 held sound or a whisper from the first sound of the take, and speech from
-the learner's everyday takes. Live guidance is on while skills are new;
-fading it is the curriculum's job later (M4).
+the learner's everyday takes of the same text (free speech from everyday
+free speech); without one it says what to record. Live guidance is on
+while skills are new; fading it is the curriculum's job later (M4).
 
 **Czech texts** address the reader without grammatical gender: imperatives
 and the present tense, no past participles (`zkuste`, not `zkusil(a) jste`).
@@ -187,10 +188,12 @@ by `puptrainer.core.reading`, whenever it is served:
 | `clarity_shift_db` | CPPS against the everyday voice                   |
 
 The everyday voice is the mean of the earliest five everyday lab takes of
-the most alike kind on the same microphone setup: the same text, else the
-same kind and language, else speech in general; sustained vowels are read
-vowel by vowel. Formants follow the words, so against speech in general
-only pitch, level and clarity are read. Each number carries the scatter of
+the most alike kind on the same microphone setup: the same text; for free
+speech, everyday free speech in its language; else speech in general.
+Sustained vowels are read vowel by vowel. Formants follow the words, so
+against speech in general only pitch, level and clarity are read: a phrase
+is read on resonance only against the same phrase, which is why the Record
+page offers the exercise texts. Each number carries the scatter of
 the everyday takes themselves. The zones on the resonance strip are
 conventions computed from the vowel tables of Hillenbrand et al. (1995)
 (`TYPICAL_PCT`), named as such in `content/measures/<lang>.toml`; their
