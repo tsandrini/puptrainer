@@ -24,6 +24,88 @@ export const cs: Messages = {
 		quality: 'Kvalita hlasu',
 		range: 'Rozsah'
 	},
+	groupIntro: {
+		recording: 'O nahrávce, ne o hlasu: jestli se jejím číslům dá věřit.',
+		pitch: 'První cíl: jak rychle hlasivky kmitají.',
+		resonance: 'Druhý cíl: co se zvukem hlasivek udělá prostor nad nimi.',
+		quality:
+			'Není to cíl: je to podmínka pro oba. Změna se počítá, když hlas zůstane čistý a snadný.',
+		range: 'Prostor pro první cíl: tóny, na které hlas vůbec dosáhne.'
+	},
+	targets: {
+		pitch: 'Výška',
+		resonance: 'Rezonance',
+		condition: 'Co to stojí',
+		intro: {
+			pitch:
+				'První cíl: jak rychle hlasivky kmitají. Je to nejsilnější jednotlivé vodítko toho, jak hlas působí, a také to, co se nejsnáz přežene.',
+			resonance:
+				'Druhý cíl: co se zvukem hlasivek udělá prostor nad nimi. Menší prostor zvedá rezonance a hlas pak zní menší a jasnější, v jakékoli výšce.',
+			condition:
+				'Není to cíl: je to podmínka, kterou musí splnit oba cíle. Změna se počítá, když hlas zůstane zhruba stejně hlasitý, čistý a snadný jako váš běžný hlas.'
+		}
+	},
+	reading: {
+		title: 'Proti vašemu běžnému hlasu',
+		basis: {
+			'same-text': (n) =>
+				n === 1
+					? 'Počítáno od vaší jediné běžné nahrávky stejného textu.'
+					: `Počítáno od vašich prvních ${n} běžných nahrávek stejného textu.`,
+			'same-kind': (n) =>
+				n === 1
+					? 'Počítáno od vaší jediné běžné nahrávky tohoto druhu: jiná slova, takže rezonance je hrubší než u textu.'
+					: `Počítáno od vašich prvních ${n} běžných nahrávek tohoto druhu: pokaždé jiná slova, takže rezonance je hrubší než u textu.`,
+			speech: (n) =>
+				n === 1
+					? 'Počítáno od vaší jediné běžné nahrávky řeči, což jsou jiná slova.'
+					: `Počítáno od vašich prvních ${n} běžných nahrávek řeči, což jsou jiná slova.`,
+			vowels: (n) =>
+				n === 1
+					? 'Počítáno od vaší jediné běžné nahrávky samohlásek, samohlásku po samohlásce.'
+					: `Počítáno od vašich prvních ${n} běžných nahrávek samohlásek, samohlásku po samohlásce.`
+		},
+		everyday: (value) => `běžně ${value}`,
+		scatter: (value) => `vaše běžné nahrávky kolísají o ±${value}`,
+		zero: 'běžný hlas',
+		yours: 'kolísání vašich běžných nahrávek',
+		noResonance:
+			'Rezonance se tu neporovnává: jsou to jiná slova než ve vašich běžných nahrávkách a formanty se řídí slovy.',
+		recordText:
+			'Nahrajte tento text jednou běžným hlasem (Nahrát, pod „Co nahrát“) a každá jeho nahrávka se pak přečte i v rezonanci.',
+		none: 'Zatím není žádná běžná nahrávka, proti které by se tato dala přečíst. Nahrajte tento druh nahrávky jednou běžným hlasem.',
+		notes: {
+			everyday: 'Rezonance: v rozmezí kolísání vašich běžných nahrávek. Nic se tu nepohnulo.',
+			darker: 'Rezonance: tmavší než váš běžný hlas.',
+			brighter:
+				'Rezonance: zřetelně jasnější než váš běžný hlas a ještě pod místem, kde leží ženské hlasy. S tím se dá pracovat: dalším krokem je udržet to s menším úsilím, ne tlačit dál.',
+			typical:
+				'Rezonance: uvnitř rozmezí, kde leží ženské hlasy. Víc není potřeba; potřeba je lehkost a stálost.',
+			beyond:
+				'Rezonance: za rozmezím dospělých hlasů. Tolik už obvykle zní dětsky nebo stísněně a postojem se toho bez tlaku dosáhne málokdy: uberte.',
+			'r1-fell':
+				'První rezonance klesla, zatímco ostatní stouply: jas přichází z jazyka a zavřenějších úst, ještě ne z menšího hrdla. Nechte čelist otevírat tak jako v běžném hlasu.',
+			quieter: 'Zřetelně tišší než váš běžný hlas: často znamení zadržování nebo svírání.',
+			'less-clear':
+				'Tón je méně čistý než ve vašem běžném hlasu: dostal se do něj dech nebo tlak. Uberte, dokud nebude zase čistý.'
+		}
+	},
+	live: {
+		title: 'Rezonance, živě',
+		caption: 'Vodítko při mluvení. Uložená nahrávka se měří pečlivěji a obvykle vyjde výš.',
+		soFar: 'tato nahrávka zatím',
+		recent: (seconds) => `posledních ${seconds} s`,
+		brightness: 'Jas',
+		first: 'R1',
+		settingZero: (heard, need) => `Nastavuje se nula z prvního zvuku: ${heard} z ${need} s.`,
+		fromStart: 'Počítáno od prvního zvuku této nahrávky.',
+		fromEveryday: 'Počítáno od vašich běžných nahrávek tohoto textu.',
+		rough: 'Počítáno od vaší běžné řeči, což jsou jiná slova: jen hrubé vodítko.',
+		preparing: 'Měří se vaše běžné nahrávky pro živé srovnání…',
+		none: 'Zatím není žádná běžná nahrávka tohoto druhu, takže není od čeho počítat: nahrajte ji jednou běžným hlasem.',
+		waiting: 'Čeká se na zvuk…',
+		tooHigh: 'Nad 300 Hz se rezonance nedá přečíst: jděte s výškou dolů.'
+	},
 	common: {
 		save: 'Uložit',
 		cancel: 'Zrušit',
@@ -108,6 +190,8 @@ export const cs: Messages = {
 		confirmDelete: 'Smazat tuto nahrávku i s jejím záznamem? Nelze to vrátit.',
 		saved: 'Uloženo',
 		contour: 'Výška hlasu v průběhu nahrávky',
+		contourReads:
+			'Výška okamžik po okamžiku: sledujte, kde se čára drží, a propady na koncích vět.',
 		contourBand: 'Vybarvené pásmo je 145–185 Hz.',
 		contourTarget: (low, high) =>
 			`Vybarvené pásmo je vaše pásmo v době nahrávání: ${low}–${high} Hz.`,
@@ -124,7 +208,8 @@ export const cs: Messages = {
 	progress: {
 		title: 'Pokrok',
 		intro:
-			'Jeden bod za každou nahrávku. Porovnávejte srovnatelné: vždy jedno nastavení mikrofonu a jeden druh nahrávky.',
+			'Jeden bod za každou nahrávku, vždy pro jedno nastavení mikrofonu a jeden druh nahrávky. Každý cíl začíná vzdáleností od vašeho běžného hlasu; za ní následují měření, ze kterých vychází.',
+		against: 'proti vašemu běžnému hlasu',
 		empty: 'Těmto filtrům zatím neodpovídá žádná analyzovaná nahrávka.',
 		kind: 'Druh nahrávky',
 		latest: 'poslední',
@@ -207,7 +292,7 @@ export const cs: Messages = {
 	practice: {
 		title: 'Cvičení',
 		intro:
-			'Krátká vedená sezení: pár cvičení a pak řeč. Výška je tu nástroj, ne skóre; jde o lehký, nenamáhavý hlas.',
+			'Dvě krátká vedená sezení, jedno pro každý cíl: výšku a rezonanci. Každé je pár cvičení a pak řeč. Čísla jsou nástroje, ne skóre; jde o hlas, který se drží snadno.',
 		sessions: 'Sezení',
 		minutes: (n) => `asi ${n} min`,
 		start: 'Začít',
@@ -244,6 +329,7 @@ export const cs: Messages = {
 		takes: (n) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}`,
 		unfinished: 'nedokončeno',
 		single: 'Jedno cvičení',
+		earlier: 'Dřívější sestava',
 		needBand: 'Nejdřív nastavte své pásmo: cvičení se posuzují podle něj.',
 		needDevice: 'Nejdřív přidejte nastavení mikrofonu.',
 		band: {
@@ -352,9 +438,9 @@ export const cs: Messages = {
 		views: { harmonics: 'Harmonické', formants: 'Formanty' },
 		viewHint: {
 			harmonics:
-				'Dlouhé okno: jednotlivé harmonické hlasu jako tenké čáry. Tady je vidět váha: lehčí hlas má nahoře méně čar a slabší.',
+				'Dlouhé okno: jednotlivé harmonické hlasu jako tenké čáry. Výška je jejich rozestup: čáry dál od sebe, vyšší hlas. Vidět je i váha: lehčí hlas má nahoře méně čar a slabší.',
 			formants:
-				'Krátké okno: rezonance úst a hrdla jako široké pásy. Tady je vidět velikost: menší prostor posouvá pásy nahoru.'
+				'Krátké okno: rezonance hrdla a úst jako široké pásy. Rezonance je to, kde pásy leží: menší prostor je posouvá nahoru.'
 		},
 		problems: {
 			missing: 'Nahrávka v úložišti chybí.',

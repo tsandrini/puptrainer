@@ -26,6 +26,13 @@ export const fmtNumber = (value: number, decimals: number, locale: string) =>
 		})
 		.replace('-', '−');
 
+/** A difference with its sign: `+4.2`, `−0.3`; no sign on what rounds to zero. */
+export function fmtSigned(value: number, decimals: number, locale: string): string {
+	const text = fmtNumber(Math.abs(value), decimals, locale);
+	if (Number(Math.abs(value).toFixed(decimals)) === 0) return text;
+	return (value > 0 ? '+' : '−') + text;
+}
+
 /** A measurement with its unit: `159 Hz`. */
 export function fmtMetric(value: number, metric: MetricDef, locale: string): string {
 	const text = fmtNumber(value, metric.decimals, locale);

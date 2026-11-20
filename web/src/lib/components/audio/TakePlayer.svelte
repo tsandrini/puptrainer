@@ -355,6 +355,9 @@
 					</span>
 				{/if}
 			</div>
+			<p class="text-xs text-muted-foreground" data-testid="player-reads">
+				{i18n.t.player.viewHint[spectrumView.value]}
+			</p>
 			<Meter peakDb={levelDb} />
 		{/if}
 	{/if}

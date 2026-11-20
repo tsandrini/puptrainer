@@ -1,8 +1,9 @@
 <script lang="ts">
 	// One take: the player, for a practice take its exercise, comfort and
-	// result, its pitch over time, every measurement in groups with what it
-	// means, the vowels (or held sounds) one by one, the labels (editable),
-	// the state of the analysis with a retry, and delete.
+	// result, its reading against the learner's everyday voice (pitch and
+	// resonance), its pitch over time, every measurement in groups with what
+	// it means, the vowels (or held sounds) one by one, the labels
+	// (editable), the state of the analysis with a retry, and delete.
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { ApiError } from '#lib/api/client.js';
@@ -21,6 +22,7 @@
 	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
 	import MetricGroups from '#lib/components/app/MetricGroups.svelte';
+	import ReadingView from '#lib/components/app/ReadingView.svelte';
 	import Figure from '#lib/components/charts/Figure.svelte';
 	import PitchContour from '#lib/components/charts/PitchContour.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -56,6 +58,14 @@
 	const passage = $derived(app.passage(take?.content_ref));
 	const exercise = $derived(app.exerciseOf(take?.exercise_ref));
 	const hz = (value: number) => `${Math.round(value)} Hz`;
+	/** An analysed voice with nothing to be read against: say what is missing. */
+	const unread = $derived(
+		take !== null &&
+			take.reading === null &&
+			take.intent === 'attempt' &&
+			!['glide', 'sustain'].includes(take.item) &&
+			Object.keys(take.metrics).length > 0
+	);
 	/** The vowels of a vowels take, or the held sounds of a sustain take. */
 	const segments = $derived<{ title: string; rows: VowelSegment[]; testid: string } | null>(
 		take?.details.vowels.length
@@ -205,13 +215,28 @@
 		</p>
 	{/if}
 
+	{#if take.reading}
+		<div class="mb-4">
+			<ReadingView reading={take.reading} metrics={take.metrics} text={take.content_ref !== null} />
+		</div>
+	{:else if unread}
+		<p class="panel mb-4 text-sm text-muted-foreground" data-testid="unread">
+			{i18n.t.reading.none}
+		</p>
+	{/if}
+
 	{#if contour && contour.values.some((v) => v !== null)}
 		{@const target = take.target}
 		<Figure
 			title={i18n.t.take.contour}
-			sub={target
-				? i18n.t.take.contourTarget(Math.round(target.band_low_hz), Math.round(target.band_high_hz))
-				: i18n.t.take.contourBand}
+			sub={`${i18n.t.take.contourReads} ${
+				target
+					? i18n.t.take.contourTarget(
+							Math.round(target.band_low_hz),
+							Math.round(target.band_high_hz)
+						)
+					: i18n.t.take.contourBand
+			}`}
 			class="mb-4"
 		>
 			<PitchContour

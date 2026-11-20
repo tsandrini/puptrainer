@@ -141,7 +141,8 @@
 						href="/practice/sessions/{session.id}"
 					>
 						<span class="font-semibold">
-							{i18n.pick(app.routineOf(session.routine_ref)?.titles) || i18n.t.practice.single}
+							{i18n.pick(app.routineOf(session.routine_ref)?.titles) ||
+								(session.routine_ref ? i18n.t.practice.earlier : i18n.t.practice.single)}
 						</span>
 						<span class="text-sm text-muted-foreground">
 							{fmtDateTime(session.started_at, i18n.locale)}

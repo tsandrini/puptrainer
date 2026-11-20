@@ -213,6 +213,21 @@ try {
 		5_000
 	);
 	check('a live spectrogram follows the microphone', scope > 20, `${scope} colours`);
+	check(
+		'every picture says what it shows of the two targets',
+		(await text(page, '[data-testid=scope-reads]')).includes('Pitch is their spacing')
+	);
+	const unanchored = await until(
+		() => text(page, '[data-testid=live-status]'),
+		(v) => v.includes('No everyday take'),
+		5_000
+	);
+	check(
+		'the live resonance says when there is no everyday take to count from',
+		unanchored.includes('No everyday take') &&
+			(await page.getAttribute('[data-testid=live-resonance]', 'data-from')) === 'everyday',
+		unanchored
+	);
 	await page.click('[data-testid=stop]');
 	await page.waitForSelector('[data-testid=review]');
 	await page.waitForSelector('[data-testid=player][data-ready=true]');
@@ -295,6 +310,29 @@ try {
 	);
 	const takeUrl = page.url();
 
+	const reading = page.locator('[data-testid=reading]');
+	check(
+		'an everyday take is read against the everyday voice, and is it',
+		(await reading.getAttribute('data-basis')) === 'same-text' &&
+			(await reading.locator('[data-shift=pitch_shift_st]').innerText()).startsWith('0.0') &&
+			(await reading.locator('[data-note=everyday]').count()) === 1,
+		(await reading.innerText()).replace(/\s+/g, ' ').slice(0, 160)
+	);
+	check(
+		'resonance sits on a strip with the zones it is read by',
+		(await reading.locator('[data-testid=shift-strip] [data-testid=marker]').count()) === 1 &&
+			(await reading.locator('[data-testid=shift-strip]').innerText()).includes('where women')
+	);
+	check(
+		'every group and measurement says how it stands to the two targets',
+		(await text(page, '[data-group=pitch] [data-testid=group-intro]')).startsWith(
+			'The first target'
+		) &&
+			(await text(page, '[data-group=pitch] [data-testid=relates]')).startsWith(
+				'Pitch: the headline'
+			)
+	);
+
 	await page.selectOption('#labels-intent', 'attempt');
 	await page.getByLabel('Note').fill('edited in the e2e run');
 	await page.getByRole('button', { name: 'Save' }).click();
@@ -302,6 +340,11 @@ try {
 	await page.reload();
 	await page.waitForSelector('#labels-intent');
 	check('edited labels persist', (await page.inputValue('#labels-intent')) === 'attempt');
+	check(
+		'an attempt with no everyday take says what is missing',
+		(await count(page, '[data-testid=reading]')) === 0 &&
+			(await text(page, '[data-testid=unread]')).includes('no everyday take')
+	);
 	check(
 		'edited note persists',
 		(await page.getByLabel('Note').inputValue()) === 'edited in the e2e run'
@@ -392,6 +435,12 @@ try {
 	await page.waitForSelector('[data-testid=trends] [data-testid=trend] svg circle');
 	const trends = await text(page, '[data-testid=trends]');
 	check('progress charts the pitch of the take', trends.includes('Median pitch'));
+	check(
+		'progress is laid out by target',
+		(await count(page, '[data-testid=trends] [data-target=pitch]')) === 1 &&
+			(await count(page, '[data-testid=trends] [data-target=condition]')) === 1 &&
+			trends.includes('The first target')
+	);
 	check('progress leaves recording quality out', !trends.includes('Noise floor'));
 
 	// --- the theme
@@ -589,7 +638,7 @@ try {
 	// --- practice: a band first
 	await page.goto('/practice');
 	await page.waitForSelector('[data-testid=band-card]');
-	check('sessions wait for a band', (await count(page, '[data-testid=start-quick]')) === 0);
+	check('sessions wait for a band', (await count(page, '[data-testid=start-pitch]')) === 0);
 	await page.fill('[data-testid=band-low]', '200');
 	await page.fill('[data-testid=band-high]', '190');
 	await page.click('[data-testid=band-set]');
@@ -598,7 +647,7 @@ try {
 	await page.fill('[data-testid=band-low]', '160');
 	await page.fill('[data-testid=band-high]', '200');
 	await page.click('[data-testid=band-set]');
-	await page.waitForSelector('[data-testid=start-quick]');
+	await page.waitForSelector('[data-testid=start-pitch]');
 	check('the band is set', (await text(page, '[data-testid=band]')).includes('160 Hz'));
 	check(
 		'the catalogue lists the exercises with sources',
@@ -609,10 +658,20 @@ try {
 			)
 	);
 
-	// --- practice: the quick routine from start to end
-	await page.click('[data-testid=start-quick]');
+	check(
+		'two sessions are offered, one per target',
+		(await count(page, '[data-testid=routines] [data-routine]')) === 2 &&
+			(await count(page, '[data-testid=start-resonance]')) === 1
+	);
+
+	// --- practice: the pitch session from start to end (the warm-up and the hum skipped)
+	await page.click('[data-testid=start-pitch]');
 	await page.waitForSelector('[data-testid=checkin]');
 	await page.click('[data-testid=feel-fresh]');
+	for (const skipped of ['trill-glide', 'light-hum']) {
+		await page.waitForSelector(`[data-testid=step][data-exercise=${skipped}]`);
+		await page.click('[data-testid=skip-step]');
+	}
 	await page.waitForSelector('[data-testid=step][data-exercise=slide-down-hold]');
 	check(
 		'a step says what to do, in steps, and can play its shape',
@@ -621,7 +680,7 @@ try {
 	);
 	check(
 		'the session walks its steps',
-		(await text(page, '[data-testid=position]')).includes('Exercise 1 of 2')
+		(await text(page, '[data-testid=position]')).includes('Exercise 3 of 6')
 	);
 	await page.click('[data-testid=record]');
 	await page.waitForSelector('[data-testid=band-strip]');
@@ -659,6 +718,8 @@ try {
 	await page.waitForSelector('[data-testid=strained]');
 	check('a strained rep offers to stop', true);
 	await page.getByRole('button', { name: 'Go to the next exercise' }).click();
+	await page.waitForSelector('[data-testid=step][data-exercise=note-match]');
+	await page.click('[data-testid=skip-step]');
 	await page.waitForSelector('[data-testid=step][data-exercise=count-in-band]');
 
 	// the worker goes away: the result is measured later
@@ -678,6 +739,8 @@ try {
 	await page.waitForSelector('[data-testid=measuring]');
 	check('without a worker the result waits', true);
 	await page.click('[data-testid=next]');
+	await page.waitForSelector('[data-testid=step][data-exercise=anchor-phrases]');
+	await page.click('[data-testid=end]');
 	await page.waitForSelector('[data-testid=checkout]');
 	await page.click('[data-testid=checkout] [data-testid=comfort-4]');
 	await page.click('[data-testid=tension-no]');
@@ -744,7 +807,7 @@ try {
 	);
 
 	// --- practice: a hoarse voice is told to rest
-	await page.goto('/practice/run?routine=quick');
+	await page.goto('/practice/run?routine=pitch');
 	await page.click('[data-testid=feel-hoarse]');
 	await page.waitForSelector('[data-testid=rest]');
 	await page.click('[data-testid=rest]');
@@ -772,17 +835,63 @@ try {
 		),
 		await text(page, '[data-testid=band-own]')
 	);
-	check('the size routine is offered', (await count(page, '[data-testid=start-size]')) === 1);
 
-	// --- practice: size is read against the everyday voice, with a live picture
+	// --- the live resonance counts from the everyday takes, measured in the browser
+	await page.goto('/record');
+	await page.selectOption('[data-testid=what]', 'item:free');
+	await record(page, 3.5);
+	const counted = await until(
+		() => text(page, '[data-testid=live-brightness]'),
+		(v) => /[+−]?\d+ %/.test(v),
+		20_000
+	);
+	const brightness = Number.parseInt(
+		counted.replace('−', '-').replace(/[^-\d]*(-?\d+) %.*/s, '$1'),
+		10
+	);
+	check(
+		'the live resonance of the everyday voice reads about zero against itself',
+		Math.abs(brightness) <= 3,
+		counted.replace(/\s+/g, ' ')
+	);
+	check(
+		'and says what it is counted from',
+		(await text(page, '[data-testid=live-status]')).includes('this take so far')
+	);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=review]');
+	await page.getByRole('button', { name: 'Discard' }).click();
+	check(
+		'the texts of the exercises can be recorded in the everyday voice',
+		(await text(page, '[data-testid=what]')).includes('Anchor phrases (English)')
+	);
+
+	// --- practice: a whisper is followed live, from its own start
+	await page.goto('/practice/run?exercise=whisper-slide');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	await page.click('[data-testid=record]');
+	await page.waitForSelector('[data-testid=live-resonance][data-mode=whisper]');
+	check(
+		'a whisper step counts from the start of the take and waits for a whisper',
+		(await page.getAttribute('[data-testid=live-resonance]', 'data-from')) === 'start' &&
+			(await count(page, '[data-testid=band-strip]')) === 0 &&
+			(await text(page, '[data-testid=live-status]')).includes('Setting the zero')
+	);
+	await page.getByRole('button', { name: 'Discard' }).click();
+
+	// --- practice: resonance is read against the everyday voice, with a live picture
 	await page.goto('/practice/run?exercise=bright-phrase');
 	await page.getByRole('button', { name: 'Skip' }).click();
 	await page.click('[data-testid=record]');
 	await page.waitForSelector('[data-testid=live-scope]');
 	check(
-		'a size step shows the formants live with the pitch strip, without the switch',
+		'a resonance step shows the formants live with the pitch strip, without the switch',
 		(await count(page, '[data-testid=live-scope] [data-testid=spectrum-toggle]')) === 0 &&
 			(await count(page, '[data-testid=band-strip]')) === 1
+	);
+	check(
+		'and the live resonance, counted from everyday speech',
+		(await page.getAttribute('[data-testid=live-resonance]', 'data-from')) === 'everyday'
 	);
 	await pause(2);
 	await page.click('[data-testid=stop]');
@@ -795,6 +904,13 @@ try {
 		/cm \(hint; your everyday voice: \d+\.\d cm\)/.test(size) &&
 			(await count(page, '[data-testid=verdict]')) === 0,
 		size.replace(/\s+/g, ' ')
+	);
+	check(
+		'other words than the everyday takes are read on pitch, not on resonance',
+		(await page.getAttribute('[data-testid=result] [data-testid=reading]', 'data-basis')) ===
+			'speech' &&
+			(await count(page, '[data-testid=result] [data-shift=pitch_shift_st]')) === 1 &&
+			(await count(page, '[data-testid=result] [data-testid=no-resonance]')) === 1
 	);
 
 	// --- practice: a miss says which way to go; a band far above the voice is flagged

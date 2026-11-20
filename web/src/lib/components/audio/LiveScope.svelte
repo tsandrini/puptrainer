@@ -86,4 +86,7 @@
 		></canvas>
 		<FrequencyAxis />
 	</div>
+	<p class="mt-1 text-xs text-muted-foreground" data-testid="scope-reads">
+		{i18n.t.player.viewHint[fixed ?? spectrumView.value]}
+	</p>
 </div>

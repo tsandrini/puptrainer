@@ -1,32 +1,41 @@
 <script lang="ts">
 	// One measurement over time: a point per take, joined by a line per
 	// voice (everyday, attempt). The last point of the first series is
-	// labelled; the crosshair names the take under the pointer.
-	import { Axis, Chart, Circle, Highlight, Spline, Svg, Text, Tooltip } from 'layerchart';
+	// labelled; the crosshair names the take under the pointer. A distance
+	// from the everyday voice can carry the zones it is read by.
+	import { Axis, Chart, Circle, Highlight, Rect, Spline, Svg, Text, Tooltip } from 'layerchart';
 	import { niceTicks, timeTicks } from '#lib/charts.js';
 	import Tip from './Tip.svelte';
 
 	export type TrendPoint = { ts: number; value: number; label: string };
 	export type TrendSeries = { key: string; label: string; color: string; points: TrendPoint[] };
+	/** A stretch of the value axis that is shaded; an unset end runs to the edge. */
+	export type TrendZone = { key: string; low: number | null; high: number | null };
 
 	let {
 		series,
 		fmt,
 		fmtTime,
-		height = 170
+		height = 170,
+		zones = [],
+		include = []
 	}: {
 		series: TrendSeries[];
 		fmt: (value: number) => string;
 		fmtTime: (ts: number) => string;
 		height?: number;
+		zones?: TrendZone[];
+		/** Values the scale reaches whatever the points are, e.g. zero and a zone's edge. */
+		include?: number[];
 	} = $props();
+
+	const ZONE: Record<string, string> = { typical: 'fill-good/15', beyond: 'fill-warning/15' };
 
 	const PAD = { top: 10, right: 56, bottom: 24, left: 48 };
 
 	const all = $derived(series.flatMap((s) => s.points));
-	const yTicks = $derived(
-		niceTicks(Math.min(...all.map((p) => p.value)), Math.max(...all.map((p) => p.value)), 3)
-	);
+	const values = $derived([...all.map((p) => p.value), ...include]);
+	const yTicks = $derived(niceTicks(Math.min(...values), Math.max(...values), 3));
 	/** The time axis has room on both sides, also when every take is from one hour. */
 	const span = $derived.by(() => {
 		const from = Math.min(...all.map((p) => p.ts));
@@ -58,6 +67,20 @@
 			{@const x = (t: number) => context.xScale(t) as number}
 			{@const y = (v: number) => context.yScale(v) as number}
 			<Svg>
+				{#each zones as zone (zone.key)}
+					{@const top = Math.min(zone.high ?? Infinity, yTicks[yTicks.length - 1])}
+					{@const bottom = Math.max(zone.low ?? -Infinity, yTicks[0])}
+					{#if top > bottom}
+						<Rect
+							x={0}
+							y={y(top)}
+							width={context.width}
+							height={y(bottom) - y(top)}
+							class={ZONE[zone.key] ?? 'fill-chart-band'}
+							data-zone={zone.key}
+						/>
+					{/if}
+				{/each}
 				<Axis
 					placement="left"
 					ticks={yTicks}

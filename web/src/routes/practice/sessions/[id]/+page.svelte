@@ -8,6 +8,7 @@
 	import type { PracticeOut, TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
+	import ReadingView from '#lib/components/app/ReadingView.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { fmtDateTime } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
@@ -54,7 +55,8 @@
 	<p class="text-muted-foreground">{error ?? i18n.t.common.loading}</p>
 {:else}
 	<h1 class="mb-1 text-2xl">
-		{i18n.pick(app.routineOf(session.routine_ref)?.titles) || i18n.t.practice.single}
+		{i18n.pick(app.routineOf(session.routine_ref)?.titles) ||
+			(session.routine_ref ? i18n.t.practice.earlier : i18n.t.practice.single)}
 	</h1>
 	<p class="mb-4 text-sm text-muted-foreground">
 		{fmtDateTime(session.started_at, i18n.locale)} · {i18n.t.practice.takes(session.take_count)}
@@ -108,6 +110,15 @@
 				</div>
 				{#if take.evaluation}
 					<EvaluationView evaluation={take.evaluation} />
+				{/if}
+				{#if take.reading}
+					<div class="mt-2">
+						<ReadingView
+							reading={take.reading}
+							metrics={take.metrics}
+							text={take.content_ref !== null}
+						/>
+					</div>
 				{/if}
 			</li>
 		{/each}

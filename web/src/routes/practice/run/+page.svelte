@@ -13,7 +13,9 @@
 	import type { Feel, TakeMeta, TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, type Recording } from '#lib/audio/capture.js';
+	import { liveReference, type LiveReference } from '#lib/audio/reference.js';
 	import { playShape, playTone, shapeOf } from '#lib/audio/tone.js';
+	import LiveResonance, { type Zero } from '#lib/components/audio/LiveResonance.svelte';
 	import LiveScope from '#lib/components/audio/LiveScope.svelte';
 	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import BandCard from '#lib/components/app/BandCard.svelte';
@@ -22,6 +24,7 @@
 	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
 	import ExerciseDetails from '#lib/components/app/ExerciseDetails.svelte';
 	import Meter from '#lib/components/app/Meter.svelte';
+	import ReadingView from '#lib/components/app/ReadingView.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { fmtDuration } from '#lib/format.js';
@@ -74,6 +77,9 @@
 	let lastNote: number | null = null;
 	let playing = $state(false);
 	let scope = $state<LiveScope | null>(null);
+	let meter = $state<LiveResonance | null>(null);
+	/** The everyday voice a spoken resonance step counts from; undefined while it is measured. */
+	let everyday = $state.raw<LiveReference | null | undefined>(undefined);
 
 	let waitingFor = $state<string | null>(null);
 	let outcome = $state<Outcome | null>(null);
@@ -91,6 +97,7 @@
 		pitchHz = frame.pitchHz;
 		seconds = frame.seconds;
 		scope?.push(frame.samples, frame.sampleRate);
+		meter?.push(frame.samples, frame.sampleRate, frame.pitchHz);
 	});
 
 	$effect(() => {
@@ -103,6 +110,31 @@
 	const needsNote = $derived(exercise?.rule.kind === 'pitch_hold' && exercise.rule.at === 'note');
 	const text = $derived(app.passage(exercise?.texts[language]));
 	const band = $derived(app.band);
+	/** A held sound or a whisper is read against its own start; speech against the everyday takes. */
+	const zero = $derived<Zero>(
+		exercise && SPOKEN.has(exercise.item)
+			? { from: 'everyday', reference: everyday }
+			: { from: 'start' }
+	);
+
+	// the everyday voice for the live meter of a spoken resonance step
+	$effect(() => {
+		const [setup, drill, spokenIn] = [device, exercise, language];
+		everyday = undefined;
+		if (!setup || !drill || drill.live !== 'formants' || !SPOKEN.has(drill.item)) return;
+		let current = true;
+		liveReference({
+			device_id: setup.id,
+			item: drill.item,
+			language: spokenIn,
+			content_ref: drill.texts[spokenIn] ?? null
+		})
+			.then((reference) => current && (everyday = reference))
+			.catch(() => current && (everyday = null));
+		return () => {
+			current = false;
+		};
+	});
 
 	// a new note for every note-matching rep
 	$effect(() => {
@@ -478,8 +510,12 @@
 						note={needsNote && note ? note.hz : null}
 					/>
 				{:else if exercise.live === 'formants'}
-					<!-- NOTE: size work wants the pitch held still, so the strip stays in view -->
+					<!-- NOTE: resonance work wants the pitch held still, so the strip stays in view -->
 					<BandStrip low={band.low_hz} high={band.high_hz} pitch={pitchHz} />
+					<LiveResonance bind:this={meter} {zero} />
+					<LiveScope bind:this={scope} fixed="formants" />
+				{:else if exercise.live === 'whisper'}
+					<LiveResonance bind:this={meter} mode="whisper" {zero} />
 					<LiveScope bind:this={scope} fixed="formants" />
 				{/if}
 				<Meter {peakDb} {clipping} />
@@ -516,6 +552,15 @@
 				<div data-testid="result">
 					{#if result?.evaluation && result.evaluation.problem !== 'not-analysed'}
 						<EvaluationView evaluation={result.evaluation} />
+						{#if result.reading}
+							<div class="mt-3">
+								<ReadingView
+									reading={result.reading}
+									metrics={result.metrics}
+									text={result.content_ref !== null}
+								/>
+							</div>
+						{/if}
 					{:else if outcome === 'waiting' || outcome === 'rejected'}
 						<p class="text-sm text-muted-foreground" data-testid="result-offline">
 							{outcome === 'rejected' ? i18n.t.queue.rejected : i18n.t.practice.run.offline}

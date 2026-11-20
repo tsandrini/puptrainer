@@ -1,8 +1,9 @@
 <script lang="ts">
 	// Recording: pick the microphone setup, what to record and which voice
-	// it is; watch the level, the live pitch and a live spectrogram while
-	// speaking; listen back, then save. A saved take goes through the upload queue, so it is never
-	// lost when the API is away.
+	// it is; watch the level, the live pitch, the live resonance against the
+	// everyday voice and a live spectrogram while speaking; listen back, then
+	// save. A saved take goes through the upload queue, so it is never lost
+	// when the API is away.
 	import { onDestroy, onMount } from 'svelte';
 	import { browser } from '$app/env';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -13,6 +14,8 @@
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, listInputs, type Recording } from '#lib/audio/capture.js';
 	import { TARGET_DB } from '#lib/audio/meter.js';
+	import { liveReference, type LiveReference } from '#lib/audio/reference.js';
+	import LiveResonance, { type Zero } from '#lib/components/audio/LiveResonance.svelte';
 	import LiveScope from '#lib/components/audio/LiveScope.svelte';
 	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
@@ -21,6 +24,7 @@
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { fmtDuration, fmtNumber } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
+	import { passageRef } from '#lib/labels.js';
 	import { queue, type Outcome } from '#lib/queue.svelte.js';
 	import { cn } from '#lib/utils.js';
 
@@ -30,7 +34,17 @@
 	/** Free choices next to the protocol's steps. */
 	const extra: Item[] = ['vowels', 'glide', 'free', 'other'];
 
-	type Choice = { key: string; label: string; item: Item; step: ProtocolItem | null };
+	/** Kinds of take whose resonance can be followed live. */
+	const RESONANT: Item[] = ['vowels', 'phrase', 'passage', 'free', 'other'];
+
+	type Choice = {
+		key: string;
+		label: string;
+		item: Item;
+		step: ProtocolItem | null;
+		language: string | null;
+		contentRef: string | null;
+	};
 
 	let deviceId = $state<number | null>(
 		browser ? Number(localStorage.getItem(DEVICE_KEY)) || null : null
@@ -52,6 +66,9 @@
 	let seconds = $state(0);
 	let recording = $state.raw<Recording | null>(null);
 	let scope = $state<LiveScope | null>(null);
+	let meter = $state<LiveResonance | null>(null);
+	/** The everyday voice the live resonance counts from; undefined while it is measured. */
+	let everyday = $state.raw<LiveReference | null | undefined>(undefined);
 	let problem = $state<string | null>(null);
 	let outcome = $state<Outcome | null>(null);
 
@@ -62,21 +79,72 @@
 		pitchHz = frame.pitchHz;
 		seconds = frame.seconds;
 		scope?.push(frame.samples, frame.sampleRate);
+		meter?.push(frame.samples, frame.sampleRate, frame.pitchHz);
 	});
 
 	const baseline = $derived(app.content?.protocols.find((p) => p.id === 'baseline') ?? null);
+	/** The texts of the exercises: read once in the everyday voice, they can be compared too. */
+	const texts = $derived(
+		(app.content?.passages ?? []).filter(
+			(p) => !baseline?.items.some((step) => step.content_ref === passageRef(p))
+		)
+	);
 	const choices = $derived<Choice[]>([
 		...(baseline?.items ?? []).map((step) => ({
 			key: `baseline:${step.key}`,
 			label: i18n.pick(step.titles),
 			item: step.item,
-			step
+			step,
+			language: step.language ?? null,
+			contentRef: step.content_ref ?? null
 		})),
-		...extra.map((item) => ({ key: `item:${item}`, label: i18n.t.item[item], item, step: null }))
+		...texts.map((text) => ({
+			key: `text:${text.id}`,
+			label: `${text.title} (${i18n.language(text.language)})`,
+			item: 'phrase' as const,
+			step: null,
+			language: text.language,
+			contentRef: passageRef(text)
+		})),
+		...extra.map((item) => ({
+			key: `item:${item}`,
+			label: i18n.t.item[item],
+			item,
+			step: null,
+			language: null,
+			contentRef: null
+		}))
 	]);
 	const choice = $derived(choices.find((c) => c.key === choiceKey) ?? choices[0] ?? null);
-	const passage = $derived(app.passage(choice?.step?.content_ref));
+	const passage = $derived(app.passage(choice?.contentRef));
 	const device = $derived(app.devices.find((d) => d.id === deviceId) ?? app.devices[0] ?? null);
+	/** Sustained vowels are read against their own start; speech against the everyday takes. */
+	const zero = $derived<Zero | null>(
+		!choice || !RESONANT.includes(choice.item)
+			? null
+			: choice.item === 'vowels'
+				? { from: 'start' }
+				: { from: 'everyday', reference: everyday }
+	);
+
+	// the everyday voice for the live meter follows what is about to be recorded
+	$effect(() => {
+		const [setup, what] = [device, choice];
+		everyday = undefined;
+		if (!setup || !what || what.item === 'vowels' || !RESONANT.includes(what.item)) return;
+		let current = true;
+		liveReference({
+			device_id: setup.id,
+			item: what.item,
+			language: what.language,
+			content_ref: what.contentRef
+		})
+			.then((reference) => current && (everyday = reference))
+			.catch(() => current && (everyday = null));
+		return () => {
+			current = false;
+		};
+	});
 
 	/** The baseline steps already recorded today in this voice on this setup. */
 	const doneToday = $derived(
@@ -170,8 +238,8 @@
 			device_id: device.id,
 			item: choice.item,
 			intent,
-			language: choice.step?.language ?? null,
-			content_ref: choice.step?.content_ref ?? null,
+			language: choice.language,
+			content_ref: choice.contentRef,
 			recorded_at: stamp.toISOString(),
 			note
 		});
@@ -366,6 +434,11 @@
 					<p class="mt-1 text-sm text-warning">{i18n.t.record.tooQuiet}</p>
 				{/if}
 			</div>
+			{#if zero}
+				<div class="mt-4">
+					<LiveResonance bind:this={meter} {zero} />
+				</div>
+			{/if}
 			<div class="mt-4">
 				<LiveScope bind:this={scope} />
 			</div>

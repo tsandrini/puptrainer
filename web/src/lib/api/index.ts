@@ -13,6 +13,7 @@ import type {
 	MetricDef,
 	PracticeIn,
 	PracticeOut,
+	Reference,
 	Requeued,
 	Series,
 	SessionOut,
@@ -41,6 +42,14 @@ export const fetchMeasures = () => getJson<MeasureDef[]>('measures');
 /** Every pitch band set so far, the current one first. */
 export const fetchBands = () => getJson<BandOut[]>('bands');
 export const createBand = (body: BandIn) => postJson<BandOut>('bands', body);
+
+/** The everyday voice a take of this kind on this setup is read against; null without one. */
+export const fetchReference = (kind: {
+	device_id: number;
+	item: string;
+	language?: string | null;
+	content_ref?: string | null;
+}) => getJson<Reference | null>(`reference${query(kind)}`);
 
 /** Practice sessions, the newest first. */
 export const fetchPracticeList = () => getJson<PracticeOut[]>('practice');

@@ -1,21 +1,26 @@
 <script lang="ts">
-	// Progress: each measurement over time, one point per take, for one
-	// kind of take on one microphone setup at a time (numbers are only
-	// comparable like with like). Everyday voice and attempts are separate
-	// lines. Drills are sounds, not a voice, and never draw a line; attempts
-	// made inside practice sessions join only when asked for.
+	// Progress: one point per take, for one kind of take on one microphone
+	// setup at a time (numbers are only comparable like with like), in a
+	// section per target: pitch, resonance, and what they cost. Each section
+	// leads with the take's distance from the learner's own everyday voice,
+	// then the measurements behind it. Everyday voice and attempts are
+	// separate lines. Drills are sounds, not a voice, and never draw a line;
+	// attempts made inside practice sessions join only when asked for.
 	import { fetchTakes } from '#lib/api/index.js';
-	import type { Item, MetricDef, TakeOut } from '#lib/api/types.js';
+	import type { Item, MeasureDef, MetricDef, TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Figure from '#lib/components/charts/Figure.svelte';
 	import Trend, { type TrendSeries } from '#lib/components/charts/Trend.svelte';
 	import { INTENT_COLOR, type Voice } from '#lib/charts.js';
-	import { fmtDateTime, fmtMetric } from '#lib/format.js';
+	import { fmtDateTime, fmtMetric, fmtSigned } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
+	import { ROLE, SHIFTS, TARGETS, shiftOf } from '#lib/targets.js';
 
 	type Kind = { key: string; item: Item; language: string | null; label: string };
 	const INTENTS: Voice[] = ['habitual', 'attempt'];
+	/** A distance is about the attempt: its line comes first and carries the label. */
+	const SHIFT_INTENTS: Voice[] = ['attempt', 'habitual'];
 	/** Recording-quality numbers say nothing about the voice; they stay on the take's page. */
 	const SKIP = new Set(['recording']);
 
@@ -85,6 +90,53 @@
 		})).filter((s) => s.points.length);
 	}
 
+	/** A take's distance from the everyday voice over time, by voice. */
+	function shiftSeries(key: string): TrendSeries[] {
+		return SHIFT_INTENTS.map((intent) => ({
+			key: intent,
+			label: i18n.t.intent[intent],
+			color: INTENT_COLOR[intent],
+			points: shown.flatMap((t) => {
+				const shift = t.intent === intent ? shiftOf(t.reading, key) : null;
+				return shift
+					? [
+							{
+								ts: Date.parse(t.recorded_at),
+								value: shift.value,
+								label: fmtDateTime(t.recorded_at, i18n.locale)
+							}
+						]
+					: [];
+			})
+		})).filter((s) => s.points.length);
+	}
+
+	const fmtShift = (value: number, measure: MeasureDef) =>
+		`${fmtSigned(value, measure.decimals, i18n.locale)}${measure.unit ? ` ${measure.unit}` : ''}`;
+
+	/**
+	 * What a distance's scale shows whatever the points are: zero, and the near quarter of
+	 * the zone it is read by, so the way still to go is on the picture.
+	 */
+	function reach(measure: MeasureDef): number[] {
+		const zone = measure.zones.find((z) => z.key === 'typical');
+		if (!zone || zone.low === null || zone.high === null) return [0];
+		return [0, zone.low + (zone.high - zone.low) / 4];
+	}
+
+	/** What there is to chart, target by target. */
+	const sections = $derived(
+		TARGETS.map((target) => ({
+			target,
+			shifts: SHIFTS[target].flatMap((key) => {
+				const measure = app.measures.find((m) => m.key === key);
+				const series = measure ? shiftSeries(key) : [];
+				return measure && series.length ? [{ measure, series }] : [];
+			}),
+			metrics: metrics.filter((m) => ROLE[m.group] === target)
+		})).filter((s) => s.shifts.length || s.metrics.length)
+	);
+
 	const shortDate = (ts: number) =>
 		new Intl.DateTimeFormat(i18n.locale === 'en' ? 'en-GB' : i18n.locale, {
 			day: 'numeric',
@@ -139,24 +191,67 @@
 {:else if !metrics.length}
 	<Empty text={i18n.t.progress.empty} />
 {:else}
-	<div class="grid gap-4 md:grid-cols-2" data-testid="trends">
-		{#each metrics as metric (metric.key)}
-			{@const series = seriesFor(metric)}
-			{@const latest = series[0]?.points.at(-1)}
-			<Figure
-				title={i18n.pick(metric.titles) || metric.key}
-				sub={i18n.pick(metric.descriptions)}
-				value={latest ? fmtMetric(latest.value, metric, i18n.locale) : undefined}
-				legend={series.map((s) => ({ label: s.label, color: s.color }))}
-				table={{
-					headers: [i18n.t.progress.taken, i18n.t.intent.label, i18n.pick(metric.titles)],
-					rows: series.flatMap((s) =>
-						s.points.map((p) => [p.label, s.label, fmtMetric(p.value, metric, i18n.locale)])
-					)
-				}}
-			>
-				<Trend {series} fmt={(v) => fmtMetric(v, metric, i18n.locale)} fmtTime={shortDate} />
-			</Figure>
+	<div class="space-y-6" data-testid="trends">
+		{#each sections as section (section.target)}
+			<section data-target={section.target}>
+				<h2 class="text-xl">{i18n.t.targets[section.target]}</h2>
+				<p class="mb-2 max-w-3xl text-sm text-muted-foreground">
+					{i18n.t.targets.intro[section.target]}
+				</p>
+				<div class="grid gap-4 md:grid-cols-2">
+					{#each section.shifts as { measure, series } (measure.key)}
+						{@const latest = series[0]?.points.at(-1)}
+						{@const title = `${i18n.pick(measure.titles)} ${i18n.t.progress.against}`}
+						<Figure
+							{title}
+							sub={i18n.pick(measure.descriptions)}
+							value={latest ? fmtShift(latest.value, measure) : undefined}
+							legend={[
+								...series.map((s) => ({ label: s.label, color: s.color })),
+								...measure.zones.map((z) => ({
+									label: i18n.pick(z.titles),
+									color: z.key === 'typical' ? 'var(--good)' : 'var(--warning)'
+								}))
+							]}
+							table={{
+								headers: [i18n.t.progress.taken, i18n.t.intent.label, i18n.pick(measure.titles)],
+								rows: series.flatMap((s) =>
+									s.points.map((p) => [p.label, s.label, fmtShift(p.value, measure)])
+								)
+							}}
+							class="border-primary/40"
+						>
+							<div data-shift-trend={measure.key}>
+								<Trend
+									{series}
+									zones={measure.zones}
+									include={reach(measure)}
+									fmt={(v) => fmtShift(v, measure)}
+									fmtTime={shortDate}
+								/>
+							</div>
+						</Figure>
+					{/each}
+					{#each section.metrics as metric (metric.key)}
+						{@const series = seriesFor(metric)}
+						{@const latest = series[0]?.points.at(-1)}
+						<Figure
+							title={i18n.pick(metric.titles) || metric.key}
+							sub={`${i18n.pick(metric.descriptions)} ${i18n.pick(metric.relates)}`}
+							value={latest ? fmtMetric(latest.value, metric, i18n.locale) : undefined}
+							legend={series.map((s) => ({ label: s.label, color: s.color }))}
+							table={{
+								headers: [i18n.t.progress.taken, i18n.t.intent.label, i18n.pick(metric.titles)],
+								rows: series.flatMap((s) =>
+									s.points.map((p) => [p.label, s.label, fmtMetric(p.value, metric, i18n.locale)])
+								)
+							}}
+						>
+							<Trend {series} fmt={(v) => fmtMetric(v, metric, i18n.locale)} fmtTime={shortDate} />
+						</Figure>
+					{/each}
+				</div>
+			</section>
 		{/each}
 	</div>
 {/if}

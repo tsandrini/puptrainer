@@ -18,6 +18,91 @@ export const en = {
 		quality: 'Voice quality',
 		range: 'Range'
 	},
+	groupIntro: {
+		recording: 'About the take, not the voice: whether its numbers can be trusted.',
+		pitch: 'The first target: how fast the vocal folds vibrate.',
+		resonance: 'The second target: what the space above the vocal folds does to their sound.',
+		quality:
+			'Not a target: the condition on both. A change counts when the voice stays clear and easy.',
+		range: 'The room for the first target: the notes the voice reaches at all.'
+	},
+	targets: {
+		pitch: 'Pitch',
+		resonance: 'Resonance',
+		condition: 'What it costs',
+		intro: {
+			pitch:
+				'The first target: how fast the vocal folds vibrate. It is the strongest single cue to how a voice is heard, and the easiest one to push too far.',
+			resonance:
+				'The second target: what the space above the vocal folds does to their sound. A smaller space raises the resonances and makes a voice sound smaller and brighter, at any pitch.',
+			condition:
+				'Not a target: the condition both targets have to meet. A change counts when the voice stays about as loud, as clear and as easy as your everyday voice.'
+		}
+	},
+	reading: {
+		title: 'Against your everyday voice',
+		basis: {
+			'same-text': (n: number) =>
+				n === 1
+					? 'Counted from your one everyday take of the same text.'
+					: `Counted from your first ${n} everyday takes of the same text.`,
+			'same-kind': (n: number) =>
+				n === 1
+					? 'Counted from your one everyday take of this kind: other words, so resonance is rougher than on a text.'
+					: `Counted from your first ${n} everyday takes of this kind: other words each time, so resonance is rougher than on a text.`,
+			speech: (n: number) =>
+				n === 1
+					? 'Counted from your one everyday take of speech, which is other words.'
+					: `Counted from your first ${n} everyday takes of speech, which are other words.`,
+			vowels: (n: number) =>
+				n === 1
+					? 'Counted from your one everyday take of the vowels, vowel by vowel.'
+					: `Counted from your first ${n} everyday takes of the vowels, vowel by vowel.`
+		},
+		everyday: (value: string) => `everyday ${value}`,
+		scatter: (value: string) => `your everyday takes scatter by ±${value}`,
+		zero: 'everyday',
+		yours: 'the scatter of your everyday takes',
+		noResonance:
+			'Resonance is not compared here: these are other words than in your everyday takes, and formants follow the words.',
+		recordText:
+			'Record this text once in your everyday voice (Record, under “What to record”) and every take of it will be read on resonance too.',
+		none: 'There is no everyday take to read this one against yet. Record this kind of take once in your everyday voice.',
+		notes: {
+			everyday: 'Resonance: within the scatter of your everyday takes. Nothing has moved here.',
+			darker: 'Resonance: darker than your everyday voice.',
+			brighter:
+				'Resonance: clearly brighter than your everyday voice, and short of where women’s voices sit. This is enough to work with: the next step is holding it with less effort, not pushing it further.',
+			typical:
+				'Resonance: inside the range where women’s voices sit. More is not needed; ease and steadiness are.',
+			beyond:
+				'Resonance: past the range of adult voices. This much tends to sound child-like or pinched, and posture rarely reaches it without strain: ease off.',
+			'r1-fell':
+				'The first resonance went down while the others went up: the brightening comes from the tongue and a more closed mouth, not yet from a smaller throat. Let the jaw open as it does in your everyday voice.',
+			quieter:
+				'Clearly quieter than your everyday voice: often a sign of holding back or squeezing.',
+			'less-clear':
+				'The tone is less clear than in your everyday voice: breath or strain got in. Ease off until it is clean again.'
+		} as Record<string, string>
+	},
+	live: {
+		title: 'Resonance, live',
+		caption:
+			'A guide while you speak. The saved take is measured more carefully and usually reads higher.',
+		soFar: 'this take so far',
+		recent: (seconds: number) => `the last ${seconds} s`,
+		brightness: 'Brightness',
+		first: 'R1',
+		settingZero: (heard: string, need: string) =>
+			`Setting the zero from your first sound: ${heard} of ${need} s.`,
+		fromStart: 'Counted from the first sound of this take.',
+		fromEveryday: 'Counted from your everyday takes of this text.',
+		rough: 'Counted from your everyday speech, which is other words: a rough guide only.',
+		preparing: 'Measuring your everyday takes for the live reference…',
+		none: 'No everyday take of this kind yet, so there is nothing to count from: record it once in your everyday voice.',
+		waiting: 'Waiting for sound…',
+		tooHigh: 'Above 300 Hz the resonance cannot be read: bring the pitch down.'
+	},
 	common: {
 		save: 'Save',
 		cancel: 'Cancel',
@@ -103,6 +188,8 @@ export const en = {
 		confirmDelete: 'Delete this take and its recording? This cannot be undone.',
 		saved: 'Saved',
 		contour: 'Pitch over the take',
+		contourReads:
+			'Pitch, moment by moment: look for where the line lives, and for drops at the ends of phrases.',
 		contourBand: 'The shaded band is 145–185 Hz.',
 		contourTarget: (low: number, high: number) =>
 			`The shaded band is your band when this was recorded: ${low}–${high} Hz.`,
@@ -119,7 +206,8 @@ export const en = {
 	progress: {
 		title: 'Progress',
 		intro:
-			'One point per take. Compare like with like: one microphone setup and one kind of take at a time.',
+			'One point per take, for one microphone setup and one kind of take at a time. Each target leads with its distance from your everyday voice; the measurements behind it follow.',
+		against: 'against your everyday voice',
 		empty: 'No analysed take matches these filters yet.',
 		kind: 'Kind of take',
 		latest: 'latest',
@@ -200,7 +288,7 @@ export const en = {
 	practice: {
 		title: 'Practice',
 		intro:
-			'Short guided sessions: a few drills, then speech. Pitch is a tool here, not a score; what you are after is a light, easy voice.',
+			'Two short guided sessions, one per target: pitch and resonance. Each is a few drills, then speech. The numbers are tools, not scores; what you are after is a voice that is easy to hold.',
 		sessions: 'Sessions',
 		minutes: (n: number) => `about ${n} min`,
 		start: 'Start',
@@ -237,6 +325,7 @@ export const en = {
 		takes: (n: number) => (n === 1 ? '1 take' : `${n} takes`),
 		unfinished: 'not finished',
 		single: 'One exercise',
+		earlier: 'An earlier routine',
 		needBand: 'Set your band first: the drills are judged against it.',
 		needDevice: 'Add a microphone setup first.',
 		band: {
@@ -345,9 +434,9 @@ export const en = {
 		views: { harmonics: 'Harmonics', formants: 'Formants' },
 		viewHint: {
 			harmonics:
-				'A long window: the separate harmonics of the voice as thin lines. Weight shows here: a lighter voice has fewer, fainter lines higher up.',
+				'A long window: the separate harmonics of the voice as thin lines. Pitch is their spacing: lines further apart, a higher voice. Weight shows too: a lighter voice has fewer, fainter lines higher up.',
 			formants:
-				'A short window: the resonances of the mouth and throat as broad bands. Size shows here: a smaller space moves the bands up.'
+				'A short window: the resonances of the throat and mouth as broad bands. Resonance is where the bands sit: a smaller space moves them up.'
 		},
 		problems: {
 			missing: 'The recording is missing from storage.',
