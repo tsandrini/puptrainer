@@ -141,7 +141,7 @@ def test_deleting_a_session_keeps_its_takes(client: TestClient, device_id: int) 
 
 def test_measures_have_texts(client: TestClient) -> None:
     measures = client.get("/api/v1/measures").json()
-    assert {m["key"] for m in measures} >= {"band_share_pct", "hold_s", "step_rise_pct"}
+    assert {m["key"] for m in measures} >= {"band_share_pct", "hold_s", "step_bright_pct"}
     assert all(m["titles"].keys() == {"en", "cs"} for m in measures)
 
 
@@ -168,34 +168,35 @@ def test_setting_the_same_band_again_adds_nothing(client: TestClient) -> None:
     assert len(client.get("/api/v1/bands").json()) == 2
 
 
-def test_practice_sizes_are_read_against_the_lab_baseline(
+def test_a_spoken_practice_take_is_read_against_the_everyday_take_of_its_text(
     client: TestClient, device_id: int
 ) -> None:
     from .conftest import vowel
 
+    anchors = {"item": "phrase", "content_ref": "passage:anchors-en@1"}
     speech = wav_bytes(vowel((500.0, 1500.0, 2500.0, 3500.0, 4500.0), seconds=3.0))
-    upload(client, device_id, speech, item="free")  # the everyday voice, 17.5 cm
+    upload(client, device_id, speech, **anchors)  # the phrases in the everyday voice
     labels = {
-        "item": "phrase",
+        **anchors,
         "intent": "attempt",
-        "exercise_ref": "exercise:bright-phrase@1",
+        "exercise_ref": "exercise:bright-phrase@2",
         "target": {"band_low_hz": 110, "band_high_hz": 130, "note_hz": None},
     }
     brighter = wav_bytes(vowel((570.0, 1710.0, 2850.0, 3990.0, 5130.0), seconds=3.0))
     take = upload(client, device_id, brighter, **labels).json()
     while run_once(client):
         pass
-    judged = client.get(f"/api/v1/takes/{take['id']}").json()["evaluation"]
-    assert judged["met"] is None
-    size = judged["hints"][0]
-    assert size["key"] == "vtl_cm"
-    assert size["value"] == pytest.approx(15.35, abs=0.5)
-    assert size["baseline"] == pytest.approx(17.5, abs=0.5)
-    # a practice take is not part of the baseline, and another setup has none
-    listed = client.get("/api/v1/takes", params={"item": "phrase"}).json()
-    assert listed[0]["evaluation"]["hints"][0]["baseline"] == size["baseline"]
+    read = client.get(f"/api/v1/takes/{take['id']}").json()
+    assert (read["evaluation"]["met"], read["evaluation"]["hints"]) == (None, [])
+    reading = read["reading"]
+    assert (reading["basis"], reading["takes"]) == ("same-text", 1)
+    shifts = {s["key"]: s["value"] for s in reading["shifts"]}
+    assert shifts["brightness_pct"] == pytest.approx(14.0, abs=3.0)
+    # a practice take is not part of the everyday voice, and another setup has none
+    again = upload(client, device_id, brighter, **labels).json()
+    run_once(client)
+    assert client.get(f"/api/v1/takes/{again['id']}").json()["reading"]["takes"] == 1
     other = client.post("/api/v1/devices", json={"name": "phone", "kind": "phone"}).json()["id"]
     elsewhere = upload(client, other, brighter, **labels).json()
     run_once(client)
-    hint = client.get(f"/api/v1/takes/{elsewhere['id']}").json()["evaluation"]["hints"][0]
-    assert hint["baseline"] is None
+    assert client.get(f"/api/v1/takes/{elsewhere['id']}").json()["reading"] is None

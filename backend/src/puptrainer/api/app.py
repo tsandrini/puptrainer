@@ -51,7 +51,7 @@ from puptrainer.api.storage import AudioStore, InvalidAudioError
 from puptrainer.core.content import load_content, load_measures, load_metrics, parse_ref
 from puptrainer.core.evaluation import TakeFacts, evaluate, needs_pitch
 from puptrainer.core.metrics import KEYS
-from puptrainer.core.reading import Voice, comparable, everyday_size_cm, read, reference
+from puptrainer.core.reading import Voice, comparable, read, reference
 from puptrainer.core.schemas import (
     AnalysisOut,
     BandIn,
@@ -164,7 +164,6 @@ def voice_of(take: Take) -> Voice | None:
 def take_out(
     take: Take,
     exercises: dict[str, Exercise] | None = None,
-    baseline_cm: float | None = None,
     reading: Reading | None = None,
 ) -> TakeOut:
     """A take as the API returns it: labels, the latest job, the newest finished results.
@@ -173,8 +172,6 @@ def take_out(
         take: The take, with its jobs, their metrics and series loaded.
         exercises: The catalogue by id, to judge a practice take; without it, or for a
             take of no exercise, there is no evaluation.
-        baseline_cm: The learner's everyday apparent tract length in a comparable kind of
-            take on the same setup, for the evaluation to show sizes against.
         reading: The take read against the learner's everyday voice, if it can be.
     """
     latest = take.jobs[-1] if take.jobs else None
@@ -191,7 +188,6 @@ def take_out(
             segments=details.segments,
             target=target,
             comfort=take.comfort,
-            baseline_cm=baseline_cm,
         )
         contour = next((s for s in done.series if s.key == "pitch_hz"), None) if done else None
         if contour is not None and needs_pitch(exercise):
@@ -372,11 +368,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def out(db: Session, take: Take, cache: dict[int, list[Voice]] | None = None) -> TakeOut:
         voices = everyday(db, take.device_id, {} if cache is None else cache)
-        size = None
-        if take.exercise_ref is not None:
-            size = everyday_size_cm(Item(take.item), take.language, take.content_ref, voices)
         voice = None if take.intent == Intent.DRILL else voice_of(take)
-        return take_out(take, exercises, size, None if voice is None else read(voice, voices))
+        return take_out(take, exercises, None if voice is None else read(voice, voices))
 
     def known(ref: str, kind: str, catalogue: dict[str, Any]) -> None:
         # NOTE: the id must exist; an older version is fine (a take queued offline before

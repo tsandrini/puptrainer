@@ -30,11 +30,17 @@ def content_copy(tmp_path: Path) -> Path:
 def test_catalogue_loads_with_every_text_in_both_languages() -> None:
     content = load_content(CONTENT)
     assert {e.id for e in content.exercises} >= {"slide-down-hold", "note-match", "count-in-band"}
+    by_id = {e.id: e for e in content.exercises}
+    assert [p.pause for p in by_id["resonance-contrast"].sequence] == [False, True] * 2 + [False]
+    assert by_id["resonance-contrast"].sequence[0].seconds == 3
+    assert by_id["count-in-band"].sequence == []
     assert {r.id for r in content.routines} == {"pitch", "resonance"}
     for exercise in content.exercises:
         for field in ("titles", "summaries", "steps", "right", "why"):
             assert set(getattr(exercise, field)) == LANGUAGES, (exercise.id, field)
         assert set(exercise.safety) in (set(), LANGUAGES), exercise.id
+        for part in exercise.sequence:
+            assert set(part.labels) == (set() if part.pause else LANGUAGES), exercise.id
         assert exercise.sources, exercise.id
     for routine in content.routines:
         assert set(routine.titles) == set(routine.summaries) == LANGUAGES
@@ -101,6 +107,13 @@ def test_every_number_says_what_it_is_for() -> None:
             "note-match.toml",
         ),
         ("exercises/note-match.toml", "[[sources]]", "[[nope]]", "note-match.toml"),
+        (
+            "exercises/hum-glide.toml",
+            "pause = true",
+            'pause = true\nlabels = { en = "wait" }',
+            "part of the sequence",
+        ),
+        ("exercises/hum-glide.toml", 'en = "slide up", ', "", "part of the sequence"),
     ],
 )
 def test_loader_refuses_broken_content(

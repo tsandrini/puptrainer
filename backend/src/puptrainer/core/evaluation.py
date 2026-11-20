@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from puptrainer.core.acoustics import cents, semitones, spacing
+from puptrainer.core.acoustics import brightness_pct, cents, first_pct, semitones
 from puptrainer.core.schemas import (
     Advice,
     Evaluation,
@@ -33,13 +33,13 @@ MEASURES: tuple[MeasureDef, ...] = (
     MeasureDef(key="band_share_pct", unit="%", decimals=0),
     MeasureDef(key="band_up_share_pct", unit="%", decimals=0),
     MeasureDef(key="note_offset_st", unit="st", decimals=1),
-    MeasureDef(key="step_first_cm", unit="cm", decimals=1),
-    MeasureDef(key="step_last_cm", unit="cm", decimals=1),
     MeasureDef(key="hold_s", unit="s", decimals=1),
     MeasureDef(key="hold_pitch_hz", unit="Hz", decimals=0),
     MeasureDef(key="hold_offset_cents", unit="cents", decimals=0),
     MeasureDef(key="steps_found", unit="", decimals=0),
-    MeasureDef(key="step_rise_pct", unit="%", decimals=1),
+    MeasureDef(key="step_bright_pct", unit="%", decimals=0),
+    MeasureDef(key="step_r1_pct", unit="%", decimals=0),
+    MeasureDef(key="step_dark_pct", unit="%", decimals=0),
     MeasureDef(key="step_drift_st", unit="st", decimals=1),
 )
 """Every key a judgement may report besides registry metrics; texts in `content/measures`."""
@@ -50,10 +50,6 @@ STRAINED = 1
 """The lowest comfort rating: a rep rated so is never met."""
 EFFORTFUL = 2
 """The comfort rating that still counts, with the advice to go easier."""
-SIZE_KEYS = frozenset({"vtl_cm"})
-FORMANT_MAX_F0_HZ = 300.0
-"""Above this pitch the pipeline measures no formants (see `analysis.pipeline`)."""
-"""Hints read against the learner's baseline size."""
 
 
 @dataclass
@@ -68,8 +64,6 @@ class TakeFacts:
         segments: The held sounds of a `sustain` take.
         target: The band, and the note, it was recorded against.
         comfort: How the rep felt, 1 (strained) to 5.
-        baseline_cm: The apparent tract length of the learner's everyday voice in a
-            comparable kind of take on the same microphone setup, if known.
     """
 
     analysed: bool
@@ -79,7 +73,6 @@ class TakeFacts:
     segments: list[VowelSegment] = field(default_factory=list)
     target: Target | None = None
     comfort: int | None = None
-    baseline_cm: float | None = None
 
 
 def needs_pitch(exercise: Exercise | None) -> bool:
@@ -109,17 +102,8 @@ def evaluate(exercise_ref: str, exercise: Exercise | None, facts: TakeFacts) -> 
         out.problem = EvaluationProblem.NOT_ANALYSED
         return out
     out.hints = [
-        Measure(
-            key=k,
-            value=facts.metrics[k],
-            baseline=facts.baseline_cm if k in SIZE_KEYS else None,
-        )
-        for k in exercise.hints
-        if k in facts.metrics
+        Measure(key=k, value=facts.metrics[k]) for k in exercise.hints if k in facts.metrics
     ]
-    median = facts.metrics.get("pitch_median_hz", 0.0)
-    if SIZE_KEYS & set(exercise.hints) - set(facts.metrics) and median > FORMANT_MAX_F0_HZ:
-        out.advice.append(Advice.PITCH_TOO_HIGH)
     match rule:
         case NoRule():
             pass
@@ -330,20 +314,25 @@ def _steps(rule: StepsRule, facts: TakeFacts, out: Evaluation) -> None:
     out.measures = [Measure(key="step_drift_st", value=drift, high=rule.max_drift_st, met=steady)]
     if not steady:
         out.advice.append(Advice.PITCH_MOVED)
-    if not all(len(s.formants_hz) == 4 for s in chosen):
+    first, last = chosen[0].formants_hz, chosen[-1].formants_hz
+    if len(first) != 4 or len(last) != 4:
         # a sound pitched too high to show its resonances: nothing to compare
         out.met = False
         out.advice.append(Advice.PITCH_TOO_HIGH)
         return
-    widths = [spacing(s.formants_hz)[0] for s in chosen]
-    lengths = [spacing(s.formants_hz)[1] for s in chosen]
-    rising = all(b > a for a, b in zip(widths, widths[1:], strict=False))
-    out.met = rising and steady
-    if steady and not rising:
+    bright = brightness_pct(last, first)
+    brighter = bright >= rule.min_bright_pct
+    out.met = brighter and steady
+    if steady and not brighter:
         out.advice.append(Advice.NOT_BRIGHTER)
     out.measures = [
-        Measure(key="step_rise_pct", value=100.0 * (widths[-1] / widths[0] - 1), met=rising),
+        Measure(key="step_bright_pct", value=bright, low=rule.min_bright_pct, met=brighter),
         *out.measures,
-        Measure(key="step_first_cm", value=lengths[0], baseline=facts.baseline_cm),
-        Measure(key="step_last_cm", value=lengths[-1], baseline=facts.baseline_cm),
+        Measure(key="step_r1_pct", value=first_pct(last, first)),
     ]
+    between = [
+        brightness_pct(s.formants_hz, first) for s in chosen[1:-1] if len(s.formants_hz) == 4
+    ]
+    if between:
+        # the darkest of the sounds in between: how far the other way the learner can go
+        out.measures.append(Measure(key="step_dark_pct", value=min(between)))

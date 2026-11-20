@@ -52,6 +52,16 @@ cs = "Tohle je hlavní cvičení na váhu hlasu. Vysoko se hlasivky ztenčí sam
 en = "If you have to push to get up there, that is weight, not lightness: start less high."
 cs = "Pokud se tam nahoru dá dostat jen tlačením, je to váha, ne lehkost: začněte méně vysoko."
 
+[[sequence]]
+labels = { en = "“Ah”, high and thin", cs = "„Á“, vysoko a tence" }
+
+[[sequence]]
+labels = { en = "slide down into your band", cs = "sklouznout do pásma" }
+
+[[sequence]]
+seconds = 3
+labels = { en = "hold", cs = "držet" }
+
 [rule]
 kind = "pitch_hold"
 at = "band"

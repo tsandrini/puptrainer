@@ -1,6 +1,6 @@
 id = "resonance"
 version = 1
-minutes = 6
+minutes = 5
 
 [titles]
 en = "Resonance"
@@ -11,14 +11,10 @@ en = "Resonance, at an easy pitch: find the smaller sound in a whisper, hold it 
 cs = "Rezonance, ve snadné výšce: najít menší zvuk v šepotu, podržet ho na jednom tónu a pak ho udržet ve větě."
 
 [[steps]]
-exercise = "trill-glide"
-reps = 1
-
-[[steps]]
 exercise = "whisper-slide"
 
 [[steps]]
-exercise = "resonance-steps"
+exercise = "resonance-contrast"
 
 [[steps]]
 exercise = "bright-phrase"

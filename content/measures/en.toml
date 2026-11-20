@@ -12,14 +12,6 @@ description = "Share of the voiced time whose pitch is not below your band's low
 title = "Away from the note"
 description = "How far your voice was from the note on the whole, in semitones; minus is below."
 
-[step_first_cm]
-title = "Size of the first sound"
-description = "Apparent vocal-tract length of the first held sound. Smaller is brighter; under half a centimetre is noise."
-
-[step_last_cm]
-title = "Size of the last sound"
-description = "Apparent vocal-tract length of the last held sound."
-
 [hold_s]
 title = "Steady hold"
 description = "The longest stretch held steadily inside the range (dropouts under 50 ms do not end it)."
@@ -36,9 +28,17 @@ description = "How far the held pitch lies from the note, in cents (a hundredth 
 title = "Held sounds"
 description = "How many held sounds were found (each at least 1.5 s, with a pause between)."
 
-[step_rise_pct]
-title = "Brightening"
-description = "How much the formant spacing rose from the first held sound to the last: smaller and brighter is higher."
+[step_bright_pct]
+title = "Bright against ordinary"
+description = "How much higher the resonances F2 to F4 of the last held sound sit than those of the first, your ordinary one. A few percent is what two takes of the same sound differ by."
+
+[step_r1_pct]
+title = "R1, bright against ordinary"
+description = "How much higher the lowest resonance, F1, of the last held sound sits than that of the first. This is the number the resonance lesson is about: a smaller throat raises it. On a note above about 220 Hz it is rough, because few harmonics fall near it."
+
+[step_dark_pct]
+title = "Dark against ordinary"
+description = "The same for the darkest sound in between: how far the other way you went. Lower is darker."
 
 [step_drift_st]
 title = "Pitch drift"

@@ -14,7 +14,7 @@ from datetime import datetime
 
 import numpy as np
 
-from puptrainer.core.acoustics import semitones, spacing
+from puptrainer.core.acoustics import BRIGHT, semitones
 from puptrainer.core.schemas import (
     Basis,
     Item,
@@ -33,8 +33,6 @@ MIN_WOBBLE_TAKES = 3
 SPEECH_ITEMS = frozenset({Item.PHRASE, Item.PASSAGE, Item.FREE, Item.OTHER})
 HELD_ITEMS = frozenset({Item.VOWELS, Item.SUSTAIN})
 FORMANT_KEYS = ("f1_median_hz", "f2_median_hz", "f3_median_hz", "f4_median_hz")
-# NOTE: F1 follows the jaw and loudness as much as the tract, so it is reported apart
-BRIGHT = slice(1, 4)
 
 NOISE_FLOOR_PCT = 2.0
 """A brightness difference under this is never called a change, however steady the takes."""
@@ -175,29 +173,6 @@ def reference(basis: Basis, takes: Sequence[Voice]) -> Reference:
         formants_hz=formants,
         vowels=vowels,
     )
-
-
-def everyday_size_cm(
-    item: Item, language: str | None, content_ref: str | None, everyday: Sequence[Voice]
-) -> float | None:
-    """The apparent tract length of the everyday voice, for a practice take to show beside.
-
-    Args:
-        item: What the practice take contains: held sounds are held against the everyday
-            "a", speech against everyday speech.
-        language: The language it is spoken in.
-        content_ref: The text it reads.
-        everyday: The learner's analysed everyday lab takes on the same microphone setup.
-
-    Returns:
-        The length in cm, or `None` without a comparable everyday take.
-    """
-    found = comparable(item, language, content_ref, everyday)
-    if found is None:
-        return None
-    voice = reference(*found)
-    formants = voice.vowels.get("a", []) if voice.basis == Basis.VOWELS else voice.formants_hz
-    return spacing(formants)[1] if formants else None
 
 
 def read(take: Voice, everyday: Sequence[Voice]) -> Reading | None:

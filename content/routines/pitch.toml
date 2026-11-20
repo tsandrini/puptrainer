@@ -7,12 +7,11 @@ en = "Pitch"
 cs = "Výška"
 
 [summaries]
-en = "Pitch, with a light voice: warm up, find your band from above, match notes, then speak."
+en = "Pitch, with a light voice: hum to warm up, find your band from above, match notes, then speak."
 cs = "Výška, lehkým hlasem: rozcvičit se, najít pásmo shora, trefovat tóny a pak mluvit."
 
 [[steps]]
-exercise = "trill-glide"
-reps = 1
+exercise = "hum-glide"
 
 [[steps]]
 exercise = "light-hum"

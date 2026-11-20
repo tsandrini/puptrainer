@@ -52,6 +52,13 @@ cs = "Trénuje čistý začátek a konec hlasu: hlasivky, které dovírají tak 
 en = "If the hum rattles, make it lighter rather than pushing through."
 cs = "Když broukání chrastí, uberte, místo abyste se přes to protlačili."
 
+[[sequence]]
+seconds = 3
+labels = { en = "Light “mmm”", cs = "Lehké „mmm“" }
+
+[[sequence]]
+labels = { en = "“mm-hmm, one, two, three”", cs = "„mhm, jedna, dva, tři“" }
+
 [rule]
 kind = "metric"
 key = "subharmonic_share_pct"

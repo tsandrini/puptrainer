@@ -9,7 +9,6 @@ from puptrainer.core.reading import (
     TYPICAL_PCT,
     Voice,
     comparable,
-    everyday_size_cm,
     read,
     reference,
 )
@@ -193,21 +192,6 @@ def test_what_is_not_read() -> None:
     assert read(voice("try", 5), []) is None
     unmeasured = Voice("u", Item.PASSAGE, "en", GARDEN, START, {"duration_s": 3.0})
     assert read(unmeasured, EVERYDAY) is None
-
-
-def test_everyday_size() -> None:
-    # a uniform tube of 17.5 cm resonates at 500, 1500, 2500, 3500 Hz
-    tube = Voice(
-        "t",
-        Item.FREE,
-        "en",
-        None,
-        START,
-        {f"f{i}_median_hz": 1000.0 * (2 * i - 1) / 2 for i in range(1, 5)},
-    )
-    assert everyday_size_cm(Item.PHRASE, "en", None, [tube]) == pytest.approx(17.5)
-    assert everyday_size_cm(Item.SUSTAIN, None, None, [tube]) is None
-    assert everyday_size_cm(Item.SUSTAIN, None, None, EVERYDAY) == pytest.approx(18.4, abs=0.5)
 
 
 def test_takes_are_served_with_their_reading(client: TestClient, device_id: int) -> None:

@@ -1,5 +1,5 @@
 id = "count-in-band"
-version = 2
+version = 3
 skill = "carry-over"
 item = "phrase"
 intent = "attempt"
@@ -17,13 +17,13 @@ cs = "Napočítat do deseti lehkým hlasem, který cvičení našla."
 
 [steps]
 en = [
-  "Find the light sound again: a short slide down into your band, as in the exercise before.",
-  "In that voice, count slowly from one to ten, in the language of this session.",
+  "Before you record: find the light sound again with a short slide down into your band, as in the exercise before.",
+  "Then record: in that voice, count slowly from one to ten, in the language of this session.",
   "Speak, don't sing. Let the pitch move a little, as it does in speech, with the marker mostly inside your band.",
 ]
 cs = [
-  "Najděte znovu lehký zvuk: krátké sklouznutí do pásma jako v předchozím cvičení.",
-  "Tím hlasem pomalu napočítejte od jedné do deseti, v jazyce tohoto sezení.",
+  "Před nahráváním: najděte znovu lehký zvuk krátkým sklouznutím do pásma jako v předchozím cvičení.",
+  "Pak nahrávejte: tím hlasem pomalu napočítejte od jedné do deseti, v jazyce tohoto sezení.",
   "Mluvte, nezpívejte. Nechte výšku trochu se pohybovat jako v řeči, se značkou většinou uvnitř pásma.",
 ]
 

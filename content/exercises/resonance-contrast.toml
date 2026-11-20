@@ -1,0 +1,89 @@
+id = "resonance-contrast"
+version = 1
+skill = "resonance"
+item = "sustain"
+intent = "drill"
+seconds = 15
+reps = 2
+live = "formants"
+
+[titles]
+en = "Ordinary, dark, bright"
+cs = "Obyčejně, tmavě, jasně"
+
+[summaries]
+en = "The same note three times: your ordinary “ah”, then a darker one, then a brighter one."
+cs = "Třikrát stejný tón: vaše obyčejné „á“, pak tmavší, pak jasnější."
+
+[steps]
+en = [
+  "Pick one easy note and keep it for the whole take: hum it first and note where the marker sits on the strip.",
+  "Hold “ah” for three seconds in your ordinary way. This sets the zero of the resonance meter.",
+  "Pause. Hold “ah” dark for three seconds: as at the start of a yawn, with lots of room in the mouth and throat. The meter moves to the left.",
+  "Pause. Hold “ah” bright for three seconds: the small sound from the whisper, with your voice added quietly. The meter moves to the right.",
+]
+cs = [
+  "Zvolte jeden snadný tón a držte se ho celou nahrávku: nejdřív si ho zabručte a zapamatujte si, kde je značka na pruhu.",
+  "Podržte tři sekundy „á“ svým obyčejným způsobem. Tím se nastaví nula ukazatele rezonance.",
+  "Pauza. Podržte tři sekundy „á“ tmavě: jako na začátku zívnutí, se spoustou místa v ústech a hrdle. Ukazatel se posune doleva.",
+  "Pauza. Podržte tři sekundy „á“ jasně: malý zvuk ze šepotu, ke kterému tiše přidáte hlas. Ukazatel se posune doprava.",
+]
+
+[right]
+en = "All three sit on the same note and are about as loud, yet the second sounds like a bigger body and the third like a smaller one. On the meter the dark one sits left of zero and the bright one right of it."
+cs = "Všechny tři jsou na stejném tónu a zhruba stejně hlasité, a přece druhý zní jako větší tělo a třetí jako menší. Na ukazateli je tmavý vlevo od nuly a jasný vpravo od ní."
+
+[mistakes]
+en = [
+  "The pitch goes with the colour: down for dark, up for bright. That is the habit this exercise is here to break. Hum your note before each “ah” and keep the marker where it was; above about 300 Hz the app cannot measure resonance at all.",
+  "Getting louder for bright: the level should stay where it was. Brighter is a shape, not more force, and a take that is too loud clips.",
+  "Squeezing the throat or holding a swallow to get bright: back off. Find it in a whisper first, then add the voice softly.",
+  "Changing the vowel to “eh” or “ee”: it should still be an “ah”, only a brighter one. A vowel change moves the brightness without moving R1.",
+]
+cs = [
+  "Výška jde s barvou: dolů pro tmavý, nahoru pro jasný. Právě tenhle zvyk má cvičení odnaučit. Před každým „á“ si svůj tón zabručte a držte značku tam, kde byla; nad zhruba 300 Hz už aplikace rezonanci vůbec nezměří.",
+  "Zesilování kvůli jasu: hlasitost má zůstat, kde byla. Jasnější je tvar, ne víc síly, a příliš hlasitá nahrávka se přebudí.",
+  "Stahování hrdla nebo držení polknutí kvůli jasu: uberte. Nejdřív to najděte v šepotu a pak tiše přidejte hlas.",
+  "Změna samohlásky na „é“ nebo „í“: pořád to má být „á“, jen jasnější. Změna samohlásky pohne jasem, ale ne R1.",
+]
+
+[why]
+en = "This is resonance on a voiced sound: the space above the vocal folds, moved on purpose in both directions while the note stays put. The app reads the dark and the bright “ah” against your ordinary one from the same take: brightness (the upper resonances) and R1, the lowest one, which the lesson you follow is about. It is met when the bright one measures brighter than the ordinary one and the three notes lie within two semitones."
+cs = "Tohle je rezonance na znělém zvuku: prostor nad hlasivkami, vědomě posouvaný oběma směry, zatímco tón zůstává. Aplikace čte tmavé a jasné „á“ proti vašemu obyčejnému z téže nahrávky: jas (horní rezonance) a R1, tu nejnižší, o kterou jde v lekci, podle které se učíte. Splněno je, když jasné vyjde jasnější než obyčejné a všechny tři tóny leží do dvou půltónů od sebe."
+
+[safety]
+en = "Back off if it turns buzzy or tight, or if you feel it in your throat afterwards."
+cs = "Uberte, pokud to začne bzučet nebo se stahovat, nebo pokud to potom cítíte v krku."
+
+[[sequence]]
+seconds = 3
+labels = { en = "Ordinary “ah”", cs = "Obyčejné „á“" }
+
+[[sequence]]
+pause = true
+
+[[sequence]]
+seconds = 3
+labels = { en = "Dark “ah”", cs = "Tmavé „á“" }
+
+[[sequence]]
+pause = true
+
+[[sequence]]
+seconds = 3
+labels = { en = "Bright “ah”", cs = "Jasné „á“" }
+
+[rule]
+kind = "steps"
+count = 3
+max_drift_st = 2.0
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Resonance: voiced resonance stepping (adapted: a held “ah” instead of counting, the ordinary one first, so each step can be measured against it)"
+url = "https://wiki.sumianvoice.com/wiki/pages/resonance"
+
+[[sources]]
+author = "TransVoiceLessons (Zheanna Erose)"
+title = "The Single Most Powerful Element of Voice Feminization: Meta Resonance (exercise 4, R1 raising on voiced vowels)"
+url = "https://www.youtube.com/watch?v=BW8X2nXexQs"

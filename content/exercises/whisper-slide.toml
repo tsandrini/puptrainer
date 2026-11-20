@@ -17,13 +17,13 @@ cs = "Šeptané „e“, které klouže od velkého zvuku k malému a zpět: rez
 
 [steps]
 en = [
-  "Whisper a steady “eh”, as in “edge”, for two seconds in your ordinary way. This sets the zero of the meter.",
+  "Whisper “eh”, as in “edge”, in your ordinary way: held, or in short puffs as in the lesson. The first moments set the zero of the meter, so start ordinary. A whisper is quiet, and that is fine: the microphone hears it well.",
   "Keep whispering and let the hiss get smaller and higher, as from fogging up a window to a small dog's panting. The vowel stays an “eh”.",
   "Slide slowly back to the big sound, then up again. Watch the marker follow you.",
   "Breathe when you need to; the meter keeps its zero.",
 ]
 cs = [
-  "Šeptejte dvě sekundy rovné „e“ svým obvyklým způsobem. Tím se nastaví nula ukazatele.",
+  "Šeptejte „e“ svým obvyklým způsobem: držené, nebo v krátkých dechnutích jako v lekci. První okamžiky nastaví nulu ukazatele, takže začněte obyčejně. Šepot je tichý a to nevadí: mikrofon ho slyší dobře.",
   "Šeptejte dál a nechte šum zmenšit a zvýšit, jako od dýchnutí na okno k funění malého psa. Samohláska zůstává „e“.",
   "Pomalu sklouzněte zpět k velkému zvuku a pak znovu nahoru. Sledujte, jak vás značka následuje.",
   "Nadechněte se, kdykoli potřebujete; ukazatel si nulu pamatuje.",
@@ -48,12 +48,25 @@ cs = [
 ]
 
 [why]
-en = "The first exercise of the lesson this session follows (TransVoiceLessons: learn the movement that makes the space above the vocal folds smaller, with the voice out of the way). A whisper has no pitch, so what you hear rise and fall is the resonance itself, and the app can follow it even where a voiced sound would shoot too high to be measured. Nothing is judged and no number is stored yet: the meter is the feedback. It shows two things, counted from your first two seconds: brightness (the upper resonances) and the first resonance, R1, which the lesson is about."
-cs = "První cvičení z lekce, kterou toto sezení následuje (TransVoiceLessons: naučit se pohyb, který zmenšuje prostor nad hlasivkami, bez hlasu, který by překážel). Šepot nemá výšku, takže to, co slyšíte stoupat a klesat, je sama rezonance, a aplikace ji dokáže sledovat i tam, kde by znělý zvuk vystřelil příliš vysoko na měření. Nic se nehodnotí a žádné číslo se zatím neukládá: zpětnou vazbou je ukazatel. Ukazuje dvě věci, počítané od vašich prvních dvou sekund: jas (horní rezonance) a první rezonanci, R1, o kterou v lekci jde."
+en = "The first exercise of the lesson this session follows (TransVoiceLessons: learn the movement that makes the space above the vocal folds smaller, with the voice out of the way). A whisper has no pitch, so what you hear rise and fall is the resonance itself, and the app can follow it even where a voiced sound would shoot too high to be measured. Nothing is judged and no number is stored yet: the meter is the feedback. It shows two things, counted from your first moments of whisper: brightness (the upper resonances) and the first resonance, R1, which the lesson is about."
+cs = "První cvičení z lekce, kterou toto sezení následuje (TransVoiceLessons: naučit se pohyb, který zmenšuje prostor nad hlasivkami, bez hlasu, který by překážel). Šepot nemá výšku, takže to, co slyšíte stoupat a klesat, je sama rezonance, a aplikace ji dokáže sledovat i tam, kde by znělý zvuk vystřelil příliš vysoko na měření. Nic se nehodnotí a žádné číslo se zatím neukládá: zpětnou vazbou je ukazatel. Ukazuje dvě věci, počítané od prvních okamžiků vašeho šepotu: jas (horní rezonance) a první rezonanci, R1, o kterou v lekci jde."
 
 [safety]
 en = "Whispering dries the throat: sip water, and keep it to a couple of takes. Stop if it turns scratchy."
 cs = "Šepot vysušuje hrdlo: napijte se a zůstaňte u pár nahrávek. Přestaňte, pokud to začne škrábat."
+
+[[sequence]]
+seconds = 2
+labels = { en = "Whispered “eh”, ordinary", cs = "Šeptané „e“, obyčejně" }
+
+[[sequence]]
+labels = { en = "slide to small", cs = "klouzat k malému" }
+
+[[sequence]]
+labels = { en = "back to big", cs = "zpět k velkému" }
+
+[[sequence]]
+labels = { en = "small again", cs = "znovu malé" }
 
 [rule]
 kind = "none"

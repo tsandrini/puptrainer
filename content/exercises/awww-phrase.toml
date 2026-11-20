@@ -51,6 +51,12 @@ cs = "Pocit často najde lehčí hlas rychleji než jakýkoli pokyn o mechanice;
 en = "Keep it soft; this is not about going as high as possible."
 cs = "Zůstaňte u něžného tónu; nejde o to dostat se co nejvýš."
 
+[[sequence]]
+labels = { en = "“Awww”, one to three times", cs = "„Awww“, jednou až třikrát" }
+
+[[sequence]]
+labels = { en = "“Oh, look at you, you're so tiny!”", cs = "„Jéé, ty jsi ale maličké!“" }
+
 [rule]
 kind = "pitch_band"
 min_share_pct = 50

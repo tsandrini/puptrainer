@@ -10,8 +10,8 @@ en = "Warm-up"
 cs = "Rozcvička"
 
 [skills.descriptions]
-en = "Easy sounds that get the voice moving before anything else: a lip trill, a hum through a straw. They take almost no effort and smooth the way between low and high notes."
-cs = "Snadné zvuky, které hlas rozhýbou dřív než cokoli jiného: rtový trylek, bzučení do brčka. Skoro nic nestojí a uhlazují přechod mezi nízkými a vysokými tóny."
+en = "An easy sound that gets the voice moving before anything else: a quiet hum that slides up and down. It takes almost no effort and smooths the way between low and high notes."
+cs = "Snadný zvuk, který hlas rozhýbe dřív než cokoli jiného: tiché bručení, které klouže nahoru a dolů. Skoro nic nestojí a uhlazuje přechod mezi nízkými a vysokými tóny."
 
 [[skills]]
 key = "pitch-weight"

@@ -1,0 +1,84 @@
+id = "hum-glide"
+version = 1
+skill = "warm-up"
+item = "glide"
+intent = "drill"
+seconds = 15
+reps = 1
+live = "none"
+demo = "glide"
+hints = ["glide_low_hz", "glide_high_hz", "glide_breaks"]
+
+[titles]
+en = "Hum up and down"
+cs = "Bručení nahoru a dolů"
+
+[summaries]
+en = "A warm-up: a quiet hum that slides from low to high and back."
+cs = "Rozcvička: tiché bručení, které klouže zdola nahoru a zpět."
+
+[steps]
+en = [
+  "Close your lips and hum “mmm”, quietly, on a low note that is easy for you. It is your ordinary voice with the mouth shut, nothing else.",
+  "Still humming, slide slowly up to a high note that is still easy, like a siren, and back down. About five seconds each way. “Hear the shape” plays the movement as a tone.",
+  "Take a breath and do it once more in the same take.",
+]
+cs = [
+  "Zavřete rty a tiše bručte „mmm“ na nízkém tónu, který je pro vás snadný. Je to váš obyčejný hlas se zavřenými ústy, nic víc.",
+  "Stále bručte a pomalu klouzejte nahoru k vysokému tónu, který je ještě snadný, jako siréna, a zpět dolů. Asi pět sekund každým směrem. „Poslechnout si tvar“ přehraje ten pohyb jako tón.",
+  "Nadechněte se a v téže nahrávce to udělejte ještě jednou.",
+]
+
+[right]
+en = "Quiet and almost effortless, like idling. The pitch moves smoothly, without a jump or a crack on the way. How high you get does not matter at all."
+cs = "Tiché a skoro bez námahy, jako volnoběh. Výška se mění plynule, bez skoku a přeskočení. Jak vysoko se dostanete, je úplně jedno."
+
+[mistakes]
+en = [
+  "Pushing for the top: stop where it is still easy. The range grows by itself over weeks.",
+  "A crack or a jump on the way: normal at first. Go slower and quieter through that spot.",
+  "Humming loudly: about as loud as talking to yourself is plenty.",
+]
+cs = [
+  "Tlačení k vrcholu: přestaňte tam, kde je to ještě snadné. Rozsah během týdnů naroste sám.",
+  "Přeskočení nebo skok po cestě: zpočátku běžné. Tím místem projděte pomaleji a tišeji.",
+  "Hlasité bručení: stačí tak nahlas, jako když si mluvíte pro sebe.",
+]
+
+[why]
+en = "A warm-up, not a test. With the lips closed the vocal folds vibrate with very little effort, which loosens the voice and smooths the join between your low and your high voice. The app shows the lowest and the highest note it heard and counts jumps, for interest only; nothing is judged."
+cs = "Rozcvička, ne zkouška. Se zavřenými rty hlasivky kmitají s velmi malou námahou, což hlas uvolní a uhladí přechod mezi nízkým a vysokým hlasem. Aplikace ukáže nejnižší a nejvyšší tón, který slyšela, a spočítá skoky, jen pro zajímavost; nic se nehodnotí."
+
+[safety]
+en = "Stop if anything scratches, tickles into a cough or tightens in your throat."
+cs = "Přestaňte, pokud cokoli škrábe, dráždí ke kašli nebo se v krku něco stahuje."
+
+[[sequence]]
+labels = { en = "Hum “mmm”, low", cs = "Bručet „mmm“, nízko" }
+
+[[sequence]]
+seconds = 5
+labels = { en = "slide up", cs = "klouzat nahoru" }
+
+[[sequence]]
+seconds = 5
+labels = { en = "slide down", cs = "klouzat dolů" }
+
+[[sequence]]
+pause = true
+
+[[sequence]]
+labels = { en = "once more", cs = "ještě jednou" }
+
+[rule]
+kind = "none"
+
+[[sources]]
+author = "Selene Da Silva (clip archive)"
+title = "SOVTE explorations (humming is the plainest of them)"
+url = "https://selenearchive.github.io/"
+
+[[sources]]
+author = "lavendercat (notes from coached lessons)"
+title = "Voice training background: warm-ups"
+url = "https://lavendercat.neocities.org/voice_training_background"

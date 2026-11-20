@@ -102,6 +102,7 @@ export type Exercise = {
 	titles: Record<string, string>;
 	summaries: Record<string, string>;
 	steps: Record<string, string[]>;
+	sequence: SequencePart[];
 	right: Record<string, string>;
 	mistakes: Record<string, string[]>;
 	why: Record<string, string>;
@@ -146,7 +147,6 @@ export type Measure = {
 	low: number | null;
 	high: number | null;
 	met: boolean | null;
-	baseline: number | null;
 };
 
 /** A measure of the evaluation or of a reading, with its texts. */
@@ -300,6 +300,13 @@ export type RoutineStep = {
 	reps: number | null;
 };
 
+/** One part of what a take of an exercise contains, for the picture of its order. */
+export type SequencePart = {
+	labels: Record<string, string>;
+	seconds: number | null;
+	pause: boolean;
+};
+
 /** Evenly spaced values over a take, e.g. its pitch contour. */
 export type Series = {
 	start_s: number;
@@ -339,11 +346,12 @@ export type Source = {
 	url: string;
 };
 
-/** Held sounds that should change step by step while the pitch stays put. */
+/** Held sounds read against the first of them, while the pitch stays put. */
 export type StepsRule = {
 	kind: 'steps';
 	count: number;
 	max_drift_st: number;
+	min_bright_pct: number;
 };
 
 /** The labels of a take being uploaded. */

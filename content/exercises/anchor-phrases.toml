@@ -1,5 +1,5 @@
 id = "anchor-phrases"
-version = 2
+version = 3
 skill = "carry-over"
 item = "phrase"
 intent = "attempt"
@@ -21,14 +21,14 @@ cs = "Stejné čtyři krátké věty v každém sezení, hlasem, který trénuje
 
 [steps]
 en = [
-  "Find the light sound once more with a short slide into your band.",
-  "Read the four phrases in that voice, calmly, as if talking to a friend.",
-  "Take a breath between the phrases; if the voice slips, slide into the band again before the next one.",
+  "Before you record: find the light sound once more with a short slide into your band. “Try it first” shows the strip without recording.",
+  "Then record and read the four phrases in that voice, calmly, as if talking to a friend. Only the phrases belong in the take: it is compared with your everyday take of them.",
+  "Take a breath between the phrases; if the voice slips, pause and find it again before the next one.",
 ]
 cs = [
-  "Ještě jednou najděte lehký zvuk krátkým sklouznutím do pásma.",
-  "Přečtěte tím hlasem čtyři věty, v klidu, jako při řeči s někým blízkým.",
-  "Mezi větami se nadechněte; když hlas uklouzne, před další větou znovu sklouzněte do pásma.",
+  "Před nahráváním: ještě jednou najděte lehký zvuk krátkým sklouznutím do pásma. „Nejdřív zkusit“ ukáže pruh bez nahrávání.",
+  "Pak nahrávejte a přečtěte tím hlasem čtyři věty, v klidu, jako při řeči s někým blízkým. Do nahrávky patří jen věty: porovnává se s vaší běžnou nahrávkou těchto vět.",
+  "Mezi větami se nadechněte; když hlas uklouzne, udělejte pauzu a před další větou ho znovu najděte.",
 ]
 
 [right]

@@ -125,30 +125,53 @@ def segment(start: float, spacing_hz: float, pitch: float, seconds: float = 2.5)
     )
 
 
-def test_resonance_steps(catalogue: dict[str, Exercise]) -> None:
-    exercise = catalogue["resonance-steps"]
-    rising = [segment(0, 1000, 180), segment(3, 1080, 181), segment(6, 1150, 182)]
-    result = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=rising))
-    assert result.met is True
-    assert measures(result)["step_rise_pct"] == pytest.approx(15.0)
-    drifting = [segment(0, 1000, 180), segment(3, 1080, 200), segment(6, 1150, 220)]
-    drift = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=drifting))
-    assert drift.met is False and measures(drift)["step_drift_st"] > 1
-    # a short cough between the steps is not one of them
-    cough = [*rising[:2], segment(4.5, 900, 180, seconds=1.5), rising[2]]
-    assert evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=cough)).met
-    assert drift.advice == ["pitch-moved"]
-    same = [segment(0, 1000, 180), segment(3, 1000, 180), segment(6, 990, 180)]
-    flat = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=same))
+def test_resonance_contrast(catalogue: dict[str, Exercise]) -> None:
+    exercise = catalogue["resonance-contrast"]
+    ref = "exercise:resonance-contrast@1"
+    # the ordinary sound, a darker one, a brighter one, on one note
+    good = [segment(0, 1000, 180), segment(3, 930, 181), segment(6, 1080, 182)]
+    result = evaluate(ref, exercise, facts(None, segments=good))
+    assert result.met is True and result.advice == []
+    assert [m.key for m in result.measures] == [
+        "step_bright_pct",
+        "step_drift_st",
+        "step_r1_pct",
+        "step_dark_pct",
+    ]
+    got = measures(result)
+    assert got["step_bright_pct"] == pytest.approx(8.0)
+    assert got["step_r1_pct"] == pytest.approx(8.0)
+    assert got["step_dark_pct"] == pytest.approx(-7.0)
+    assert got["step_drift_st"] < 0.2
+    # the pitch going with the colour: the numbers are still shown, the rep is not met
+    drifting = [segment(0, 1000, 180), segment(3, 930, 130), segment(6, 1080, 234)]
+    drift = evaluate(ref, exercise, facts(None, segments=drifting))
+    assert (drift.met, drift.advice) == (False, ["pitch-moved"])
+    assert measures(drift)["step_drift_st"] > 10
+    assert measures(drift)["step_bright_pct"] == pytest.approx(8.0)
+    # a short cough between the sounds is not one of them
+    cough = [*good[:2], segment(4.5, 900, 180, seconds=1.5), good[2]]
+    assert evaluate(ref, exercise, facts(None, segments=cough)).met
+    # a last sound within what two takes of one sound differ by is not brighter
+    same = [segment(0, 1000, 180), segment(3, 930, 180), segment(6, 1010, 180)]
+    flat = evaluate(ref, exercise, facts(None, segments=same))
     assert (flat.met, flat.advice) == (False, ["not-brighter"])
-    # a "bright" sound that shot up in pitch cannot be measured: no sizes, and why
-    squeak = rising[:2] + [
+    # a "bright" sound that shot up in pitch cannot be measured: no numbers, and why
+    squeak = good[:2] + [
         VowelSegment(start_s=6, duration_s=2.5, pitch_hz=520, formants_hz=[], cpps_db=0, hnr_db=0)
     ]
-    high = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=squeak))
+    high = evaluate(ref, exercise, facts(None, segments=squeak))
     assert (high.met, high.advice) == (False, ["pitch-moved", "pitch-too-high"])
     assert [m.key for m in high.measures] == ["step_drift_st"]
-    two = evaluate("exercise:resonance-steps@1", exercise, facts(None, segments=rising[:2]))
+    # an unmeasured sound in between only costs its own number
+    gap = [
+        good[0],
+        VowelSegment(start_s=3, duration_s=2.5, pitch_hz=181, formants_hz=[], cpps_db=0, hnr_db=0),
+        good[2],
+    ]
+    partly = evaluate(ref, exercise, facts(None, segments=gap))
+    assert partly.met is True and "step_dark_pct" not in measures(partly)
+    two = evaluate(ref, exercise, facts(None, segments=good[:2]))
     assert two.met is False and measures(two)["steps_found"] == 2
 
 
@@ -162,7 +185,7 @@ def test_problems(catalogue: dict[str, Exercise]) -> None:
     assert silent.problem == EvaluationProblem.TOO_LITTLE_VOICE
     gone = evaluate("exercise:retired@3", None, facts(contour((190, 190, 1))))
     assert gone.problem == EvaluationProblem.UNKNOWN_EXERCISE
-    plain = evaluate("exercise:trill-glide@1", catalogue["trill-glide"], facts(None))
+    plain = evaluate("exercise:hum-glide@1", catalogue["hum-glide"], facts(None))
     assert plain.met is None and plain.problem is None and plain.measures == []
 
 
@@ -230,19 +253,7 @@ def test_an_effortful_rep_counts_with_the_advice_to_go_easier(
     assert (result.met, result.advice) == (True, ["effortful"])
 
 
-def test_sizes_are_shown_beside_the_everyday_voice(catalogue: dict[str, Exercise]) -> None:
-    steps = [segment(0, 1000, 180), segment(3, 1080, 181), segment(6, 1150, 182)]
-    take = facts(None, segments=steps)
-    take.baseline_cm = 17.6
-    result = evaluate("exercise:resonance-steps@2", catalogue["resonance-steps"], take)
-    sizes = {m.key: m for m in result.measures}
-    assert sizes["step_first_cm"].value == pytest.approx(17.5)
-    assert sizes["step_last_cm"].value == pytest.approx(15.22, abs=0.01)
-    assert sizes["step_last_cm"].baseline == 17.6 and sizes["step_last_cm"].met is None
-    phrase = facts(None, metrics={"vtl_cm": 16.9})
-    phrase.baseline_cm = 17.8
-    hint = evaluate("exercise:bright-phrase@1", catalogue["bright-phrase"], phrase).hints[0]
-    assert (hint.key, hint.value, hint.baseline) == ("vtl_cm", 16.9, 17.8)
-    squeaky = facts(None, metrics={"pitch_median_hz": 420.0})
-    unmeasured = evaluate("exercise:bright-phrase@1", catalogue["bright-phrase"], squeaky)
-    assert (unmeasured.hints, unmeasured.advice) == ([], ["pitch-too-high"])
+def test_a_spoken_exercise_is_left_to_its_reading(catalogue: dict[str, Exercise]) -> None:
+    phrase = facts(None, metrics={"vtl_cm": 16.9, "pitch_median_hz": 420.0})
+    result = evaluate("exercise:bright-phrase@2", catalogue["bright-phrase"], phrase)
+    assert (result.met, result.measures, result.hints, result.advice) == (None, [], [], [])

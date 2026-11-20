@@ -1,12 +1,11 @@
 id = "bright-phrase"
-version = 1
+version = 2
 skill = "resonance"
 item = "phrase"
 intent = "attempt"
 seconds = 12
 reps = 2
 live = "formants"
-hints = ["vtl_cm"]
 
 [texts]
 en = "passage:anchors-en@1"
@@ -17,19 +16,19 @@ en = "Keep it bright in a phrase"
 cs = "Udržet jas ve větě"
 
 [summaries]
-en = "Find the bright “ah”, then say a few phrases without letting go of it."
-cs = "Najít jasné „á“ a pak říct pár vět, aniž ho pustíte."
+en = "Find the bright sound, then say a few phrases without letting go of it."
+cs = "Najít jasný zvuk a pak říct pár vět, aniž ho pustíte."
 
 [steps]
 en = [
-  "Hold the bright “ah” from the exercise before for two seconds, on an easy note.",
-  "Keep your mouth and tongue as they are and go straight into the first phrase.",
-  "Read the other phrases the same way. When the sound gets big again, stop, find the bright “ah”, and go on.",
+  "Before you record: find the bright “ah” from the exercise before and hold it for a moment on an easy note. “Try it first” shows the meters without recording.",
+  "Then record, and go straight into the first phrase with your mouth and tongue as they are. Only the phrases belong in the take: it is compared with your everyday take of the same phrases.",
+  "Read the other phrases the same way. When the sound gets big again, pause, find the bright sound in a whisper, and go on.",
 ]
 cs = [
-  "Podržte dvě sekundy jasné „á“ z předchozího cvičení, na snadném tónu.",
-  "Nechte ústa a jazyk, jak jsou, a rovnou přejděte do první věty.",
-  "Ostatní věty přečtěte stejně. Když zvuk zase zvětší, zastavte, najděte jasné „á“ a pokračujte.",
+  "Před nahráváním: najděte jasné „á“ z předchozího cvičení a chvíli ho podržte na snadném tónu. „Nejdřív zkusit“ ukáže ukazatele bez nahrávání.",
+  "Pak nahrávejte a rovnou přejděte do první věty, s ústy a jazykem tak, jak jsou. Do nahrávky patří jen věty: porovnává se s vaší běžnou nahrávkou stejných vět.",
+  "Ostatní věty přečtěte stejně. Když zvuk zase zvětší, udělejte pauzu, najděte jasný zvuk v šepotu a pokračujte.",
 ]
 
 [right]
@@ -39,18 +38,20 @@ cs = "Věty znějí o číslo menší než běžný hlas, trochu jako mluvení s
 [mistakes]
 en = [
   "The brightness is gone by the second word: it drops on certain vowels (oh, oo). Slow down and keep the tongue forward through them.",
-  "Raising the pitch instead: bright is not high. Keep the marker on the strip around your band; above about 300 Hz the size cannot be measured.",
+  "Raising the pitch instead: bright is not high. Keep the marker on the strip around your band; above about 300 Hz resonance cannot be measured.",
+  "Getting louder: brighter is a shape, not more force. If the take clips, it was too loud.",
   "A tight or pinched sound: less effort; a smaller change that is comfortable is worth more.",
 ]
 cs = [
   "Jas zmizí u druhého slova: padá na některých samohláskách (o, u). Zpomalte a držte jazyk vpředu i přes ně.",
-  "Zvedání výšky místo jasu: jasný neznamená vysoký. Držte značku na pruhu kolem svého pásma; nad zhruba 300 Hz se velikost nedá změřit.",
+  "Zvedání výšky místo jasu: jasný neznamená vysoký. Držte značku na pruhu kolem svého pásma; nad zhruba 300 Hz se rezonance nedá změřit.",
+  "Zesilování: jasnější je tvar, ne víc síly. Když se nahrávka přebudí, byla příliš hlasitá.",
   "Stažený nebo zmáčknutý zvuk: méně úsilí; menší změna, která je pohodlná, má větší cenu.",
 ]
 
 [why]
-en = "Holding a bright “ah” is one thing; keeping it through real words is where resonance is actually learned, and where most people lose it. Nothing is judged here. While you speak, the meter shows how much brighter the last seconds were than your everyday speech; afterwards the app reads the whole take against your everyday voice, on both pitch and resonance, and shows its apparent size in centimetres beside it (smaller means brighter; under about half a centimetre is noise)."
-cs = "Podržet jasné „á“ je jedna věc; udržet ho ve skutečných slovech je místo, kde se rezonance opravdu učí a kde ji většina lidí ztrácí. Nic se tu nehodnotí. Při mluvení ukazatel ukazuje, o kolik jasnější byly poslední sekundy než vaše běžná řeč; potom aplikace přečte celou nahrávku proti vašemu běžnému hlasu, ve výšce i v rezonanci, a ukáže vedle toho její zdánlivou velikost v centimetrech (menší znamená jasnější; rozdíl pod zhruba půl centimetru je šum)."
+en = "Holding a bright “ah” is one thing; keeping it through real words is where resonance is actually learned, and where most people lose it. Nothing is judged here. While you speak, the meter shows how much brighter the take is so far than your everyday take of these phrases; afterwards the app reads the whole take against it, on pitch and on resonance."
+cs = "Podržet jasné „á“ je jedna věc; udržet ho ve skutečných slovech je místo, kde se rezonance opravdu učí a kde ji většina lidí ztrácí. Nic se tu nehodnotí. Při mluvení ukazatel ukazuje, o kolik je nahrávka zatím jasnější než vaše běžná nahrávka těchto vět; potom ji aplikace celou přečte proti ní, ve výšce i v rezonanci."
 
 [safety]
 en = "Stop if your throat feels tight; rest and try a smaller change."

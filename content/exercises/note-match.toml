@@ -51,6 +51,13 @@ cs = "Trénuje sluch a ovládání výšky, abyste později poznali, kde hlas je
 en = "Sing quietly. If a note feels out of reach, skip it rather than strain."
 cs = "Zpívejte potichu. Když je tón mimo dosah, přeskočte ho, místo abyste se namáhali."
 
+[[sequence]]
+labels = { en = "“Ah”, slide to the line", cs = "„Á“, klouzat k čáře" }
+
+[[sequence]]
+seconds = 3
+labels = { en = "hold on the line", cs = "držet na čáře" }
+
 [rule]
 kind = "pitch_hold"
 at = "note"

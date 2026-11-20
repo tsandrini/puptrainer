@@ -111,6 +111,13 @@ def check(content: Content) -> None:
                 raise ValueError(f"{where}: {field} lack the base language ({BASE_LANGUAGE})")
         if exercise.skill not in skills:
             raise ValueError(f"{where}: skill {exercise.skill} is not described in skills.toml")
+        for part in exercise.sequence:
+            if part.pause == bool(part.labels) or (
+                part.labels and BASE_LANGUAGE not in part.labels
+            ):
+                raise ValueError(
+                    f"{where}: a part of the sequence is a pause or has labels ({BASE_LANGUAGE})"
+                )
         if exercise.intent not in ("drill", "attempt"):
             raise ValueError(f"{where}: intent must be drill or attempt")
         for language, ref in exercise.texts.items():

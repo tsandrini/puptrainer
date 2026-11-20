@@ -12,14 +12,6 @@ description = "Podíl znělého času, kdy výška není pod dolním okrajem va�
 title = "Vzdálenost od tónu"
 description = "Jak daleko byl hlas celkově od tónu, v půltónech; minus je pod ním."
 
-[step_first_cm]
-title = "Velikost prvního zvuku"
-description = "Zdánlivá délka hlasového traktu prvního podrženého zvuku. Menší je jasnější; pod půl centimetru je šum."
-
-[step_last_cm]
-title = "Velikost posledního zvuku"
-description = "Zdánlivá délka hlasového traktu posledního podrženého zvuku."
-
 [hold_s]
 title = "Klidné podržení"
 description = "Nejdelší úsek klidně podržený uvnitř rozsahu (výpadky kratší než 50 ms ho nepřeruší)."
@@ -36,9 +28,17 @@ description = "Jak daleko je podržená výška od tónu, v centech (setina půl
 title = "Podržené zvuky"
 description = "Kolik podržených zvuků se našlo (každý aspoň 1,5 s, s pauzou mezi nimi)."
 
-[step_rise_pct]
-title = "Zjasnění"
-description = "O kolik vzrostla vzdálenost formantů od prvního podrženého zvuku k poslednímu: menší a jasnější je víc."
+[step_bright_pct]
+title = "Jasný proti obyčejnému"
+description = "O kolik výš leží rezonance F2 až F4 posledního podrženého zvuku než u prvního, vašeho obyčejného. Pár procent je rozdíl, o který se liší i dvě nahrávky stejného zvuku."
+
+[step_r1_pct]
+title = "R1, jasný proti obyčejnému"
+description = "O kolik výš leží nejnižší rezonance, F1, posledního podrženého zvuku než u prvního. O tomhle čísle je lekce rezonance: menší hrdlo ho zvedá. Na tónu nad zhruba 220 Hz je hrubé, protože poblíž leží málo harmonických."
+
+[step_dark_pct]
+title = "Tmavý proti obyčejnému"
+description = "Totéž pro nejtmavší zvuk mezi nimi: jak daleko jste došli opačným směrem. Níž znamená tmavěji."
 
 [step_drift_st]
 title = "Posun výšky"

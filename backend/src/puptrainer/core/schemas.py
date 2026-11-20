@@ -207,8 +207,6 @@ class Measure(Schema):
         low: Lowest value that meets it; unset for no lower limit.
         high: Highest value that meets it; unset for no upper limit.
         met: Whether it is within limits; unset for a number given as context.
-        baseline: The same number in the learner's everyday voice on this microphone
-            setup, where one exists, to read the value against.
     """
 
     key: str
@@ -216,7 +214,6 @@ class Measure(Schema):
     low: float | None = None
     high: float | None = None
     met: bool | None = None
-    baseline: float | None = None
 
 
 class Advice(StrEnum):
@@ -773,25 +770,44 @@ class MetricRule(Schema):
 
 
 class StepsRule(Schema):
-    """Held sounds that should change step by step while the pitch stays put.
+    """Held sounds read against the first of them, while the pitch stays put.
 
-    Met when the take has `count` held sounds, their formant spacing rises from each to
-    the next (smaller, brighter), and their pitches lie within `max_drift_st`.
+    The first sound is the learner's ordinary one; the last is the one the exercise is
+    after. Met when the take has `count` held sounds, the last is brighter than the first
+    (F2 to F4 higher by `min_bright_pct`), and all their pitches lie within
+    `max_drift_st`.
 
     Attributes:
         count: Held sounds expected.
         max_drift_st: How far apart their pitches may be, in semitones.
+        min_bright_pct: How much brighter than the first the last has to measure: above
+            what two takes of the same sound differ by.
     """
 
     kind: Literal["steps"]
     count: int = Field(ge=2, le=6)
     max_drift_st: float = Field(gt=0, le=12)
+    min_bright_pct: float = Field(default=3.0, ge=0, le=50)
 
 
 Rule = Annotated[
     NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule,
     Field(discriminator="kind"),
 ]
+
+
+class SequencePart(Schema):
+    """One part of what a take of an exercise contains, for the picture of its order.
+
+    Attributes:
+        labels: What to do, in a few words, per language; unset for a pause.
+        seconds: How long it lasts, where that matters.
+        pause: A silence between two sounds.
+    """
+
+    labels: dict[str, str] = {}
+    seconds: float | None = Field(default=None, gt=0, le=60)
+    pause: bool = False
 
 
 class Exercise(Schema):
@@ -813,6 +829,8 @@ class Exercise(Schema):
         titles: Short name per language.
         summaries: One line per language.
         steps: What to do, step by step, per language.
+        sequence: The parts of one take in order, for a small picture of it; empty for
+            an exercise that is one thing from start to end.
         right: What it sounds and feels like when it goes right, per language.
         mistakes: Common mistakes and what to do about each, per language.
         why: What it is for, per language.
@@ -835,6 +853,7 @@ class Exercise(Schema):
     titles: dict[str, str]
     summaries: dict[str, str]
     steps: dict[str, list[str]]
+    sequence: list[SequencePart] = []
     right: dict[str, str]
     mistakes: dict[str, list[str]] = {}
     why: dict[str, str]
