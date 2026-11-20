@@ -5,7 +5,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import type { Evaluation, Measure } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
-	import { fmtNumber } from '#lib/format.js';
+	import { fmtNumber, fmtSigned } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { noteName } from '#lib/practice/notes.js';
 	import { cn } from '#lib/utils.js';
@@ -27,9 +27,12 @@
 	const unitOf = (key: string) => app.measure(key)?.unit ?? '';
 	const decimalsOf = (key: string) => app.measure(key)?.decimals ?? 1;
 
+	/** Measures that are a distance from something, shown with their sign. */
+	const SIGNED = new Set(['step_bright_pct', 'step_r1_pct', 'step_dark_pct', 'note_offset_st']);
+
 	function number(key: string, value: number): string {
 		const unit = unitOf(key);
-		const text = fmtNumber(value, decimalsOf(key), i18n.locale);
+		const text = (SIGNED.has(key) ? fmtSigned : fmtNumber)(value, decimalsOf(key), i18n.locale);
 		return unit ? `${text} ${unit}` : text;
 	}
 
@@ -94,11 +97,6 @@
 								)}>{range(m)}</span
 							>
 						{/if}
-						{#if m.baseline !== null}
-							<span class="text-xs text-muted-foreground tabular-nums" data-testid="baseline">
-								{i18n.t.practice.run.everyday(number(m.key, m.baseline))}
-							</span>
-						{/if}
 					</dd>
 				</div>
 			{/each}
@@ -111,9 +109,7 @@
 				<span class="mr-3 inline-block" data-hint={h.key}>
 					{def ? i18n.pick(def.titles) : h.key}:
 					<span class="font-semibold text-foreground tabular-nums">{number(h.key, h.value)}</span>
-					({i18n.t.practice.run.hint}{#if h.baseline !== null}; {i18n.t.practice.run.everyday(
-							number(h.key, h.baseline)
-						)}{/if})
+					({i18n.t.practice.run.hint})
 				</span>
 			{/each}
 		</div>

@@ -163,6 +163,28 @@ describe('resonance of a stream', () => {
 		expect(brightnessPct(small!, big!)).toBeLessThan(15);
 	});
 
+	it('counts a quiet held sound after a loud one, which speech would leave out', () => {
+		const loud = vowel(TUBE, 150, 1);
+		const quiet = vowel(scaled(1.1), 150, 1.2).map((v) => v / 6); // 15.6 dB down
+		const heardAfter = (steady: boolean) => {
+			const tracker = new ResonanceTracker('voiced', steady);
+			const feed = (sound: Float32Array, pitch: number | null) => {
+				for (let at = 0; at + 2048 <= sound.length; at += 2048)
+					tracker.push(sound.subarray(at, at + 2048), 48000, pitch);
+			};
+			feed(loud, 150);
+			feed(new Float32Array(48000), null);
+			feed(quiet, 150);
+			return { now: tracker.recent(0.8), zero: tracker.opening(0.6) };
+		};
+		// in speech a sound this far under the loudest recent one is a consonant or a breath
+		expect(heardAfter(false).now).toBeNull();
+		const held = heardAfter(true);
+		expect(held.now).not.toBeNull();
+		expect(brightnessPct(held.now!, held.zero!)).toBeGreaterThan(8);
+		expect(brightnessPct(held.now!, held.zero!)).toBeLessThan(12);
+	});
+
 	it('reads the last seconds against the start of the take', () => {
 		const tracker = new ResonanceTracker('voiced');
 		const feed = (sound: Float32Array) => {

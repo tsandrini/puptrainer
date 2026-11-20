@@ -31,8 +31,12 @@
 
 	let { mode = 'voiced', zero }: { mode?: Mode; zero: Zero } = $props();
 
-	/** How much sound sets the zero of a take read against its own start. */
-	const START_S = 1.5;
+	/**
+	 * How much sound sets the zero of a take read against its own start. A whisper comes
+	 * in short puffs, a quarter of a second each, so it gets by with less.
+	 */
+	// svelte-ignore state_referenced_locally
+	const START_S = mode === 'whisper' ? 0.6 : 1;
 	/** What "now" is: a held sound answers at once, speech needs a few words. */
 	const WINDOW_S = { start: 1.5, everyday: 8 } as const;
 	/** Blocks between two readings of the tracker: about four a second. */
@@ -41,7 +45,7 @@
 	type Shown = { bright: number; first: number };
 
 	// svelte-ignore state_referenced_locally
-	const tracker = new ResonanceTracker(mode);
+	const tracker = new ResonanceTracker(mode, zero.from === 'start');
 	let blocks = 0;
 	let now = $state<Shown | null>(null);
 	let whole = $state<Shown | null>(null);

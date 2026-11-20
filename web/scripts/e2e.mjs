@@ -668,7 +668,7 @@ try {
 	await page.click('[data-testid=start-pitch]');
 	await page.waitForSelector('[data-testid=checkin]');
 	await page.click('[data-testid=feel-fresh]');
-	for (const skipped of ['trill-glide', 'light-hum']) {
+	for (const skipped of ['hum-glide', 'light-hum']) {
 		await page.waitForSelector(`[data-testid=step][data-exercise=${skipped}]`);
 		await page.click('[data-testid=skip-step]');
 	}
@@ -894,12 +894,51 @@ try {
 	await page.click('[data-testid=record]');
 	await page.waitForSelector('[data-testid=live-resonance][data-mode=whisper]');
 	check(
+		'an exercise in several parts shows their order while recording',
+		(await count(page, '[data-testid=sequence] li[data-pause=false]')) === 4 &&
+			(await text(page, '[data-testid=sequence]')).includes('slide to small')
+	);
+	check(
 		'a whisper step counts from the start of the take and waits for a whisper',
 		(await page.getAttribute('[data-testid=live-resonance]', 'data-from')) === 'start' &&
 			(await count(page, '[data-testid=band-strip]')) === 0 &&
 			(await text(page, '[data-testid=live-status]')).includes('Setting the zero')
 	);
 	await page.getByRole('button', { name: 'Discard' }).click();
+
+	// --- practice: an exercise can be tried with its live guides, and nothing is kept
+	const takesBefore = (await (await context.request.get('/api/v1/takes?limit=1000')).json()).length;
+	await page.goto('/practice/run?exercise=resonance-contrast');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	check(
+		'the order of a take is drawn with its pauses',
+		(await count(page, '[data-testid=sequence] li[data-pause=true]')) === 2 &&
+			(await text(page, '[data-testid=sequence]')).includes('Ordinary “ah” · 3 s')
+	);
+	await page.click('[data-testid=try]');
+	await page.waitForSelector('[data-testid=trying]');
+	await page.waitForSelector('[data-testid=live-resonance][data-from=start]');
+	const tried = await until(
+		() => text(page, '[data-testid=live-brightness]'),
+		(v) => /[+−]?\d+ %/.test(v),
+		15_000
+	);
+	check(
+		'trying shows the live guides without a stop-and-rate',
+		/[+−]?\d+ %/.test(tried) &&
+			(await count(page, '[data-testid=stop]')) === 0 &&
+			(await count(page, '[data-testid=band-strip]')) === 1,
+		tried.replace(/\s+/g, ' ')
+	);
+	await page.click('[data-testid=done-trying]');
+	await page.waitForSelector('[data-testid=record]');
+	await pause(1);
+	const takesAfter = (await (await context.request.get('/api/v1/takes?limit=1000')).json()).length;
+	check(
+		'and leaves no take behind',
+		takesAfter === takesBefore && (await count(page, '[data-testid=rating]')) === 0,
+		`${takesBefore} → ${takesAfter}`
+	);
 
 	// --- practice: resonance is read against the everyday voice, with a live picture
 	await page.goto('/practice/run?exercise=bright-phrase');
@@ -919,13 +958,10 @@ try {
 	await page.click('[data-testid=stop]');
 	await page.waitForSelector('[data-testid=rating]');
 	await page.click('[data-testid=comfort-4]');
-	await page.waitForSelector('[data-testid=result] [data-hint=vtl_cm]', { timeout: 30_000 });
-	const size = await text(page, '[data-testid=result] [data-hint=vtl_cm]');
+	await page.waitForSelector('[data-testid=result] [data-testid=reading]', { timeout: 30_000 });
 	check(
-		'its size is shown beside the everyday voice, unjudged',
-		/cm \(hint; your everyday voice: \d+\.\d cm\)/.test(size) &&
-			(await count(page, '[data-testid=verdict]')) === 0,
-		size.replace(/\s+/g, ' ')
+		'a spoken resonance step is read, not judged',
+		(await count(page, '[data-testid=result] [data-testid=verdict]')) === 0
 	);
 	check(
 		'a text read in the everyday voice before is read on resonance too',

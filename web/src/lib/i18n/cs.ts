@@ -68,6 +68,8 @@ export const cs: Messages = {
 		everyday: (value) => `běžně ${value}`,
 		scatter: (value) => `vaše běžné nahrávky kolísají o ±${value}`,
 		zero: 'běžný hlas',
+		clipped:
+			'Tato nahrávka se přebudila, takže její čísla jsou méně jistá: tišeji, nebo dál od mikrofonu.',
 		yours: 'kolísání vašich běžných nahrávek',
 		noResonance:
 			'Rezonance se tu neporovnává: jsou to jiná slova než ve vašich běžných nahrávkách a formanty se řídí slovy.',
@@ -320,7 +322,7 @@ export const cs: Messages = {
 			'pitch-too-high':
 				'Hlas vystoupal nad zhruba 300 Hz, kde se rezonance nedá změřit: harmonické hlasu jsou od sebe moc daleko, než aby ji ukázaly. Zvednutý hrtan s sebou rád táhne výšku; vraťte výšku dolů a jas si nechte.',
 			'not-brighter':
-				'Zvuky nevyšly krok za krokem jasnější. Malá změna se může ztratit v šumu měření; zkuste větší rozdíl mezi tmavým a jasným a nechte samohlásku „á“.',
+				'Poslední zvuk nevyšel jasnější než váš obyčejný. Malá změna se může ztratit v šumu měření; zkuste větší rozdíl a nechte samohlásku „á“.',
 			aboveNote: (semitones) =>
 				`Hlas byl asi ${semitones} půltónů nad tónem. Klouzejte dolů, až značka sedne na čáru.`,
 			belowNote: (semitones) =>
@@ -333,6 +335,8 @@ export const cs: Messages = {
 		takes: (n) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}`,
 		unfinished: 'nedokončeno',
 		single: 'Jedno cvičení',
+		order: 'Jedna nahrávka, po pořadě',
+		pause: 'pauza',
 		earlier: 'Dřívější sestava',
 		needBand: 'Nejdřív nastavte své pásmo: cvičení se posuzují podle něj.',
 		needDevice: 'Nejdřív přidejte nastavení mikrofonu.',
@@ -377,9 +381,14 @@ export const cs: Messages = {
 			you: (pitch) => `Vy: ${pitch}`,
 			youSilent: 'Vy: —',
 			metWithEffort: 'Splněno, s námahou',
-			everyday: (value) => `váš běžný hlas: ${value}`,
 			yourNote: (name) => `Váš tón: ${name}`,
 			record: 'Nahrávat',
+			try: 'Nejdřív zkusit',
+			tryHint: 'Živé ukazatele běží z mikrofonu; nic se nenahrává ani neukládá.',
+			trying: 'Zkouška: nic se nenahrává.',
+			doneTrying: 'Konec zkoušky',
+			clipped: (n) =>
+				`Tato nahrávka se přebudila (${n} vzorků na plném rozsahu): byla na mikrofon příliš hlasitá, takže její čísla nesedí. O tišší zvuk tu jde i tak: cvičení chtějí snadný zvuk, ne hlasitý. Zahoďte ji a zkuste to znovu o něco tišeji nebo dál od mikrofonu.`,
 			stop: 'Stop',
 			listen: 'Poslechnout si',
 			comfort: 'Jak se vám to dělalo?',

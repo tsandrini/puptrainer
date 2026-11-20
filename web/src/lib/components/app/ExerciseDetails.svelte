@@ -1,10 +1,11 @@
 <script lang="ts">
-	// An exercise, spelled out: what it is for, what to do step by step,
-	// what it is like when it goes right, the common mistakes, when to
-	// stop, and where it comes from.
+	// An exercise, spelled out: what it is for, the order of one take as a
+	// small picture, what to do step by step, what it is like when it goes
+	// right, the common mistakes, when to stop, and where it comes from.
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import type { Exercise } from '#lib/api/types.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
+	import SequenceStrip from './SequenceStrip.svelte';
 
 	let {
 		exercise,
@@ -25,6 +26,9 @@
 			<span class="font-semibold text-foreground">{i18n.t.practice.why}:</span>
 			{i18n.pick(exercise.why)}
 		</p>
+	{/if}
+	{#if exercise.sequence.length}
+		<SequenceStrip parts={exercise.sequence} />
 	{/if}
 	<ol class="list-decimal space-y-1 pl-5" data-testid="steps">
 		{#each steps as step, index (index)}

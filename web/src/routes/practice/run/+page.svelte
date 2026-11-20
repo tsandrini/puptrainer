@@ -70,6 +70,8 @@
 	let seconds = $state(0);
 	let recording = $state.raw<Recording | null>(null);
 	let listening = $state(false);
+	/** Trying an exercise with the live guides on: nothing of it is kept. */
+	let rehearsing = $state(false);
 	let problem = $state<string | null>(null);
 
 	/** The note of the current note-matching rep, keyed by step and rep. */
@@ -220,8 +222,10 @@
 		problem = null;
 	}
 
-	async function start() {
+	/** Opens the microphone for a rep, or with `trying` only for its live guides. */
+	async function start(trying = false) {
 		clearRep();
+		rehearsing = trying;
 		peakDb = -120;
 		clipping = false;
 		pitchHz = null;
@@ -254,6 +258,7 @@
 
 	function cancel() {
 		recorder.cancel();
+		rehearsing = false;
 		clearRep();
 		send({ type: 'cancel' });
 	}
@@ -471,11 +476,21 @@
 						size="lg"
 						class="rounded-full px-6"
 						disabled={playing}
-						onclick={start}
+						onclick={() => start()}
 						data-testid="record"
 					>
 						<MicIcon class="size-5" />
 						{i18n.t.practice.run.record}
+					</Button>
+					<Button
+						variant="outline"
+						class="rounded-full"
+						disabled={playing}
+						title={i18n.t.practice.run.tryHint}
+						onclick={() => start(true)}
+						data-testid="try"
+					>
+						{i18n.t.practice.run.try}
 					</Button>
 					<Button variant="ghost" onclick={() => next({ type: 'skip' })} data-testid="skip-step">
 						{i18n.t.practice.run.skipStep}
@@ -485,23 +500,34 @@
 					</Button>
 				</div>
 			{:else if run.phase === 'recording'}
-				<div class="flex flex-wrap items-center gap-4">
-					<Button
-						size="lg"
-						variant="destructive"
-						class="rounded-full px-6"
-						onclick={stop}
-						data-testid="stop"
-					>
-						<SquareIcon class="size-4 fill-current" />
-						{i18n.t.practice.run.stop}
-					</Button>
-					<span class="flex items-center gap-2 text-sm">
-						<span class="size-2.5 animate-pulse rounded-full bg-critical"></span>
-						<span class="font-mono tabular-nums">{fmtDuration(seconds)}</span>
-					</span>
-					<Button variant="ghost" onclick={cancel}>{i18n.t.common.discard}</Button>
-				</div>
+				{#if rehearsing}
+					<!-- NOTE: the live guides run on the microphone; no take comes of it -->
+					<div class="flex flex-wrap items-center gap-4" data-testid="trying">
+						<Button size="lg" class="rounded-full px-6" onclick={cancel} data-testid="done-trying">
+							{i18n.t.practice.run.doneTrying}
+						</Button>
+						<span class="text-sm font-semibold">{i18n.t.practice.run.trying}</span>
+						<span class="font-mono text-sm tabular-nums">{fmtDuration(seconds)}</span>
+					</div>
+				{:else}
+					<div class="flex flex-wrap items-center gap-4">
+						<Button
+							size="lg"
+							variant="destructive"
+							class="rounded-full px-6"
+							onclick={stop}
+							data-testid="stop"
+						>
+							<SquareIcon class="size-4 fill-current" />
+							{i18n.t.practice.run.stop}
+						</Button>
+						<span class="flex items-center gap-2 text-sm">
+							<span class="size-2.5 animate-pulse rounded-full bg-critical"></span>
+							<span class="font-mono tabular-nums">{fmtDuration(seconds)}</span>
+						</span>
+						<Button variant="ghost" onclick={cancel}>{i18n.t.common.discard}</Button>
+					</div>
+				{/if}
 				{#if exercise.live === 'pitch'}
 					<BandStrip
 						low={band.low_hz}
@@ -521,6 +547,14 @@
 				<Meter {peakDb} {clipping} />
 			{:else if run.phase === 'rating'}
 				<div data-testid="rating">
+					{#if recording && recording.clipped > 0}
+						<p
+							class="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
+							data-testid="clipped"
+						>
+							{i18n.t.practice.run.clipped(recording.clipped)}
+						</p>
+					{/if}
 					<h3 class="mb-2 font-semibold">{i18n.t.practice.run.comfort}</h3>
 					<ComfortPicker onpick={(comfort) => void rate(comfort)} />
 					<div class="mt-3 flex flex-wrap items-center gap-2">

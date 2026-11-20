@@ -62,6 +62,8 @@ export const en = {
 		everyday: (value: string) => `everyday ${value}`,
 		scatter: (value: string) => `your everyday takes scatter by ±${value}`,
 		zero: 'everyday',
+		clipped:
+			'This take clipped, so its numbers are less sure: softer, or further from the microphone.',
 		yours: 'the scatter of your everyday takes',
 		noResonance:
 			'Resonance is not compared here: these are other words than in your everyday takes, and formants follow the words.',
@@ -318,7 +320,7 @@ export const en = {
 			'pitch-too-high':
 				'This went above about 300 Hz, where resonance cannot be measured: the harmonics of the voice lie too far apart to show it. A raised larynx tends to drag the pitch up with it; bring the pitch back down and keep the brightness.',
 			'not-brighter':
-				'The sounds did not measure brighter step by step. A small change can hide in the measure’s noise; try a bigger difference between dark and bright, keeping the vowel an “ah”.',
+				'The last sound did not measure brighter than your ordinary one. A small change can hide in the measure’s noise; try a bigger difference, keeping the vowel an “ah”.',
 			aboveNote: (semitones: string) =>
 				`You were about ${semitones} semitones above the note. Slide down until the marker sits on the line.`,
 			belowNote: (semitones: string) =>
@@ -331,6 +333,8 @@ export const en = {
 		takes: (n: number) => (n === 1 ? '1 take' : `${n} takes`),
 		unfinished: 'not finished',
 		single: 'One exercise',
+		order: 'One take, in order',
+		pause: 'pause',
 		earlier: 'An earlier routine',
 		needBand: 'Set your band first: the drills are judged against it.',
 		needDevice: 'Add a microphone setup first.',
@@ -374,9 +378,14 @@ export const en = {
 			you: (pitch: string) => `You: ${pitch}`,
 			youSilent: 'You: —',
 			metWithEffort: 'Met, with effort',
-			everyday: (value: string) => `your everyday voice: ${value}`,
 			yourNote: (name: string) => `Your note: ${name}`,
 			record: 'Record',
+			try: 'Try it first',
+			tryHint: 'The live guides run on the microphone; nothing is recorded or saved.',
+			trying: 'Trying it: nothing is recorded.',
+			doneTrying: 'Done trying',
+			clipped: (n: number) =>
+				`This take clipped (${n} samples at full scale): it was too loud for the microphone, so its numbers are off. Softer is also the point: the drills want an easy sound, not a loud one. Discard it and go again a little quieter, or further from the microphone.`,
 			stop: 'Stop',
 			listen: 'Listen back',
 			comfort: 'How did that feel?',

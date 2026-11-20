@@ -22,13 +22,16 @@ export const MAX_PITCH_HZ = 300;
 export const FRAME_S = 0.05;
 export const HOP_S = 0.02;
 /**
- * Frames this far below the loudest recent one are left out: consonants and pauses.
- * The backend keeps the louder 40% of a take's voiced frames; this is the same idea
- * for a stream whose end is not known yet.
+ * Which frames count by their level. `below`: frames this far under the loudest recent
+ * one are left out; `fade`: how fast the memory of that loudest frame fades, per frame.
+ * Speech keeps its louder moments, the vowels, as the backend keeps the louder 40% of a
+ * take's voiced frames. A held sound or a whisper is one sound from start to end, and a
+ * quiet one after a loud one must still count, so only its pauses are left out.
  */
-const GATE_DB = 6;
-/** How fast the memory of the loudest frame fades, per frame (2.5 dB a second). */
-const FADE_DB = 0.05;
+const GATE = {
+	speech: { below: 6, fade: 0.05 },
+	steady: { below: 15, fade: 0.3 }
+} as const;
 const SILENCE_DB = -55;
 /** Two poles per formant. */
 const ORDER = 10;
@@ -218,8 +221,18 @@ export class ResonanceTracker {
 	#opening: Formants[] = [];
 	#count = 0;
 
-	/** @param mode which frames count */
-	constructor(readonly mode: Mode = 'voiced') {}
+	#gate: (typeof GATE)[keyof typeof GATE];
+
+	/**
+	 * @param mode which frames count
+	 * @param steady the stream is held sounds or whispers, not running speech
+	 */
+	constructor(
+		readonly mode: Mode = 'voiced',
+		steady = false
+	) {
+		this.#gate = steady ? GATE.steady : GATE.speech;
+	}
 
 	/** Seconds of sound that counted so far. */
 	get heard(): number {
@@ -256,9 +269,9 @@ export class ResonanceTracker {
 			let sum = 0;
 			for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
 			const db = sum > 0 ? 10 * Math.log10(sum / frame.length) : -120;
-			this.#loudest = Math.max(db, this.#loudest - FADE_DB);
+			this.#loudest = Math.max(db, this.#loudest - this.#gate.fade);
 			this.#seconds += HOP_S;
-			if (!wanted || db < Math.max(SILENCE_DB, this.#loudest - GATE_DB)) continue;
+			if (!wanted || db < Math.max(SILENCE_DB, this.#loudest - this.#gate.below)) continue;
 			const formants = formantsOf(frame, sampleRate);
 			if (!formants) continue;
 			this.#frames.push({ at: this.#seconds, formants });

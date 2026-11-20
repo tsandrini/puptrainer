@@ -119,8 +119,12 @@
 				</details>
 			{:else}
 				<p class="mt-1 text-sm text-muted-foreground" data-testid="no-resonance">
-					{i18n.t.reading.noResonance}
-					{#if text}{i18n.t.reading.recordText}{/if}
+					{#if reading.basis === 'speech'}
+						{i18n.t.reading.noResonance}
+						{#if text}{i18n.t.reading.recordText}{/if}
+					{:else}
+						{i18n.t.practice.advice['pitch-too-high']}
+					{/if}
 				</p>
 			{/if}
 		</div>
@@ -140,6 +144,9 @@
 		</div>
 	{/if}
 
+	{#if metrics.clipped_samples > 0}
+		<p class="text-sm text-warning" data-testid="reading-clipped">{i18n.t.reading.clipped}</p>
+	{/if}
 	{#if reading.notes.length}
 		<ul class="space-y-1 text-sm" data-testid="reading-notes">
 			{#each reading.notes as note (note)}
