@@ -116,6 +116,17 @@ def test_take_list_filters_and_order(client: TestClient, device_id: int) -> None
     assert len(client.get("/api/v1/takes", params={"device_id": device_id, "limit": 2}).json()) == 2
     assert client.get("/api/v1/takes", params={"item": "yodel"}).status_code == 422
 
+    # a stretch of time, either end open; and the list in pages
+    def days(**bounds: object) -> list[str]:
+        found = client.get("/api/v1/takes", params=bounds).json()
+        return [take["recorded_at"][:10] for take in found]
+
+    assert days(since="2026-11-02T00:00:00Z") == ["2026-11-03", "2026-11-02"]
+    assert days(until="2026-11-02T10:00:00Z") == ["2026-11-02", "2026-11-01"]
+    assert days(since="2026-11-01T12:00:00Z", until="2026-11-02T12:00:00Z") == ["2026-11-02"]
+    assert days(limit=2, offset=2) == ["2026-11-01"]
+    assert client.get("/api/v1/takes", params={"since": "yesterday"}).status_code == 422
+
 
 def test_take_patch(client: TestClient, device_id: int) -> None:
     take = upload(client, device_id).json()

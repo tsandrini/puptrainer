@@ -625,9 +625,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         language: str | None = None,
         device_id: int | None = None,
         session_id: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
         limit: Annotated[int, Query(ge=1, le=1000)] = 200,
         offset: Annotated[int, Query(ge=0)] = 0,
     ) -> list[TakeOut]:
+        """The takes, newest first; `since` and `until` bound when they were recorded."""
         query = select(Take).options(*TAKE_LOAD)
         if item is not None:
             query = query.where(Take.item == item)
@@ -639,6 +642,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             query = query.where(Take.device_id == device_id)
         if session_id is not None:
             query = query.where(Take.session_id == session_id)
+        if since is not None:
+            query = query.where(Take.recorded_at >= since)
+        if until is not None:
+            query = query.where(Take.recorded_at <= until)
         query = query.order_by(Take.recorded_at.desc(), Take.id).limit(limit).offset(offset)
         cache: dict[int, list[Voice]] = {}
         return [out(db, t, cache) for t in db.scalars(query)]

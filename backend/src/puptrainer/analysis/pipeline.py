@@ -16,7 +16,7 @@ from parselmouth.praat import call
 from puptrainer.core.acoustics import semitones, spacing
 from puptrainer.core.schemas import Details, Item, Series, VowelSegment, WhisperSpan
 
-PIPELINE_VERSION = "0.4.1"
+PIPELINE_VERSION = "0.4.2"
 
 TIME_STEP_S = 0.01
 FRAME_S = 0.02
@@ -81,6 +81,13 @@ WHISPER_GATE_DB = 15.0
 WHISPER_CLEAR_DB = 12.0
 # NOTE: the frames where a voice starts and stops are loud and unvoiced: not a whisper
 WHISPER_EDGE_FRAMES = 3
+# NOTE: around a real voice (a voiced stretch of a quarter of a second or more) the sound
+# is neither for longer: the tracker gives up on a soft voice a fifth of a second before
+# it has gone, and such frames read the pitch as a resonance (a "whispered" R1 of
+# 217-530 Hz beside 830-930 Hz on real takes of a voice let into a whisper). The blips
+# a tracker finds inside a whisper keep the short margin, or they would cost seconds
+WHISPER_VOICE_FRAMES = 25
+WHISPER_VOICE_EDGE_FRAMES = 20
 WHISPER_MIN_SHARE = 0.2
 WHISPER_SPAN_S = 1.0
 WHISPER_MIN_FRAMES = 8
@@ -712,14 +719,20 @@ def whisper_frames(level: np.ndarray, pitch: np.ndarray) -> np.ndarray:
 
     The loudest is the 98th percentile of the unvoiced frames' levels; the room is the 5th
     percentile of all frames, and a frame has to stand 12 dB above it, so the steady noise
-    of a silent stretch never counts. The three frames either side of a voiced stretch are
-    left out: there a voice starts or stops.
+    of a silent stretch never counts. The frames either side of a voiced stretch are left
+    out, where a voice starts or stops: three of them, and 0.2 s around a stretch of a
+    quarter of a second or more, which is a voice and not a blip of the tracker.
     """
     voiced = voiced_frames(pitch)
+    lasting = np.zeros_like(voiced)
+    turns = np.flatnonzero(np.diff(np.concatenate(([0], voiced.astype(np.int8), [0]))))
+    for start, stop in zip(turns[::2], turns[1::2], strict=True):
+        lasting[start:stop] = stop - start >= WHISPER_VOICE_FRAMES
     near = voiced.copy()
-    for shift in range(1, WHISPER_EDGE_FRAMES + 1):
-        near[shift:] |= voiced[:-shift]
-        near[:-shift] |= voiced[shift:]
+    for mask, reach in ((voiced, WHISPER_EDGE_FRAMES), (lasting, WHISPER_VOICE_EDGE_FRAMES)):
+        for shift in range(1, reach + 1):
+            near[shift:] |= mask[:-shift]
+            near[:-shift] |= mask[shift:]
     unvoiced = ~near
     if not unvoiced.any():
         return unvoiced

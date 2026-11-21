@@ -5,7 +5,7 @@ import parselmouth
 import pytest
 import soundfile as sf
 
-from puptrainer.analysis.pipeline import analyse, held_spread, spacing
+from puptrainer.analysis.pipeline import analyse, held_spread, spacing, whisper_frames
 from puptrainer.core.metrics import KEYS, REGISTRY
 from puptrainer.core.schemas import Item
 
@@ -394,6 +394,23 @@ def test_a_voice_let_into_a_whisper_is_not_whisper(tmp_path: Path) -> None:
     track = analysis.series["f1_hz"]
     inside = track.values[int(2.2 / track.step_s) : int(2.8 / track.step_s)]
     assert np.median(measured(inside)) == pytest.approx(625.0, rel=0.08)
+
+
+def test_the_whisper_beside_a_voice_is_left_out() -> None:
+    # frames of 10 ms: silence, a whisper, a voice of half a second, a whisper with a blip
+    pitch = np.zeros(300)
+    pitch[100:150] = 200.0
+    pitch[220:225] = 200.0
+    level = np.full(300, -30.0)
+    level[:30] = -70.0
+    whispered = whisper_frames(level, pitch)
+    # the 0.2 s either side of the voice are neither voice nor whisper
+    assert not whispered[80:170].any()
+    assert whispered[79] and whispered[170]
+    # a blip of the tracker costs its own three frames either side, not seconds
+    assert not whispered[217:228].any()
+    assert whispered[216] and whispered[228]
+    assert not whispered[:30].any() and whispered[30]
 
 
 def test_a_silent_sustain_take_is_no_whisper(tmp_path: Path) -> None:
