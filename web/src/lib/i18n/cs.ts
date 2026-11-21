@@ -149,7 +149,7 @@ export const cs: Messages = {
 		setZero: 'Nastavit nulu tady',
 		setZeroHint: 'Udělejte svůj obyčejný zvuk a stiskněte: všechno další se počítá od něj.',
 		graph: {
-			title: 'Posledních 15 sekund',
+			title: (seconds) => `Posledních ${seconds} sekund`,
 			reads:
 				'Co mikrofon slyší, tak jak to přichází: nejnovější okamžik je u pravého okraje. Vodítko; uložená nahrávka se měří pečlivěji.',
 			speech:
@@ -375,7 +375,9 @@ export const cs: Messages = {
 			'pitch-too-high':
 				'Hlas vystoupal nad zhruba 300 Hz, kde se rezonance nedá změřit: harmonické hlasu jsou od sebe moc daleko, než aby ji ukázaly. Zvednutý hrtan s sebou rád táhne výšku; vraťte výšku dolů a jas si nechte.',
 			'not-brighter':
-				'Poslední zvuk nevyšel jasnější než váš obyčejný. Malá změna se může ztratit v šumu měření; zkuste větší rozdíl a nechte samohlásku „á“.',
+				'Poslední zvuk nevyšel jasnější než váš obyčejný. Malá změna se může ztratit v šumu měření: udělejte rozdíl o trochu větší, nechte samohlásku „á“ a tón tam, kde je.',
+			'resonance-unsteady':
+				'Rezonance jednoho z obou zvuků se nedaly přečíst ustáleně, proto se nesrovnávají: rozbor přeskakoval mezi dvěma čteními. O zvuku to nic neříká; nahrajte to znovu.',
 			'r1-unreadable':
 				'R1 se u této nahrávky neukazuje: v jednom z obou zvuků byl hlas tak lehký, že rozbor najde výšku hlasu tam, kde má být první rezonance. Se zvukem není nic špatně; to číslo se tam jen nedá přečíst.',
 			'whisper-same':

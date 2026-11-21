@@ -177,7 +177,11 @@
 	});
 
 	function valueAt(row: Row): string {
-		const index = Math.round((at - trace.start_s) / trace.step_s);
+		// NOTE: clamped: a playhead at the very end still reads the last step
+		const index = Math.min(
+			row.values.length - 1,
+			Math.max(0, Math.round((at - trace.start_s) / trace.step_s))
+		);
 		const value = row.values[index];
 		if (value == null) {
 			return row.key === 'r1_pct' && trace.r1_unreadable[index]

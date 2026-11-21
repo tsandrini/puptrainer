@@ -978,6 +978,29 @@ try {
 	);
 	await page.getByRole('button', { name: 'Discard' }).click();
 
+	// --- practice: the step between a whisper and a voice, and the small bright step
+	await page.goto('/practice/run?exercise=voice-in');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	check(
+		'letting the voice into a whisper shows its order',
+		(await count(page, '[data-testid=sequence] li[data-pause=false]')) === 5 &&
+			(await text(page, '[data-testid=sequence]')).includes('quiet voice in')
+	);
+	await page.click('[data-testid=try]');
+	await page.waitForSelector('[data-testid=live-traces][data-mode=whisper]');
+	check(
+		'and is followed as a whisper that a voice may come into',
+		(await page.getAttribute('[data-testid=live-resonance]', 'data-mode')) === 'whisper'
+	);
+	await page.click('[data-testid=done-trying]');
+	await page.goto('/practice/run?exercise=resonance-edge');
+	await page.getByRole('button', { name: 'Skip' }).click();
+	check(
+		'the small bright step is an exercise of its own',
+		(await text(page, '[data-testid=step]')).includes('Ordinary, dark, a little bright') &&
+			(await text(page, '[data-testid=sequence]')).includes('A little bright · 3 s')
+	);
+
 	// --- practice: an exercise can be tried with its live guides, and nothing is kept
 	const takesBefore = (await (await context.request.get('/api/v1/takes?limit=1000')).json()).length;
 	await page.goto('/practice/run?exercise=resonance-contrast');

@@ -38,7 +38,8 @@
 		unreadable?: boolean;
 	} = $props();
 
-	const WINDOW_S = 15;
+	/** How much of the stream the graph shows: long enough for a whole rep of a drill. */
+	const WINDOW_S = 30;
 	const STEP_S = 0.1;
 	/** Blocks between two drawings: about eight a second. */
 	const EVERY = 3;
@@ -108,12 +109,12 @@
 	data-mode={mode}
 >
 	<div>
-		<p class="mb-1 text-sm font-bold">{i18n.t.live.graph.title}</p>
+		<p class="mb-1 text-sm font-bold">{i18n.t.live.graph.title(WINDOW_S)}</p>
 		{#if shown}
 			<Traces
 				trace={shown}
 				duration={WINDOW_S}
-				position={WINDOW_S}
+				position={WINDOW_S - STEP_S / 2}
 				{band}
 				{scales}
 				live

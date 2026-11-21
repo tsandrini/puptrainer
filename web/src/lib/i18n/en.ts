@@ -147,7 +147,7 @@ export const en = {
 		setZero: 'Set the zero here',
 		setZeroHint: 'Make your ordinary sound and press this: everything after is counted from it.',
 		graph: {
-			title: 'The last 15 seconds',
+			title: (seconds: number) => `The last ${seconds} seconds`,
 			reads:
 				'What the microphone hears as it comes: the newest moment is at the right edge. A guide; the saved take is measured more carefully.',
 			speech:
@@ -374,7 +374,9 @@ export const en = {
 			'pitch-too-high':
 				'This went above about 300 Hz, where resonance cannot be measured: the harmonics of the voice lie too far apart to show it. A raised larynx tends to drag the pitch up with it; bring the pitch back down and keep the brightness.',
 			'not-brighter':
-				'The last sound did not measure brighter than your ordinary one. A small change can hide in the measure’s noise; try a bigger difference, keeping the vowel an “ah”.',
+				'The last sound did not measure brighter than your ordinary one. A small change can hide in the measure’s noise: make the difference a little bigger, keeping the vowel an “ah” and the note where it is.',
+			'resonance-unsteady':
+				'The resonances of one of the two sounds could not be read steadily, so they are not compared: the analysis kept flipping between two readings. It says nothing about the sound; record the take again.',
 			'r1-unreadable':
 				'R1 is not shown for this take: in one of the two sounds the voice was so light that the analysis finds the pitch where the first resonance should be. Nothing is wrong with the sound; the number cannot be read there.',
 			'whisper-same':
