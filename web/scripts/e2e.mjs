@@ -218,7 +218,7 @@ try {
 		(await text(page, '[data-testid=scope-reads]')).includes('Pitch is their spacing')
 	);
 	const rolling = await until(
-		() => text(page, '[data-testid=live-traces] [data-row=pitch_hz] [data-testid=trace-value]'),
+		() => text(page, '[data-testid=live-traces] li[data-series=pitch_hz] [data-testid=plot-value]'),
 		(v) => Math.abs(hz(v) - TONE_HZ) <= 5,
 		10_000
 	);
@@ -415,14 +415,17 @@ try {
 	const rows = await page.locator('[data-testid=traces-plot]').boundingBox();
 	await page
 		.locator('[data-testid=traces-plot]')
-		.click({ position: { x: rows.width * 0.5, y: rows.height - 20 } });
+		.click({ position: { x: rows.width * 0.5, y: 80 } });
 	const jumped = await playerSeconds(page);
 	check(
 		'a click on the traces seeks the player',
 		Math.abs(jumped - 0.5 * 2.6) < 0.4,
 		`${jumped} s`
 	);
-	const there = await text(page, '[data-row=pitch_hz] [data-testid=trace-value]');
+	const there = await text(
+		page,
+		'[data-testid=traces] li[data-series=pitch_hz] [data-testid=plot-value]'
+	);
 	check('and each row says its value there', Math.abs(hz(there) - TONE_HZ) <= 3, there);
 	await page.locator('[data-testid=player-plot]').press('Home');
 	await page.click('[data-testid=spectrum-toggle] [data-view=formants]');
@@ -482,7 +485,7 @@ try {
 
 	// --- progress: one chart per measurement of the kind of take
 	await page.goto('/progress');
-	await page.waitForSelector('[data-testid=trends] [data-testid=trend] svg circle');
+	await page.waitForSelector('[data-testid=trends] [data-testid=trend] .uplot canvas');
 	const trends = await text(page, '[data-testid=trends]');
 	check('progress charts the pitch of the take', trends.includes('Median pitch'));
 	check(
@@ -492,6 +495,93 @@ try {
 			trends.includes('The first target')
 	);
 	check('progress leaves recording quality out', !trends.includes('Noise floor'));
+	check(
+		'any two measures can be put against each other',
+		(await count(page, '[data-testid=cross] [data-testid=scatter]')) === 1 &&
+			(await count(page, '[data-testid=cross-x] option')) > 3 &&
+			(await text(page, '[data-testid=cross-stat]')).includes('Fewer than three')
+	);
+	// the take under the pointer is named in the card, can be heard and opened
+	check(
+		'the card waits for a point',
+		(await text(page, '[data-testid=take-card]')).includes('Rest the pointer')
+	);
+	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').hover();
+	await page.waitForSelector('[data-testid=take-card][data-take]:not([data-take=""])');
+	const carded = await text(page, '[data-testid=take-card]');
+	check('a point names its take in the card', /Reading|Attempt|Everyday/.test(carded), carded);
+	const sounded = await until(
+		() => page.getAttribute('[data-testid=take-card-toggle]', 'data-playing'),
+		(v) => v === 'true',
+		8_000
+	);
+	check('a take is heard when the pointer rests on its point', sounded === 'true');
+	await page.mouse.move(5, 5);
+	const hushed = await until(
+		() => page.getAttribute('[data-testid=take-card-toggle]', 'data-playing'),
+		(v) => v === 'false',
+		5_000
+	);
+	check('and falls silent when the pointer leaves', hushed === 'false');
+	await page.click('[data-testid=hear-on-hover]');
+	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').hover();
+	await pause(0.8);
+	check(
+		'hearing on hover can be switched off, and the button still plays',
+		(await page.getAttribute('[data-testid=take-card-toggle]', 'data-playing')) === 'false'
+	);
+	await page.click('[data-testid=take-card-toggle]');
+	await page.waitForSelector('[data-testid=take-card-toggle][data-playing=true]');
+	await page.click('[data-testid=take-card-toggle]');
+	await page.click('[data-testid=hear-on-hover]');
+	// a stretch of time: quick ranges, and an exact one that holds nothing
+	await page.click('[data-testid=date-range-open]');
+	await page.click('[data-testid=date-range-panel] [data-quick="7"]');
+	check(
+		'a quick range keeps the recent take',
+		(await page.getAttribute('[data-testid=date-range]', 'data-kind')) === 'quick' &&
+			(await count(page, '[data-testid=trends] [data-testid=trend]')) > 0
+	);
+	await page.click('[data-testid=date-range-open]');
+	await page.fill('[data-testid=date-range-from]', '2020-01-02T10:00');
+	await page.fill('[data-testid=date-range-to]', '2020-01-01T10:00');
+	await page.click('[data-testid=date-range-apply]');
+	check(
+		'a range that ends before it starts is refused, with the reason',
+		(await text(page, '[data-testid=date-range-panel] [role=alert]')).includes('after the start')
+	);
+	await page.fill('[data-testid=date-range-to]', '2020-01-03T10:00');
+	await page.click('[data-testid=date-range-apply]');
+	await page.waitForSelector('[data-testid=date-range][data-kind=absolute]');
+	check(
+		'an exact range with nothing in it shows nothing',
+		(await count(page, '[data-testid=trends]')) === 0 &&
+			(await page.getByText('No analysed take matches').count()) === 1
+	);
+	await page.click('[data-testid=date-range-open]');
+	await page.click('[data-testid=date-range-panel] [data-quick=all]');
+	await page.waitForSelector('[data-testid=trends] [data-testid=trend] .uplot canvas');
+	// a click pins the take to the card, whatever the pointer does next; the card opens it
+	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').click();
+	await page.waitForSelector('[data-testid=take-card][data-pinned=true]');
+	const held = await page.getAttribute('[data-testid=take-card]', 'data-take');
+	await page.mouse.move(5, 5);
+	check(
+		'a click on a point pins its take to the card',
+		/^[0-9a-f]{32}$/.test(held ?? '') &&
+			(await count(page, '[data-metric-trend=pitch_median_hz] [data-testid=plot-cursor]')) === 1,
+		held
+	);
+	await page.keyboard.press('Escape');
+	await page.waitForSelector('[data-testid=take-card][data-pinned=false]');
+	check(
+		'Esc unpins it',
+		(await count(page, '[data-testid=trends] [data-testid=plot-cursor]')) === 0
+	);
+	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').click();
+	await page.click('[data-testid=take-card-open]');
+	await page.waitForURL(new RegExp(`/takes/${held}$`));
+	check('the card opens the take', true);
 
 	// --- the theme
 	await page.goto('/');
@@ -1127,6 +1217,63 @@ try {
 		'practice attempts join when asked for',
 		(await text(page, '[data-testid=kind]')).includes('Short phrase')
 	);
+	check(
+		'each exercise charts what it was judged on',
+		(await count(
+			page,
+			'[data-testid=drills] [data-drill=slide-down-hold] [data-drill-measure=hold_s]'
+		)) === 1 && (await text(page, '[data-drill=slide-down-hold]')).includes('Steady hold')
+	);
+	// every kind together: only the distances from the everyday voice compare
+	await page.selectOption('[data-testid=kind]', 'all');
+	await page.waitForSelector('[data-testid=all-kinds-note]');
+	check(
+		'all kinds together show the distances and leave the measurements out',
+		(await count(page, '[data-testid=against-everyday] [data-shift-grid=pitch]')) === 1 &&
+			(await count(page, '[data-testid=by-measure]')) === 0
+	);
+	// a text read in both voices: its attempt against the everyday take, a grid per unit
+	await page.selectOption('[data-testid=kind]', 'phrase:en');
+	await page.waitForSelector(
+		'[data-testid=against-everyday] [data-shift-grid=pitch] .uplot canvas'
+	);
+	const both = await text(page, '[data-shift-grid=pitch] [data-testid=plot-legend]');
+	check(
+		'takes are charted against the everyday voice, a grid per unit',
+		both.includes('Attempt') &&
+			both.includes('Everyday voice') &&
+			(await count(page, '[data-testid=against-everyday] [data-shift-grid=resonance]')) === 1 &&
+			(await count(page, '[data-testid=against-everyday] [data-shift-grid=source]')) === 1,
+		both.replace(/\s+/g, ' ')
+	);
+	// a stretch dragged in one chart is the stretch of every chart
+	const grid = page.locator('[data-shift-grid=pitch] .u-over');
+	await grid.scrollIntoViewIfNeeded();
+	const area = await grid.boundingBox();
+	await page.mouse.move(area.x + area.width * 0.2, area.y + area.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(area.x + area.width * 0.8, area.y + area.height / 2, { steps: 6 });
+	await page.mouse.up();
+	await page.waitForSelector('[data-shift-grid=source] [data-testid=plot][data-zoomed=true]');
+	check(
+		'a drag zooms every chart into the stretch, and pins nothing',
+		(await count(page, '[data-testid=trends] [data-testid=plot][data-zoomed=false]')) === 0 &&
+			(await page.getAttribute('[data-testid=take-card]', 'data-pinned')) === 'false'
+	);
+	await page.click('[data-testid=zoom-out]');
+	await page.waitForSelector('[data-shift-grid=source] [data-testid=plot][data-zoomed=false]');
+	check(
+		'and one button shows the whole stretch again',
+		(await count(page, '[data-testid=trends] [data-testid=plot][data-zoomed=true]')) === 0
+	);
+	await page.click('[data-testid=voice-attempt]');
+	const one = await text(page, '[data-shift-grid=pitch] [data-testid=plot-legend]');
+	check(
+		'a voice can be left out of the charts',
+		!one.includes('Attempt') && one.includes('Everyday voice'),
+		one.replace(/\s+/g, ' ')
+	);
+	await page.click('[data-testid=voice-attempt]');
 
 	// --- the installed app
 	check(

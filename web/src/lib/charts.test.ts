@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { niceTicks, timeTicks } from './charts.js';
+import { niceTicks, stepDecimals } from './charts.js';
 
 describe('niceTicks', () => {
 	it('covers the range with round steps', () => {
@@ -17,9 +17,9 @@ describe('niceTicks', () => {
 	});
 });
 
-describe('timeTicks', () => {
-	it('spreads moments evenly, ends included', () => {
-		expect(timeTicks(0, 100, 5)).toEqual([0, 25, 50, 75, 100]);
-		expect(timeTicks(5, 5, 4)).toEqual([5]);
+describe('stepDecimals', () => {
+	it('gives the decimals a step between ticks needs', () => {
+		expect([10, 1, 2.5, 0.5, 0.25, 0.1, 0.05].map(stepDecimals)).toEqual([0, 0, 1, 1, 2, 1, 2]);
+		expect(stepDecimals(0.0004)).toBe(3);
 	});
 });

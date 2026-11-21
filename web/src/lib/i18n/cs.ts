@@ -100,10 +100,17 @@ export const cs: Messages = {
 	traces: {
 		title: 'Nahrávka okamžik po okamžiku',
 		reads:
-			'Jeden řádek pro každou veličinu, na časové ose obrázku nahoře. Každý řádek říká svou hodnotu pod ukazatelem, nebo tam, kde právě stojí přehrávání; kliknutím na okamžik si ho poslechnete.',
+			'Tři mřížky na časové ose obrázku nahoře, jedna pro každou jednotku. Legenda pod každou říká její hodnoty pod ukazatelem, nebo tam, kde právě stojí přehrávání. Kliknutím na okamžik si ho poslechnete; tažením se úsek přiblíží, dvojklik ho zase oddálí.',
+		grids: {
+			pitch: 'Výška (Hz)',
+			resonance: 'Rezonance (% proti nule)',
+			source: 'Zdroj (dB proti nule)',
+			sourceOwn: 'Zdroj (dB proti středu této nahrávky)'
+		},
 		live: 'Co nakreslilo živé vodítko při nahrávání, na časové ose obrázku nahoře. Uložená nahrávka se měří pečlivěji.',
 		rows: {
 			pitch_hz: 'Výška',
+			pitch_pct: 'Výška, proti prvnímu zvuku',
 			brightness_pct: 'Jas',
 			r1_pct: 'První rezonance (R1)',
 			lightness_db: 'Lehkost',
@@ -111,6 +118,8 @@ export const cs: Messages = {
 			level_db: 'Hlasitost'
 		},
 		hints: {
+			pitch_pct:
+				'Výška ještě jednou, v procentech proti prvnímu zvuku, aby se dala číst na jedné stupnici s rezonancemi: půltón je 6 %. Kde se hýbe tahle čára a ostatní ne, změnil se jen tón.',
 			pitch_hz:
 				'Jak rychle kmitají hlasivky. Vybarvené pásmo je pásmo výšky, proti kterému se nahrávalo, nebo 145–185 Hz.',
 			brightness_pct:
@@ -127,7 +136,7 @@ export const cs: Messages = {
 			'first-sound': 'Jas a R1 se počítají od prvního podrženého zvuku této nahrávky.',
 			'first-whisper': 'Jas a R1 se počítají od prvních tří šeptaných vteřin této nahrávky.'
 		},
-		shaded: 'Kde je řádek R1 zašedlý, je hlas na přečtení R1 příliš lehký.',
+		shaded: 'Kde je mřížka rezonance zašedlá, je hlas na přečtení R1 příliš lehký.',
 		unreadable: 'nelze přečíst',
 		whisper: 'šepot',
 		older:
@@ -263,13 +272,65 @@ export const cs: Messages = {
 	progress: {
 		title: 'Pokrok',
 		intro:
-			'Jeden bod za každou nahrávku, vždy pro jedno nastavení mikrofonu a jeden druh nahrávky. Každý cíl začíná vzdáleností od vašeho běžného hlasu; za ní následují měření, ze kterých vychází.',
+			'Jeden bod za každou nahrávku, vždy pro jedno nastavení mikrofonu a jeden druh nahrávky, za zvolený úsek času. Nejdřív každá nahrávka proti vašemu běžnému hlasu, potom libovolné dvě veličiny proti sobě, potom každé měření a každé cvičení zvlášť.',
 		against: 'proti vašemu běžnému hlasu',
+		hear: 'Přehrát nahrávku, když ukazatel spočine na jejím bodu',
+		zoomHint:
+			'Tažením přes graf se všechny grafy přiblíží na ten úsek; dvojklik je zase oddálí. Kliknutí na bod připne jeho nahrávku do karty nahoře; další kliknutí na něj nebo klávesa Esc ji odepne.',
+		zoomOut: 'Zobrazit zase celý úsek',
+		everydayGroup: 'Proti vašemu běžnému hlasu',
+		everydayReads:
+			'Každá nahrávka jako vzdálenost od vašeho běžného hlasu, jedna mřížka pro každou jednotku. Plné body jsou pokusy; prázdné jsou běžné nahrávky, které kolísají kolem nuly.',
+		grids: {
+			pitch: 'Výška (půltóny)',
+			resonance: 'Rezonance (%)',
+			source: 'Zdroj (dB)'
+		},
+		cross: 'Jedna veličina proti druhé',
+		crossReads:
+			'Jeden bod za nahrávku. Vyberte libovolné dvě veličiny a uvidíte, jestli spolu napříč nahrávkami souvisejí. Čárkovaná přímka je jejich proložení; r říká, jak těsně se jí drží (0: vůbec, ±1: přesně). Se zaškrtnutými oběma hlasy r říká hlavně to, čím se pokusy liší od běžných nahrávek; pohled dovnitř jednoho hlasu dá odškrtnutí toho druhého. Z hrstky nahrávek je to náznak, ne zákon.',
+		crossX: 'Vodorovně',
+		crossY: 'Svisle',
+		crossStat: (r, n) => `r = ${r} z ${n} nahrávek`,
+		crossFew: 'Obě veličiny tu mají méně než tři nahrávky.',
+		measures: 'Veličinu po veličině',
+		drills: 'Cvičení',
+		drillsReads:
+			'Podle čeho se každé cvičení hodnotilo, nahrávku po nahrávce, v této sestavě mikrofonu a v tomto úseku času.',
 		empty: 'Těmto filtrům zatím neodpovídá žádná analyzovaná nahrávka.',
 		kind: 'Druh nahrávky',
+		allKinds: 'Všechny druhy, proti běžnému hlasu',
+		allReads:
+			'Všechny druhy nahrávek dohromady, každá jako vzdálenost od vašeho běžného hlasu stejného druhu. Samotná měření se dají srovnávat jen v rámci jednoho druhu, proto tu chybí; druhy se liší i mezi sebou (krátká fráze se říká hlasitěji než úryvek).',
 		latest: 'poslední',
 		taken: 'Nahráno',
 		withPractice: 'Zahrnout pokusy ze sezení cvičení'
+	},
+	range: {
+		label: 'Čas',
+		all: 'všechno',
+		last: (days) => `posledních ${days} dní`,
+		quick: 'Rychlá rozmezí',
+		exact: 'Přesně',
+		from: 'Od',
+		to: 'Do',
+		untilNow: 'Až do teď',
+		apply: 'Použít',
+		problems: {
+			incomplete: 'Je potřeba začátek i konec.',
+			backwards: 'Konec musí ležet po začátku.'
+		}
+	},
+	card: {
+		none: 'Zastavte ukazatel na bodu grafu a jeho nahrávka se ukáže tady; kliknutí na bod ji připne.',
+		open: 'Otevřít nahrávku',
+		unpin: 'Odepnout',
+		unpinHint: 'Karta zase sleduje ukazatel (Esc)',
+		comfort: (rating) => `pohodlí ${rating}`,
+		problems: {
+			blocked: 'Prohlížeč přehrává zvuk až po kliknutí na stránku: klikněte kamkoli.',
+			failed: 'Tuto nahrávku se nepodařilo přehrát.'
+		}
 	},
 	compare: {
 		title: 'Porovnání dvou nahrávek',

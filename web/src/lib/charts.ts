@@ -1,16 +1,9 @@
-// Shared by the charts: tick placement and the series colours (the theme's
-// validated pair; the colour follows the voice, never its position).
+// Shared by the charts: tick placement and what counts as a voice.
 
 import type { Intent } from './api/types.js';
 
-/** The intents that are a voice; drills are sounds made for an exercise and draw no line. */
+/** The intents that are a voice; drills are sounds made for an exercise, charted with it. */
 export type Voice = Exclude<Intent, 'drill'>;
-
-/** Series colours by the voice a take was spoken in. */
-export const INTENT_COLOR: Record<Voice, string> = {
-	habitual: 'var(--series-1)',
-	attempt: 'var(--series-2)'
-};
 
 /** Round tick values covering `min`…`max`, about `count` of them. */
 export function niceTicks(min: number, max: number, count = 4): number[] {
@@ -32,8 +25,11 @@ export function niceTicks(min: number, max: number, count = 4): number[] {
 	return ticks;
 }
 
-/** Evenly spread moments between two timestamps, ends included. */
-export function timeTicks(from: number, to: number, count: number): number[] {
-	if (to <= from || count < 2) return [from];
-	return Array.from({ length: count }, (_, i) => from + ((to - from) * i) / (count - 1));
+/** The decimals that tell the ticks of an axis apart, from the step between them. */
+export function stepDecimals(step: number): number {
+	for (let decimals = 0; decimals < 3; decimals++) {
+		const scaled = Math.abs(step) * 10 ** decimals;
+		if (scaled >= 1 && Math.abs(scaled - Math.round(scaled)) < 1e-6) return decimals;
+	}
+	return 3;
 }

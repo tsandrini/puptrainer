@@ -32,6 +32,10 @@
 	/* charts: two validated series colours (habitual, attempt), grid and reference band */
 	--series-1: #2a78d6;
 	--series-2: #eb6834;
+	--series-3: #1baf7a;
+	--series-4: #eda100;
+	--series-5: #e87ba4;
+	--series-6: #008300;
 	--chart-grid: oklch(0.93 0.012 345);
 	--chart-band: oklch(0.56 0.2 355 / 9%);
 	/* the paw prints on the page */
@@ -62,6 +66,10 @@
 	--critical: #f27474;
 	--series-1: #3987e5;
 	--series-2: #d95926;
+	--series-3: #199e70;
+	--series-4: #c98500;
+	--series-5: #d55181;
+	--series-6: #2f9e2f;
 	--chart-grid: oklch(1 0 0 / 9%);
 	--chart-band: oklch(0.75 0.14 355 / 12%);
 	--paw-ink: oklch(1 0 0 / 3.5%);

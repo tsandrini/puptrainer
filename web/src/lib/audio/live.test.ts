@@ -94,6 +94,10 @@ describe('LiveTrack', () => {
 		expect(trace.r1_unreadable.some(Boolean)).toBe(false);
 		expect(track.now(AH)!.pitchHz).toBeCloseTo(180, 0);
 		expect(track.now(AH)!.brightPct).toBeGreaterThan(9);
+		// the first second of sound is what a moving picture counts its levels from
+		const first = track.opening()!;
+		expect(first.levelDb).toBeCloseTo(row(trace, 'level_db')[5]!, 0);
+		expect(first.leadDb).toBeCloseTo(row(trace, 'lightness_db')[5]!, 0);
 	});
 
 	it('marks a light voice: its first resonance is not read, its brightness is', () => {
@@ -135,5 +139,9 @@ describe('LiveTrack', () => {
 		expect(row(trace, 'pitch_hz')[25]).toBeCloseTo(180, 0);
 		expect(row(trace, 'brightness_pct').every((v) => v === null)).toBe(true);
 		expect(track.now(null)).toBeNull();
+		// a second of sound has not passed yet
+		const early = new LiveTrack();
+		feed(early, new Float32Array(RATE), vowel(AH, 180, 0.5));
+		expect(early.opening()).toBeNull();
 	});
 });

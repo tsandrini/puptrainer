@@ -95,10 +95,17 @@ export const en = {
 	traces: {
 		title: 'The take, moment by moment',
 		reads:
-			'One row per measure, on the time axis of the picture above. Each row says its value at the pointer, or where the playback stands; click a moment to hear it.',
+			'Three grids on the time axis of the picture above, one per unit. The legend under each says its values at the pointer, or where the playback stands. Click a moment to hear it; drag across to zoom in, double-click to zoom out.',
+		grids: {
+			pitch: 'Pitch (Hz)',
+			resonance: 'Resonance (% against the zero)',
+			source: 'The source (dB against the zero)',
+			sourceOwn: 'The source (dB against the middle of this take)'
+		},
 		live: 'What the live guide drew while you recorded, on the time axis of the picture above. The saved take is measured more carefully.',
 		rows: {
 			pitch_hz: 'Pitch',
+			pitch_pct: 'Pitch, against the first sound',
 			brightness_pct: 'Brightness',
 			r1_pct: 'First resonance (R1)',
 			lightness_db: 'Lightness',
@@ -106,6 +113,8 @@ export const en = {
 			level_db: 'Loudness'
 		} as Record<string, string>,
 		hints: {
+			pitch_pct:
+				'The pitch once more, as a percentage against the first sound, so it can be read on one scale with the resonances: a semitone is 6%. Where this line moves and the others do not, only the note changed.',
 			pitch_hz:
 				'How fast the vocal folds vibrate. The shaded band is the pitch band the take was recorded against, or 145–185 Hz.',
 			brightness_pct:
@@ -123,7 +132,7 @@ export const en = {
 			'first-whisper':
 				'Brightness and R1 are counted from the first three whispered seconds of this take.'
 		},
-		shaded: 'Where the R1 row is greyed out, the voice is too light for R1 to be read.',
+		shaded: 'Where the resonance grid is greyed out, the voice is too light for R1 to be read.',
 		unreadable: 'not readable',
 		whisper: 'whisper',
 		older:
@@ -263,13 +272,65 @@ export const en = {
 	progress: {
 		title: 'Progress',
 		intro:
-			'One point per take, for one microphone setup and one kind of take at a time. Each target leads with its distance from your everyday voice; the measurements behind it follow.',
+			'One point per take, for one microphone setup and one kind of take at a time, over the stretch of time you choose. First each take against your everyday voice, then any two measures against each other, then every measurement and every exercise by itself.',
 		against: 'against your everyday voice',
+		hear: 'Hear a take when the pointer rests on its point',
+		zoomHint:
+			'Drag across a chart to zoom every chart into that stretch; double-click to zoom back out. Click a point to pin its take to the card above; click it again, or press Esc, to unpin.',
+		zoomOut: 'Show the whole stretch again',
+		everydayGroup: 'Against your everyday voice',
+		everydayReads:
+			'Each take as its distance from your everyday voice, one grid per unit. Filled points are attempts; hollow ones are everyday takes, which scatter around zero.',
+		grids: {
+			pitch: 'Pitch (semitones)',
+			resonance: 'Resonance (%)',
+			source: 'The source (dB)'
+		},
+		cross: 'One measure against another',
+		crossReads:
+			'One point per take. Pick any two measures to see whether they go together across your takes. The dashed line is their straight-line fit; r says how closely they follow it (0: not at all, ±1: exactly). With both voices ticked, r mostly says how your attempts differ from your everyday takes; untick one to look inside a voice. A handful of takes makes a hint, not a law.',
+		crossX: 'Across',
+		crossY: 'Upwards',
+		crossStat: (r: string, n: number) => `r = ${r} over ${n} takes`,
+		crossFew: 'Fewer than three takes have both measures here.',
+		measures: 'Measure by measure',
+		drills: 'Exercises',
+		drillsReads:
+			'What each exercise was judged on, take by take, on this microphone setup and in this stretch of time.',
 		empty: 'No analysed take matches these filters yet.',
 		kind: 'Kind of take',
+		allKinds: 'All kinds, against the everyday voice',
+		allReads:
+			'Every kind of take together, each as its distance from your everyday voice of the same kind. The measurements themselves only compare within one kind, so they are left out here; kinds also differ among themselves (a short phrase is spoken louder than a passage).',
 		latest: 'latest',
 		taken: 'Recorded',
 		withPractice: 'Include attempts from practice sessions'
+	},
+	range: {
+		label: 'Time',
+		all: 'everything',
+		last: (days: number) => `last ${days} days`,
+		quick: 'Quick ranges',
+		exact: 'Exact',
+		from: 'From',
+		to: 'To',
+		untilNow: 'Until now',
+		apply: 'Apply',
+		problems: {
+			incomplete: 'Both a start and an end are needed.',
+			backwards: 'The end has to lie after the start.'
+		}
+	},
+	card: {
+		none: 'Rest the pointer on a point of a chart to see its take here; click the point to pin it.',
+		open: 'Open the take',
+		unpin: 'Unpin',
+		unpinHint: 'The card follows the pointer again (Esc)',
+		comfort: (rating: number) => `comfort ${rating}`,
+		problems: {
+			blocked: 'The browser plays sound only after a click on the page: click anywhere once.',
+			failed: 'This recording could not be played.'
+		}
 	},
 	compare: {
 		title: 'Compare two takes',

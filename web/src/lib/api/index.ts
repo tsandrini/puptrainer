@@ -73,9 +73,26 @@ export type TakeFilter = {
 	language?: string;
 	device_id?: number;
 	session_id?: string;
+	/** Recorded at or after this moment (ISO). */
+	since?: string;
+	/** Recorded at or before this moment (ISO). */
+	until?: string;
+	limit?: number;
+	offset?: number;
 };
 
 export const fetchTakes = (filter: TakeFilter = {}) => getJson<TakeOut[]>(`takes${query(filter)}`);
+
+/** Every take a filter matches, however many: the list comes in pages. */
+export async function fetchAllTakes(filter: TakeFilter = {}): Promise<TakeOut[]> {
+	const PAGE = 500;
+	const all: TakeOut[] = [];
+	for (;;) {
+		const page = await fetchTakes({ ...filter, limit: PAGE, offset: all.length });
+		all.push(...page);
+		if (page.length < PAGE) return all;
+	}
+}
 export const fetchTake = (id: string) => getJson<TakeOut>(`takes/${encodeURIComponent(id)}`);
 export const updateTake = (id: string, body: TakePatch) =>
 	patchJson<TakeOut>(`takes/${encodeURIComponent(id)}`, body);

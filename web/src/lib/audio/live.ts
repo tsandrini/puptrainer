@@ -191,6 +191,25 @@ export class LiveTrack {
 		};
 	}
 
+	/**
+	 * The level and the lead of the fundamental over the first second of sound: what the
+	 * source rows of a moving picture are counted from, so that they stay put while the
+	 * window moves on.
+	 *
+	 * @returns null until a second of sound has been heard
+	 */
+	opening(): { levelDb: number; leadDb: number | null } | null {
+		const start = this.points.find((p) => p.formants !== null || p.leadDb !== null);
+		if (!start || this.seconds < start.at + 1) return null;
+		const first = this.points.filter(
+			(p) => p.at >= start.at && p.at <= start.at + 1 && (p.formants !== null || p.leadDb !== null)
+		);
+		return {
+			levelDb: median(first.map((p) => p.levelDb))!,
+			leadDb: median(first.flatMap((p) => p.leadDb ?? []))
+		};
+	}
+
 	/** The newest pitch and brightness that go together, for the map; null without both. */
 	now(base: Formants | null): { pitchHz: number; brightPct: number } | null {
 		const since = this.seconds - HOLD_S;

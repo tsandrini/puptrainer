@@ -11,7 +11,7 @@
 	import type { Formants, Mode } from '#lib/audio/formants.js';
 	import { LiveTrack } from '#lib/audio/live.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
-	import Traces from './Traces.svelte';
+	import Traces, { type GridScales } from './Traces.svelte';
 
 	let {
 		mode = 'voiced',
@@ -55,13 +55,13 @@
 	let trail = $state.raw<{ at: number; pitchHz: number; brightPct: number }[]>([]);
 
 	const pitchRange = $derived<[number, number]>(band ? [band[0] * 0.6, band[1] * 1.5] : [90, 330]);
-	const scales = $derived<Record<string, readonly [number, number]>>({
-		pitch_hz: pitchRange,
-		brightness_pct: BRIGHT,
-		r1_pct: [-30, 50],
-		lightness_db: [0, 20],
-		level_db: [-60, 0]
+	const scales = $derived<GridScales>({
+		pitch: pitchRange,
+		resonance: [-30, 45],
+		source: [-20, 20]
 	});
+	/** What the source grid is counted from: the first second of sound of this take. */
+	let origin = $state.raw<Record<string, number>>({});
 	const mapped = $derived(resonance && !speech && mode === 'voiced');
 	const zone = $derived(
 		app.measures.find((m) => m.key === 'brightness_pct')?.zones.find((z) => z.key === 'typical')
@@ -81,6 +81,15 @@
 		if (++blocks % EVERY) return;
 		const now = track.seconds;
 		shown = track.trace(now - WINDOW_S, now, STEP_S, rows);
+		if (origin.level_db === undefined) {
+			const first = track.opening();
+			if (first) {
+				origin = {
+					level_db: first.levelDb,
+					...(first.leadDb !== null ? { lightness_db: first.leadDb } : {})
+				};
+			}
+		}
 		unreadable = shown.r1_unreadable.slice(-3).some(Boolean);
 		if (!mapped) return;
 		const at = track.now(base);
@@ -117,6 +126,7 @@
 				position={WINDOW_S - STEP_S / 2}
 				{band}
 				{scales}
+				base={origin}
 				live
 				reads={speech && resonance ? i18n.t.live.graph.speech : i18n.t.live.graph.reads}
 			/>

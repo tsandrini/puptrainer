@@ -13,16 +13,21 @@ class Theme {
 		browser ? ((localStorage.getItem(KEY) as ThemeMode | null) ?? 'system') : 'system'
 	);
 	#system = browser ? matchMedia('(prefers-color-scheme: dark)') : null;
+	// NOTE: state, so that what is drawn on a canvas (the charts) follows the system too
+	#systemDark = $state(Boolean(this.#system?.matches));
 
 	/** Whether the page is dark right now. */
 	get dark(): boolean {
-		return this.mode === 'dark' || (this.mode === 'system' && Boolean(this.#system?.matches));
+		return this.mode === 'dark' || (this.mode === 'system' && this.#systemDark);
 	}
 
 	/** Applies the theme and follows the system while the mode says so. */
 	start(): () => void {
 		this.apply();
-		const follow = () => this.apply();
+		const follow = () => {
+			this.#systemDark = Boolean(this.#system?.matches);
+			this.apply();
+		};
 		this.#system?.addEventListener('change', follow);
 		return () => this.#system?.removeEventListener('change', follow);
 	}

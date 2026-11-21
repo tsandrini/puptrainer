@@ -26,7 +26,7 @@ let
     inherit (packageJson) version;
     inherit src nodejs;
     sourceRoot = "${src.name}/web";
-    npmDepsHash = "sha256-2E83SwoS8/xhNHEudnHdJJAVpaShM3wP2nyOofzsNY4=";
+    npmDepsHash = "sha256-cclqrzXU+u9P8ubnxvuuejHyhFnDxtOImTfZzwa/Ufs=";
     meta = {
       homepage = "https://github.com/tsandrini/puptrainer";
       license = lib.licenses.eupl12;
