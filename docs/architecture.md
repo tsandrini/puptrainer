@@ -40,8 +40,25 @@ than the API and its storage.
   tell whether a drill is going right, so pitch steps show the band, the
   note and the live pitch while recording, and resonance steps the live
   resonance meter with the formants spectrogram; other steps show the level
-  only. Always-on displays help the session and hurt what is kept, so
-  fading them as skills settle belongs to the curriculum (M4).
+  only. Every step with a guide also draws the last 15 seconds as rows
+  over time (`audio/live.ts`, `LiveTraces`), and a held sound a map of
+  pitch against brightness. Always-on displays help the session and hurt
+  what is kept, so fading them as skills settle belongs to the curriculum
+  (M4).
+- **A take is more than its numbers.** One number per take hides what
+  happened in it. The pipeline keeps what it measures frame by frame, the
+  API turns it into rows over time when asked (`core.trace`, never
+  stored), and every player draws them under its picture on one time axis
+  (`Traces`). Right after recording, before the analysis is in, the rows
+  come from what the live graph drew, and say so.
+- **A number that cannot be read is not shown.** Linear prediction puts
+  its lowest peak on the fundamental when that stands far above the
+  harmonics over it, as in a light voice at a raised pitch: the "first
+  resonance" then follows the pitch. The pipeline measures how often that
+  happens and how far the fundamental leads; readings, judgements, traces
+  and the live meter leave R1 out where either says so
+  (`core.acoustics.r1_readable`) and say why. Whispered takes, which have
+  no pitch, are where R1 is measured.
 - **Two targets, read against the learner's own voice.** Pitch and
   resonance are what the training is about; every other number is a
   condition on them (clarity, loudness) or about the recording. The API
@@ -113,14 +130,18 @@ Which numbers a take gets depends on what it contains
 | Pitch         | median; 5th and 95th percentile, range and variability in semitones, time below, at and above 145–185 Hz | speech (median: also held) |
 | Pitch         | share of subharmonic (creaky) frames                                                                     | speech, held               |
 | Resonance     | median F1–F4 (speech only), formant spacing, apparent vocal-tract length                                 | speech, held               |
+| Resonance     | share of vowel frames whose F1 cannot be told from the pitch                                             | speech                     |
 | Voice quality | CPPS, harmonics-to-noise ratio, spectral slope, on the voiced parts only                                 | speech, held               |
+| Voice quality | lightness: how far the fundamental leads the second harmonic (H1–H2), on the vowels                      | speech, held               |
 | Range         | lowest and highest note, range in semitones, breaks (jumps of 3 semitones or more)                       | glide                      |
 
 Speech is a passage, free speech, a short phrase or another take; held is a
 vowels take or a sustain take (held sounds for an exercise). A take also
-stores its pitch contour (a series, 10 ms steps) and, for a vowels or
-sustain take, each held sound of 1.5 s or more with its pitch, formants,
-CPPS and HNR.
+stores series: its pitch contour (10 ms steps) and, in 20 ms steps, its
+level, F1–F4, the lead of the fundamental and the cepstral peak prominence
+of each frame. For a vowels or sustain take it stores each held sound of
+1.5 s or more with its pitch, formants, CPPS, HNR, lightness and how much
+of its R1 is unreadable, and for a whispered take each whispered second.
 
 **Pitch.** Creaky voice and period doubling put energy at half the pitch,
 and an autocorrelation tracker then reports the voice an octave low. The
@@ -149,8 +170,35 @@ then lie too far apart to show the vocal tract, and the analysis would
 report the harmonics themselves. The held sounds of a sustain take, which
 differ in length on purpose, are each fitted with a ceiling of their own.
 
+**The first resonance and the pitch.** A frame's F1 cannot be told from
+the pitch when it lies below 1.25 times the pitch, or below 1.75 times the
+pitch while the fundamental leads the second harmonic by 12 dB or more.
+The share of such frames is a metric. A take's (or a held sound's) R1 is
+left out when that share reaches a quarter or the median lead reaches 12
+dB: on one learner's takes everyday speech had 4–19% such frames and a
+lead of 4–9 dB, attempts at a higher, lighter voice 33–49% and 10–14 dB,
+and their median F1 read a fifth lower for that reason alone.
+
+**Whispers.** A sustain take counts as whispered when at least a fifth of
+its sounding frames are unvoiced. Its unvoiced frames within 15 dB of the
+loudest (and 12 dB above the room) are read at a 5500 Hz ceiling, and each
+second with eight or more of them is stored with its median formants. A
+pitch above 300 Hz found in such a take is noise, not a voice.
+
 **Voice quality** is measured on the voiced stretches joined together, never
 over pauses. CPPS uses the settings of the Acoustic Voice Quality Index.
+Lightness is uncorrected for the resonances: a first resonance close to
+either harmonic shifts it, so it is compared on the same text or the same
+held vowel only.
+
+**Traces** (`GET /api/v1/takes/{id}/trace`) are the stored series as rows
+at ten values a second: pitch, lightness, clarity and level for every
+take; for a sustain take also brightness and R1 in percent against its
+first held sound, or its first three whispered seconds. The first and last
+step of a voiced stretch are left out of the source and resonance rows, a
+whispered second is one value from end to end, and steps where R1 cannot
+be read are marked. Speech has no resonance rows: formants follow the
+words, so its brightness is one number for the take.
 
 Adding a metric: add it to `puptrainer.core.metrics.REGISTRY` with its group
 and the kinds of take it applies to, give it a title, a description and a

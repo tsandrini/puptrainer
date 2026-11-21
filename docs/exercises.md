@@ -117,8 +117,13 @@ the pitch strip, the live resonance meter and the formants spectrogram;
 `whisper` shows the meter for sound without a pitch. The meter counts a
 held sound or a whisper from the first sound of the take, and speech from
 the learner's everyday takes of the same text (free speech from everyday
-free speech); without one it says what to record. Live guidance is on
-while skills are new; fading it is the curriculum's job later (M4).
+free speech); without one it says what to record. On a held sound the
+zero can also be set by hand ("Set the zero here"), and the meter says
+which zero it has: the start of a take is not the everyday voice. Every
+guide comes with a graph of the last 15 seconds (pitch, brightness, R1,
+lightness, loudness; without the resonance rows for `pitch`), and a held
+sound with a map of pitch against brightness. Live guidance is on while
+skills are new; fading it is the curriculum's job later (M4).
 
 **Czech texts** address the reader without grammatical gender: imperatives
 and the present tense, no past participles (`zkuste`, not `zkusil(a) jste`).
@@ -133,8 +138,11 @@ which way to go (above or below the band or the note, or not held).
 `pitch_band` with `above_ok = true` only minds the band's lower edge, for
 sounds meant to be light and high. The held sounds of `steps` are read
 against the first of them, the learner's ordinary one, in the same take:
-brightness and R1 of the last, and of the darkest in between. Spoken
-exercises are read against the everyday take of their text (see Readings).
+brightness and R1 of the last, and of the darkest in between. R1 is left
+out, with a sentence saying so, when the voice of either sound is too
+light for it to be read. A `whisper` take is read against its own first
+whispered seconds. Spoken exercises are read against the everyday take of
+their text (see Readings).
 
 | `kind`       | Takes         | Met when                                                                                                                           |
 | ------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -143,6 +151,7 @@ exercises are read against the everyday take of their text (see Readings).
 | `pitch_hold` | `sustain`     | a steady stretch lasts `min_hold_s` inside the band (`at = "band"`) or within `tolerance_cents` of the played note (`at = "note"`) |
 | `metric`     | as the metric | a registry metric is at most `below`, or at least `above`                                                                          |
 | `steps`      | `sustain`     | `count` held sounds, the last brighter than the first by `min_bright_pct` (F2 to F4), all pitches within `max_drift_st`            |
+| `whisper`    | `sustain`     | after the first `lead` whispered seconds, R1 rises by `min_r1_pct` and F2 to F4 by `min_bright_pct` (the three highest seconds)    |
 
 A **steady stretch** stays within `spread_cents` (default 50) either side of
 its middle; dropouts under 50 ms do not end it. When a take has more held
@@ -194,21 +203,25 @@ Beside the judgement of a practice take, every voice (an everyday take or
 an attempt, not a drill) is read against the learner's own everyday voice
 by `puptrainer.core.reading`, whenever it is served:
 
-| Number             | What                                              |
-| ------------------ | ------------------------------------------------- |
-| `pitch_shift_st`   | Median pitch above the everyday voice             |
-| `brightness_pct`   | F2 to F4 above the everyday voice, geometric mean |
-| `r1_shift_pct`     | F1 above the everyday voice                       |
-| `level_shift_db`   | Speech level against the everyday voice           |
-| `clarity_shift_db` | CPPS against the everyday voice                   |
+| Number               | What                                              |
+| -------------------- | ------------------------------------------------- |
+| `pitch_shift_st`     | Median pitch above the everyday voice             |
+| `brightness_pct`     | F2 to F4 above the everyday voice, geometric mean |
+| `r1_shift_pct`       | F1 above the everyday voice                       |
+| `lightness_shift_db` | The fundamental's lead (H1–H2) against it         |
+| `level_shift_db`     | Speech level against the everyday voice           |
+| `clarity_shift_db`   | CPPS against the everyday voice                   |
 
 The everyday voice is the mean of the earliest five everyday lab takes of
 the most alike kind on the same microphone setup: the same text; for free
 speech, everyday free speech in its language; else speech in general.
 Sustained vowels are read vowel by vowel. Formants follow the words, so
 against speech in general only pitch, level and clarity are read: a phrase
-is read on resonance only against the same phrase, which is why the Record
-page offers the exercise texts. Each number carries the scatter of
+is read on resonance (and on lightness) only against the same phrase,
+which is why the Record page offers the exercise texts. `r1_shift_pct` is
+left out, with the note `r1-unreadable`, when the take's voice is too high
+and light for its first resonance to be read (see "The first resonance and
+the pitch" in `docs/architecture.md`). Each number carries the scatter of
 the everyday takes themselves. The zones on the resonance strip are
 conventions computed from the vowel tables of Hillenbrand et al. (1995)
 (`TYPICAL_PCT`), named as such in `content/measures/<lang>.toml`; their

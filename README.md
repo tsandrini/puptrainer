@@ -34,6 +34,10 @@ every rep, and a practice log. Voice exploration and lessons come next
 - **Plays takes over a picture of them**: a spectrogram of the whole take
   with the level under it, a playhead, click to seek. One switch shows
   either the voice's harmonics or its resonances (formants).
+- **Shows a take moment by moment**: under the player, one row each for
+  pitch, brightness, the first resonance (R1), lightness, clarity and
+  loudness, on the picture's time axis, with the playback position running
+  through them. Click a moment to hear what you did there.
 - **Labels every take**: the microphone setup, what was spoken, the
   language, and whether it was your everyday voice or an attempt at the
   voice you are training.
@@ -48,7 +52,14 @@ every rep, and a practice log. Voice exploration and lessons come next
   that cost in loudness and clarity.
 - **Shows resonance while you speak**: a live meter on the same strip,
   counted from your everyday takes or, for a held sound or a whisper, from
-  the first sound of the take.
+  the first sound of the take (or from wherever you set the zero). Beside
+  it the last 15 seconds roll by as a graph of pitch, brightness, R1,
+  lightness and loudness, and a held sound leaves a trail on a map of
+  pitch against brightness: straight up is resonance without pitch.
+- **Says when a number cannot be read.** In a high, light voice the
+  analysis finds the pitch where the first resonance should be; R1 is then
+  marked "not readable" instead of being shown as a fall. A whisper has no
+  pitch, so whispered takes are where R1 is measured.
 - **Shows progress** by target: the distance from your everyday voice over
   time, then each measurement behind it, per microphone setup and kind of
   take; and any two takes side by side.
@@ -141,11 +152,12 @@ listening does not. `services.puptrainer.api.enable` and
    sustained vowels, a pitch glide, a reading passage and free speech in
    each language.
 3. Watch the level: the loudest parts should land in the marked zone
-   (−12 to −6 dBFS). The resonance meter and the spectrogram under it are
-   guides, not measurements. Listen back, then save.
-4. **Takes** lists everything; a take's page has the player, the take read
-   against your everyday voice, its pitch over time, its numbers and its
-   labels. Tick two takes to compare them.
+   (−12 to −6 dBFS). The resonance meter, the graph of the last seconds and
+   the spectrogram under it are guides, not measurements. Listen back (the
+   take is drawn under the player as the live guide saw it), then save.
+4. **Takes** lists everything; a take's page has the player with the take
+   moment by moment under it, the take read against your everyday voice,
+   its numbers and its labels. Tick two takes to compare them.
 5. **Progress** charts pitch and resonance over time, each against your
    everyday voice first, then measurement by measurement.
 
@@ -167,7 +179,8 @@ cannot be recreated later.
    teacher's own material; one with several parts shows their order as a
    small diagram. "Try it first" runs the live guides without recording.
    Record a rep, stop, then rate how it felt. The result follows a few
-   seconds later: met or not yet, with the numbers.
+   seconds later: met or not yet, with the numbers, and the take moment by
+   moment under a player.
 4. At the end, rate the session and note whether any tension lasted. The
    **practice log** keeps every session with its takes.
 
