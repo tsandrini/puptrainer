@@ -75,7 +75,7 @@ in
         done = json.loads(machine.succeed(f"curl -sf {auth} {api}/takes/{take['id']}"))
         pitch = done["metrics"]["pitch_median_hz"]
         assert 168 < pitch < 172, pitch
-        assert done["series"] == ["pitch_hz"], done["series"]
+        assert {"pitch_hz", "level_db", "h1h2_db"} <= set(done["series"]), done["series"]
         machine.succeed(f"curl -sf {auth} {api}/takes/{take['id']}/audio -o /tmp/back.flac")
         machine.succeed("test $(soxi -D /tmp/back.flac | cut -d. -f1) = 3")
 

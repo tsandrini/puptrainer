@@ -9,7 +9,7 @@ from puptrainer.analysis.pipeline import analyse, spacing
 from puptrainer.core.metrics import KEYS, REGISTRY
 from puptrainer.core.schemas import Item
 
-from .conftest import SAMPLE_RATE, tone, vowel
+from .conftest import SAMPLE_RATE, tone, vowel, whisper
 
 NEUTRAL = (500.0, 1500.0, 2500.0, 3500.0, 4500.0)  # a 17.5 cm tube
 SHORTER = (570.0, 1710.0, 2850.0, 3990.0, 5130.0)  # a 15.35 cm tube
@@ -294,3 +294,109 @@ def test_held_sounds_are_fitted_one_by_one(tmp_path: Path) -> None:
     dark, bright = analyse(write(tmp_path, take), Item.SUSTAIN).details.segments
     assert spacing(dark.formants_hz)[1] == pytest.approx(17.5, abs=0.5)
     assert spacing(bright.formants_hz)[1] == pytest.approx(14.0, abs=0.5)
+
+
+AH = (750.0, 1200.0, 2500.0, 3500.0, 4500.0)
+TRACES = {"level_db", "f1_hz", "f2_hz", "f3_hz", "f4_hz", "h1h2_db", "cpp_db"}
+
+
+def measured(values: list[float | None]) -> np.ndarray:
+    return np.array([v for v in values if v is not None])
+
+
+def test_a_take_is_stored_frame_by_frame(tmp_path: Path) -> None:
+    silence = np.zeros(SAMPLE_RATE)
+    take = np.concatenate([silence, vowel(NEUTRAL, f0=150.0, wobble=0.0), silence])
+    series = analyse(write(tmp_path, take), Item.FREE).series
+    assert set(series) == TRACES | {"pitch_hz"}
+    for key in TRACES:
+        assert series[key].step_s == 0.02
+        assert len(series[key].values) == pytest.approx(200, abs=5)
+    level = measured(series["level_db"].values)
+    assert len(level) == len(series["level_db"].values)
+    assert level[5] < -100 and level[100] == pytest.approx(-16.5, abs=3.0)
+    # the resonances and the source are read where there is a voice, and only there
+    for index, expected in enumerate(NEUTRAL[:4], start=1):
+        track = series[f"f{index}_hz"].values
+        assert track[5] is None and track[-5] is None
+        assert np.median(measured(track)) == pytest.approx(expected, rel=0.05)
+    assert len(measured(series["h1h2_db"].values)) == pytest.approx(100, abs=5)
+    assert len(measured(series["cpp_db"].values)) == pytest.approx(100, abs=5)
+
+
+def test_a_silent_take_keeps_its_level_only(tmp_path: Path) -> None:
+    series = analyse(write(tmp_path, np.zeros(2 * SAMPLE_RATE)), Item.FREE).series
+    assert set(series) == {"pitch_hz", "level_db"}
+
+
+def test_breath_lowers_the_cpp_of_every_frame(tmp_path: Path) -> None:
+    clear = analyse(write(tmp_path, vowel(NEUTRAL)), Item.FREE).series["cpp_db"]
+    breathy = analyse(write(tmp_path, vowel(NEUTRAL, noise=0.15)), Item.FREE).series["cpp_db"]
+    assert np.median(measured(clear.values)) > np.median(measured(breathy.values)) + 5
+
+
+def test_lightness_is_how_far_the_fundamental_leads(tmp_path: Path) -> None:
+    plain = measure(tmp_path, vowel(AH, f0=220.0), Item.FREE)
+    light = measure(tmp_path, vowel(AH, f0=220.0, lead_db=12.0), Item.FREE)
+    assert light["lightness_db"] == pytest.approx(plain["lightness_db"] + 12.0, abs=1.0)
+
+
+def test_a_light_voice_reads_its_pitch_as_the_first_resonance(tmp_path: Path) -> None:
+    # NOTE: found on real takes: a higher, lighter voice read "R1 down by a fifth" with
+    # nothing changed above the vocal folds. The same vowel, the fundamental raised:
+    plain = measure(tmp_path, vowel(AH, f0=220.0), Item.FREE)
+    assert plain["f1_median_hz"] == pytest.approx(750.0, rel=0.08)
+    assert plain["r1_unreadable_pct"] == 0 and plain["lightness_db"] < 6
+
+    light = measure(tmp_path, vowel(AH, f0=220.0, lead_db=18.0), Item.FREE)
+    assert light["f1_median_hz"] < 0.7 * 750.0  # the artefact itself
+    assert light["f2_median_hz"] == pytest.approx(plain["f2_median_hz"], rel=0.08)
+    assert light["lightness_db"] > 12 and light["r1_unreadable_pct"] > 15
+
+    locked = measure(tmp_path, vowel(NEUTRAL, f0=220.0, lead_db=18.0), Item.FREE)
+    assert locked["r1_unreadable_pct"] > 25
+
+
+def test_held_sounds_say_how_light_they_are(tmp_path: Path) -> None:
+    gap = np.zeros(int(0.6 * SAMPLE_RATE))
+    firm = vowel(AH, f0=180.0, seconds=2.5, wobble=0.0)
+    light = vowel(AH, f0=230.0, seconds=2.5, wobble=0.0, lead_db=18.0)
+    analysis = analyse(write(tmp_path, np.concatenate([firm, gap, light])), Item.SUSTAIN)
+    first, second = analysis.details.segments
+    assert first.h1h2_db is not None and second.h1h2_db is not None
+    assert first.h1h2_db < 6 and second.h1h2_db > 12
+    assert first.r1_unreadable_pct == 0
+    assert analysis.details.whisper == []
+
+
+def test_a_whisper_is_measured_second_by_second(tmp_path: Path) -> None:
+    gap = np.zeros(SAMPLE_RATE // 2)
+    take = np.concatenate([gap, whisper(NEUTRAL, seconds=4.0), whisper(SHORT, seconds=4.0, seed=5)])
+    analysis = analyse(write(tmp_path, take), Item.SUSTAIN)
+    spans = analysis.details.whisper
+    assert analysis.details.segments == []
+    assert len(spans) >= 8
+    assert all(s.duration_s == 1.0 and len(s.formants_hz) == 4 for s in spans)
+    big, small = spans[1].formants_hz, spans[-2].formants_hz
+    assert big[1:] == pytest.approx(NEUTRAL[1:4], rel=0.08)
+    assert small == pytest.approx(SHORT[:4], rel=0.1)
+    assert small[0] > 1.15 * big[0]
+    assert "f1_median_hz" not in analysis.metrics
+    assert {"f1_hz", "level_db"} <= set(analysis.series)
+
+
+def test_a_voice_let_into_a_whisper_is_not_whisper(tmp_path: Path) -> None:
+    voice = vowel(SHORT, f0=180.0, seconds=1.0, wobble=0.0, amplitude=0.1)
+    take = np.concatenate([whisper(SHORT, seconds=2.0), voice, whisper(SHORT, seconds=2.0, seed=9)])
+    analysis = analyse(write(tmp_path, take), Item.SUSTAIN)
+    assert [s.start_s for s in analysis.details.whisper] == [0.0, 1.0, 3.0, 4.0]
+    # the voiced second is still read, frame by frame
+    track = analysis.series["f1_hz"]
+    inside = track.values[int(2.2 / track.step_s) : int(2.8 / track.step_s)]
+    assert np.median(measured(inside)) == pytest.approx(625.0, rel=0.08)
+
+
+def test_a_silent_sustain_take_is_no_whisper(tmp_path: Path) -> None:
+    analysis = analyse(write(tmp_path, np.zeros(2 * SAMPLE_RATE)), Item.SUSTAIN)
+    assert analysis.details.whisper == []
+    assert "f1_hz" not in analysis.series

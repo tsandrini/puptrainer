@@ -3,7 +3,13 @@ import pytest
 
 from puptrainer.core.content import load_content
 from puptrainer.core.evaluation import TakeFacts, evaluate, steady_hold
-from puptrainer.core.schemas import EvaluationProblem, Exercise, Target, VowelSegment
+from puptrainer.core.schemas import (
+    EvaluationProblem,
+    Exercise,
+    Target,
+    VowelSegment,
+    WhisperSpan,
+)
 
 from .conftest import CONTENT
 
@@ -33,6 +39,7 @@ def facts(
     target: Target | None = BAND,
     metrics: dict[str, float] | None = None,
     segments: list[VowelSegment] | None = None,
+    whisper: list[WhisperSpan] | None = None,
 ) -> TakeFacts:
     return TakeFacts(
         analysed=True,
@@ -41,6 +48,7 @@ def facts(
         target=target,
         metrics=metrics or {},
         segments=segments or [],
+        whisper=whisper or [],
     )
 
 
@@ -173,6 +181,58 @@ def test_resonance_contrast(catalogue: dict[str, Exercise]) -> None:
     assert partly.met is True and "step_dark_pct" not in measures(partly)
     two = evaluate(ref, exercise, facts(None, segments=good[:2]))
     assert two.met is False and measures(two)["steps_found"] == 2
+    # a bright sound whose voice went light: brighter, but its first resonance is not read
+    light = [good[0], good[1], good[2].model_copy(update={"h1h2_db": 13.6})]
+    airy = evaluate(ref, exercise, facts(None, segments=light))
+    assert (airy.met, airy.advice) == (True, ["r1-unreadable"])
+    assert "step_r1_pct" not in measures(airy)
+    assert measures(airy)["step_bright_pct"] == pytest.approx(8.0)
+    firm = [s.model_copy(update={"h1h2_db": 9.0, "r1_unreadable_pct": 0.0}) for s in good]
+    assert "step_r1_pct" in measures(evaluate(ref, exercise, facts(None, segments=firm)))
+
+
+def whispered(*positions: tuple[float, float]) -> list[WhisperSpan]:
+    """One whispered second per pair: (how much higher F1 sits, how much higher F2 to F4)."""
+    big = (700.0, 1700.0, 2400.0, 3800.0)
+    return [
+        WhisperSpan(
+            start_s=float(index),
+            duration_s=1.0,
+            formants_hz=[big[0] * first, *(f * upper for f in big[1:])],
+        )
+        for index, (first, upper) in enumerate(positions)
+    ]
+
+
+def test_whisper_slide(catalogue: dict[str, Exercise]) -> None:
+    exercise = catalogue["whisper-slide"]
+    ref = "exercise:whisper-slide@1"
+    steady = [(1.0, 1.0)] * 3
+    # big for three seconds, then small; one second that reads wildly does not decide
+    slide = whispered(*steady, (1.1, 1.05), (1.3, 1.15), (1.32, 1.16), (1.28, 1.14), (2.0, 1.6))
+    result = evaluate(ref, exercise, facts(None, whisper=slide))
+    assert result.met is True and result.advice == []
+    assert [m.key for m in result.measures] == ["whisper_r1_pct", "whisper_bright_pct"]
+    got = measures(result)
+    assert got["whisper_r1_pct"] == pytest.approx(32.0)
+    assert got["whisper_bright_pct"] == pytest.approx(16.0)
+    assert [m.low for m in result.measures] == [8.0, 5.0]
+    # a whisper that stays where it started
+    flat = whispered(*steady, (1.02, 1.0), (0.98, 1.01), (1.03, 1.02))
+    same = evaluate(ref, exercise, facts(None, whisper=flat))
+    assert (same.met, same.advice) == (False, ["whisper-same"])
+    # the vowel sliding to "ee": the upper resonances rise, the first one falls
+    vowel_slide = whispered(*steady, (0.8, 1.2), (0.78, 1.22), (0.8, 1.21))
+    ee = evaluate(ref, exercise, facts(None, whisper=vowel_slide))
+    assert ee.met is False and measures(ee)["whisper_r1_pct"] < 0
+    # too little whisper to tell a start from a slide; a voiced take has none at all
+    short = evaluate(ref, exercise, facts(None, whisper=slide[:5]))
+    assert (short.met, short.problem) == (None, EvaluationProblem.TOO_LITTLE_WHISPER)
+    assert evaluate(ref, exercise, facts(None)).problem == EvaluationProblem.TOO_LITTLE_WHISPER
+    # comfort is a gate here as everywhere
+    strained = facts(None, whisper=slide)
+    strained.comfort = 1
+    assert evaluate(ref, exercise, strained).strained is True
 
 
 def test_problems(catalogue: dict[str, Exercise]) -> None:

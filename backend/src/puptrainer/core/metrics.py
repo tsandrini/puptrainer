@@ -40,10 +40,12 @@ REGISTRY: tuple[MetricDef, ...] = (
     _m("f4_median_hz", "Hz", 0, MetricGroup.RESONANCE, SPEECH),
     _m("formant_spacing_hz", "Hz", 0, MetricGroup.RESONANCE, VOICED),
     _m("vtl_cm", "cm", 1, MetricGroup.RESONANCE, VOICED),
+    _m("r1_unreadable_pct", "%", 0, MetricGroup.RESONANCE, SPEECH),
     # --- voice quality
     _m("cpps_db", "dB", 1, MetricGroup.QUALITY, VOICED),
     _m("hnr_db", "dB", 1, MetricGroup.QUALITY, VOICED),
     _m("spectral_slope_db", "dB", 1, MetricGroup.QUALITY, VOICED),
+    _m("lightness_db", "dB", 1, MetricGroup.QUALITY, VOICED),
     # --- range
     _m("glide_low_hz", "Hz", 0, MetricGroup.RANGE, [Item.GLIDE]),
     _m("glide_high_hz", "Hz", 0, MetricGroup.RANGE, [Item.GLIDE]),

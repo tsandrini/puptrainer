@@ -24,6 +24,7 @@ from puptrainer.core.schemas import (
     Routine,
     SkillDef,
     StepsRule,
+    WhisperRule,
 )
 
 # NOTE: the language every text must have; the others fall back to it in the web app
@@ -34,6 +35,7 @@ RULE_ITEMS: dict[type, frozenset[Item]] = {
     PitchBandRule: frozenset({Item.SUSTAIN, Item.PHRASE, Item.PASSAGE, Item.FREE, Item.OTHER}),
     PitchHoldRule: frozenset({Item.SUSTAIN}),
     StepsRule: frozenset({Item.SUSTAIN}),
+    WhisperRule: frozenset({Item.SUSTAIN}),
 }
 
 

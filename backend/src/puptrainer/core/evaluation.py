@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from puptrainer.core.acoustics import brightness_pct, cents, first_pct, semitones
+from puptrainer.core.acoustics import brightness_pct, cents, first_pct, r1_readable, semitones
 from puptrainer.core.schemas import (
     Advice,
     Evaluation,
@@ -27,6 +27,8 @@ from puptrainer.core.schemas import (
     StepsRule,
     Target,
     VowelSegment,
+    WhisperRule,
+    WhisperSpan,
 )
 
 MEASURES: tuple[MeasureDef, ...] = (
@@ -41,6 +43,8 @@ MEASURES: tuple[MeasureDef, ...] = (
     MeasureDef(key="step_r1_pct", unit="%", decimals=0),
     MeasureDef(key="step_dark_pct", unit="%", decimals=0),
     MeasureDef(key="step_drift_st", unit="st", decimals=1),
+    MeasureDef(key="whisper_r1_pct", unit="%", decimals=0),
+    MeasureDef(key="whisper_bright_pct", unit="%", decimals=0),
 )
 """Every key a judgement may report besides registry metrics; texts in `content/measures`."""
 
@@ -62,6 +66,7 @@ class TakeFacts:
         pitch: Its stored pitch contour (`None` where unvoiced), if any.
         step_s: Time between the contour's values.
         segments: The held sounds of a `sustain` take.
+        whisper: The whispered seconds of a `sustain` take.
         target: The band, and the note, it was recorded against.
         comfort: How the rep felt, 1 (strained) to 5.
     """
@@ -71,6 +76,7 @@ class TakeFacts:
     pitch: list[float | None] | None = None
     step_s: float = 0.01
     segments: list[VowelSegment] = field(default_factory=list)
+    whisper: list[WhisperSpan] = field(default_factory=list)
     target: Target | None = None
     comfort: int | None = None
 
@@ -115,6 +121,8 @@ def evaluate(exercise_ref: str, exercise: Exercise | None, facts: TakeFacts) -> 
             _metric(rule, facts, out)
         case StepsRule():
             _steps(rule, facts, out)
+        case WhisperRule():
+            _whisper(rule, facts, out)
     if out.met and facts.comfort == STRAINED:
         out.met, out.strained = False, True
     if out.met and facts.comfort == EFFORTFUL:
@@ -328,11 +336,36 @@ def _steps(rule: StepsRule, facts: TakeFacts, out: Evaluation) -> None:
     out.measures = [
         Measure(key="step_bright_pct", value=bright, low=rule.min_bright_pct, met=brighter),
         *out.measures,
-        Measure(key="step_r1_pct", value=first_pct(last, first)),
     ]
+    if all(r1_readable(s.h1h2_db, s.r1_unreadable_pct) for s in (chosen[0], chosen[-1])):
+        out.measures.append(Measure(key="step_r1_pct", value=first_pct(last, first)))
+    else:
+        # a light voice: the analysis finds the pitch where the first resonance should be
+        out.advice.append(Advice.R1_UNREADABLE)
     between = [
         brightness_pct(s.formants_hz, first) for s in chosen[1:-1] if len(s.formants_hz) == 4
     ]
     if between:
         # the darkest of the sounds in between: how far the other way the learner can go
         out.measures.append(Measure(key="step_dark_pct", value=min(between)))
+
+
+def _whisper(rule: WhisperRule, facts: TakeFacts, out: Evaluation) -> None:
+    spans = facts.whisper
+    if len(spans) < 2 * rule.lead:
+        out.problem = EvaluationProblem.TOO_LITTLE_WHISPER
+        return
+    big = [float(v) for v in np.median([s.formants_hz for s in spans[: rule.lead]], axis=0)]
+    later = [s.formants_hz for s in spans[rule.lead :]]
+    # the three highest of each: the small position, without leaning on a single second
+    first = float(np.median(sorted(first_pct(f, big) for f in later)[-3:]))
+    bright = float(np.median(sorted(brightness_pct(f, big) for f in later)[-3:]))
+    moved = first >= rule.min_r1_pct
+    brighter = bright >= rule.min_bright_pct
+    out.met = moved and brighter
+    out.measures = [
+        Measure(key="whisper_r1_pct", value=first, low=rule.min_r1_pct, met=moved),
+        Measure(key="whisper_bright_pct", value=bright, low=rule.min_bright_pct, met=brighter),
+    ]
+    if not out.met:
+        out.advice.append(Advice.WHISPER_SAME)

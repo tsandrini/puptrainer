@@ -48,8 +48,8 @@ cs = [
 ]
 
 [why]
-en = "The first exercise of the lesson this session follows (TransVoiceLessons: learn the movement that makes the space above the vocal folds smaller, with the voice out of the way). A whisper has no pitch, so what you hear rise and fall is the resonance itself, and the app can follow it even where a voiced sound would shoot too high to be measured. Nothing is judged and no number is stored yet: the meter is the feedback. It shows two things, counted from your first moments of whisper: brightness (the upper resonances) and the first resonance, R1, which the lesson is about."
-cs = "První cvičení z lekce, kterou toto sezení následuje (TransVoiceLessons: naučit se pohyb, který zmenšuje prostor nad hlasivkami, bez hlasu, který by překážel). Šepot nemá výšku, takže to, co slyšíte stoupat a klesat, je sama rezonance, a aplikace ji dokáže sledovat i tam, kde by znělý zvuk vystřelil příliš vysoko na měření. Nic se nehodnotí a žádné číslo se zatím neukládá: zpětnou vazbou je ukazatel. Ukazuje dvě věci, počítané od prvních okamžiků vašeho šepotu: jas (horní rezonance) a první rezonanci, R1, o kterou v lekci jde."
+en = "The first exercise of the lesson this session follows (TransVoiceLessons: learn the movement that makes the space above the vocal folds smaller, with the voice out of the way). A whisper has no pitch, so what you hear rise and fall is the resonance itself, and the app can follow it even where a voiced sound would shoot too high to be measured. While you whisper, the meter shows two things, counted from your first moments: brightness (the upper resonances) and the first resonance, R1, which the lesson is about. Afterwards the take is measured second by second: the result holds your smallest seconds against the first three, and the trace under the player shows the whole slide. A small, easy movement counts; more is not better."
+cs = "První cvičení z lekce, kterou toto sezení následuje (TransVoiceLessons: naučit se pohyb, který zmenšuje prostor nad hlasivkami, bez hlasu, který by překážel). Šepot nemá výšku, takže to, co slyšíte stoupat a klesat, je sama rezonance, a aplikace ji dokáže sledovat i tam, kde by znělý zvuk vystřelil příliš vysoko na měření. Ukazatel při šepotu ukazuje dvě věci, počítané od prvních okamžiků: jas (horní rezonance) a první rezonanci, R1, o kterou v lekci jde. Nahrávka se pak změří vteřinu po vteřině: výsledek srovná nejmenší vteřiny s prvními třemi a stopa pod přehrávačem ukáže celé klouzání. Počítá se malý, snadný pohyb; víc není lépe."
 
 [safety]
 en = "Whispering dries the throat: sip water, and keep it to a couple of takes. Stop if it turns scratchy."
@@ -69,7 +69,7 @@ labels = { en = "back to big", cs = "zpět k velkému" }
 labels = { en = "small again", cs = "znovu malé" }
 
 [rule]
-kind = "none"
+kind = "whisper"
 
 [[sources]]
 author = "TransVoiceLessons (Zheanna Erose)"

@@ -94,7 +94,7 @@ relates = "Neither target directly: creak is a way the vocal folds vibrate. It t
 title = "F1, median"
 description = "Median of the first vocal-tract resonance over the voiced, louder parts."
 note = "Depends on which vowels the take contains: compare only takes of the same text."
-relates = "Resonance: the lowest one, which teachers call R1. A smaller throat raises it, but so does an open jaw, while a closed jaw or a quiet voice lowers it: read it on the same text, beside F2 to F4."
+relates = "Resonance: the lowest one, which teachers call R1. A smaller throat raises it, but so does an open jaw, while a closed jaw or a quiet voice lowers it: read it on the same text, beside F2 to F4. In a high, light voice the analysis finds the pitch instead: see “R1 not readable”."
 
 [f2_median_hz]
 title = "F2, median"
@@ -128,6 +128,12 @@ relates = "Resonance: the same number as a length. Smaller is brighter; read it 
 
 # --- voice quality
 
+[r1_unreadable_pct]
+title = "R1 not readable"
+description = "Share of the vowel moments in which the first resonance cannot be told from the pitch: its reading lies at the pitch, or just above it while the fundamental is much stronger than the harmonics over it."
+note = "Your everyday voice sits around 5 to 20%. In a higher, lighter voice it climbs, and from a quarter on the take's R1 is not shown: the number would follow the pitch and the lightness of the voice, not the throat."
+relates = "About the measuring, not the voice: it says whether this take's first resonance (R1) can be trusted. Brightness (F2 to F4) is not affected."
+
 [cpps_db]
 title = "CPPS"
 description = "Smoothed cepstral peak prominence of the voiced parts: how clearly periodic the voice is."
@@ -139,6 +145,12 @@ title = "Harmonics-to-noise ratio"
 description = "How much of the voiced sound is harmonic rather than noise."
 note = "Breathiness and background noise both lower it, so it needs a quiet recording."
 relates = "Neither target: a condition on both. A tone that stays clear while pitch and resonance move shows the change is not bought with breath or strain."
+
+[lightness_db]
+title = "Lightness"
+description = "How far the fundamental stands above the second harmonic in the vowels (H1–H2, median): the shape of the vocal folds' wave. A thick, buzzy source has strong harmonics and a low value; a thin, light one is mostly its fundamental and reads high."
+note = "Read it on the same text or the same held vowel only: a first resonance close to either harmonic shifts it. Not corrected for the resonances, so treat it as a guide. With a lower clarity beside it, part of the lightness is air."
+relates = "Neither target: this is the “weight” teachers speak of, trained together with pitch. A lighter voice is where the training usually heads; from 12 dB on, the first resonance (R1) can no longer be read."
 
 [spectral_slope_db]
 title = "Spectral slope"

@@ -33,8 +33,13 @@ def voice(
     first: float = 1.0,
     level: float = -23.0,
     clarity: float = 12.0,
+    lightness: float | None = None,
+    unreadable: float | None = None,
 ) -> Voice:
-    """A take of speech whose upper formants are scaled by `bright` and F1 by `first`."""
+    """A take of speech whose upper formants are scaled by `bright` and F1 by `first`.
+
+    `lightness` and `unreadable` are the two metrics an analysis since pipeline 0.4 adds.
+    """
     f1, *upper = FORMANTS
     metrics = {
         "pitch_median_hz": pitch,
@@ -43,6 +48,10 @@ def voice(
         "speech_level_dbfs": level,
         "cpps_db": clarity,
     }
+    if lightness is not None:
+        metrics["lightness_db"] = lightness
+    if unreadable is not None:
+        metrics["r1_unreadable_pct"] = unreadable
     return Voice(name, item, language, ref, START + timedelta(days=day), metrics)
 
 
@@ -122,7 +131,56 @@ def test_reading_of_an_attempt() -> None:
     assert shifts["r1_shift_pct"].everyday == pytest.approx(400.0)
     assert shifts["level_shift_db"].value == pytest.approx(-4.0)
     assert shifts["clarity_shift_db"].value == pytest.approx(0.0)
-    assert reading.notes == ["brighter", "r1-fell", "quieter"]
+    # a lower first resonance is a number, not a verdict on the jaw or the tongue
+    assert reading.notes == ["brighter", "quieter"]
+
+
+def test_a_light_voice_gets_no_first_resonance() -> None:
+    # NOTE: found on real takes: in a high, light voice linear prediction reads the pitch
+    # as F1, the take's median falls by a fifth, and the app called it a closed mouth
+    everyday = [voice(f"e{day}", day, lightness=5.0 + day, unreadable=8.0) for day in range(3)]
+    attempt = voice("try", 4, pitch=212.0, bright=1.07, first=0.8, lightness=12.9, unreadable=47.0)
+    reading = read(attempt, everyday)
+    assert reading is not None
+    shifts = {s.key: s for s in reading.shifts}
+    assert list(shifts) == [
+        "pitch_shift_st",
+        "brightness_pct",
+        "lightness_shift_db",
+        "level_shift_db",
+        "clarity_shift_db",
+    ]
+    assert shifts["lightness_shift_db"].value == pytest.approx(6.9)
+    assert shifts["lightness_shift_db"].everyday == pytest.approx(6.0)
+    assert shifts["lightness_shift_db"].wobble == pytest.approx(1.0)
+    assert reading.notes == ["brighter", "r1-unreadable", "lighter"]
+
+    # either sign is enough: many frames at the pitch, or a fundamental that dominates
+    shared = read(voice("try", 4, bright=1.07, first=0.8, lightness=9.0, unreadable=30.0), everyday)
+    assert shared is not None and shared.notes == ["brighter", "r1-unreadable", "lighter"]
+    leading = read(
+        voice("try", 4, bright=1.07, first=0.8, lightness=12.0, unreadable=5.0), everyday
+    )
+    assert leading is not None and "r1_shift_pct" not in [s.key for s in leading.shifts]
+
+    # a firm voice keeps its first resonance, at any pitch
+    firm = read(
+        voice("try", 4, pitch=212.0, bright=1.07, first=1.1, lightness=4.5, unreadable=5.0),
+        everyday,
+    )
+    assert firm is not None and firm.notes == ["brighter"]
+    assert {s.key: s.value for s in firm.shifts}["r1_shift_pct"] == pytest.approx(10.0)
+    heavy = read(voice("try", 4, lightness=2.5, unreadable=5.0), everyday)
+    assert heavy is not None and heavy.notes == ["everyday", "heavier"]
+
+
+def test_a_light_held_vowel_gets_no_first_resonance() -> None:
+    take = held("try", 5, scale=1.1)
+    take.vowels[0].h1h2_db = 14.0
+    reading = read(take, EVERYDAY)
+    assert reading is not None
+    assert [s.key for s in reading.shifts] == ["pitch_shift_st", "brightness_pct"]
+    assert reading.notes == ["typical", "r1-unreadable"]
 
 
 @pytest.mark.parametrize(

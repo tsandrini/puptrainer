@@ -34,7 +34,7 @@ description = "O kolik výš leží rezonance F2 až F4 posledního podrženého
 
 [step_r1_pct]
 title = "R1, jasný proti obyčejnému"
-description = "O kolik výš leží nejnižší rezonance, F1, posledního podrženého zvuku než u prvního. O tomhle čísle je lekce rezonance: menší hrdlo ho zvedá. Na tónu nad zhruba 220 Hz je hrubé, protože poblíž leží málo harmonických."
+description = "O kolik výš leží nejnižší rezonance, F1, posledního podrženého zvuku než u prvního. O tomhle čísle je lekce rezonance: menší hrdlo ho zvedá. Vynechává se, když je hlas jednoho z obou zvuků tak lehký, že rozbor najde místo ní výšku hlasu (viz „R1 nečitelná“)."
 
 [step_dark_pct]
 title = "Tmavý proti obyčejnému"
@@ -43,6 +43,14 @@ description = "Totéž pro nejtmavší zvuk mezi nimi: jak daleko jste došli op
 [step_drift_st]
 title = "Posun výšky"
 description = "Jak daleko od sebe jsou výšky podržených zvuků, v půltónech."
+
+[whisper_r1_pct]
+title = "R1, malé proti velkému"
+description = "O kolik výš leží nejnižší rezonance, F1, v nejmenších vteřinách šepotu než v jeho prvních třech vteřinách, tedy ve velké poloze. Šepot nemá výšku, takže tady se číslu dá věřit. Pro měřítko: ženské F1 leží 8 až 29 % nad průměrným mužským. Víc není lépe: jde o to, že se hýbe a že to zůstává snadné."
+
+[whisper_bright_pct]
+title = "Horní rezonance, malé proti velkému"
+description = "Totéž pro F2 až F4, tedy jas: o kolik výš leží v nejjasnějších vteřinách šepotu než v jeho prvních třech."
 
 # --- nahrávka přečtená proti vlastnímu běžnému hlasu (`puptrainer.core.reading`)
 
@@ -60,11 +68,15 @@ beyond = "dětské hlasy"
 
 [r1_shift_pct]
 title = "První rezonance (R1)"
-description = "O kolik výš leží nejnižší rezonance, F1, než ve vašem běžném hlasu. Menší hrdlo ji zvedá; zavřená čelist, tišší hlas a zvuk jdoucí nosem ji snižují. Pro měřítko: ženské F1 leží na stejné samohlásce 8 až 29 % nad průměrným mužským, uprostřed 17 %. V souvislé řeči sleduje čelist stejně jako hrdlo, takže nejvíc říká na držené nebo šeptané samohlásce."
+description = "O kolik výš leží nejnižší rezonance, F1, než ve vašem běžném hlasu. Menší hrdlo ji zvedá; zavřená čelist, tišší hlas a zvuk jdoucí nosem ji snižují. Pro měřítko: ženské F1 leží na stejné samohlásce 8 až 29 % nad průměrným mužským, uprostřed 17 %. V souvislé řeči sleduje čelist stejně jako hrdlo, takže nejvíc říká na držené nebo šeptané samohlásce. U nahrávky, jejíž hlas je na její přečtení příliš vysoký a lehký, se neukazuje."
 
 [r1_shift_pct.zones]
 typical = "kde leží ženské hlasy"
 beyond = "dětské hlasy"
+
+[lightness_shift_db]
+title = "Lehkost"
+description = "O kolik víc základní tón převyšuje druhou harmonickou než ve vašem běžném hlasu na stejných slovech (H1–H2). Výš znamená lehčí, tenčí zdroj: „váha“, o které mluví učitelé, jde dolů. Když vedle ní klesne čistota, je část lehkosti vzduch."
 
 [level_shift_db]
 title = "Hlasitost"

@@ -84,9 +84,11 @@ from puptrainer.core.schemas import (
     TakeOut,
     TakePatch,
     Target,
+    Trace,
     WorkerHello,
 )
 from puptrainer.core.settings import Settings
+from puptrainer.core.trace import trace
 
 ERRORS: dict[int | str, dict[str, object]] = {
     code: {"model": ErrorOut} for code in (400, 401, 404, 409, 422)
@@ -186,6 +188,7 @@ def take_out(
             analysed=done is not None,
             metrics={} if done is None else {m.key: m.value for m in done.metrics},
             segments=details.segments,
+            whisper=details.whisper,
             target=target,
             comfort=take.comfort,
         )
@@ -694,6 +697,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if stored is None:
             raise HTTPException(404, "no such series for this take")
         return Series(start_s=stored.start_s, step_s=stored.step_s, values=decode_series(stored))
+
+    @router.get("/takes/{take_id}/trace", operation_id="takeTrace")
+    def take_trace(take_id: str, db: Db) -> Trace:
+        """The take moment by moment, from the series of its newest finished analysis."""
+        take = get_take(db, take_id)
+        done = finished(take)
+        if done is None:
+            raise HTTPException(404, "the take has not been analysed yet")
+        series = {
+            s.key: Series(start_s=s.start_s, step_s=s.step_s, values=decode_series(s))
+            for s in done.series
+        }
+        return trace(Item(take.item), series, details_of(done))
 
     @router.post("/analysis/requeue", operation_id="requeueAnalysis")
     def requeue(db: Db, pipeline_version: str | None = None) -> Requeued:

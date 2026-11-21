@@ -89,6 +89,12 @@ def test_every_number_says_what_it_is_for() -> None:
         ),
         (
             "exercises/count-in-band.toml",
+            'kind = "pitch_band"\nmin_share_pct = 50',
+            'kind = "whisper"',
+            "cannot judge phrase",
+        ),
+        (
+            "exercises/count-in-band.toml",
             'intent = "attempt"',
             'intent = "habitual"',
             "drill or attempt",

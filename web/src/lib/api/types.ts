@@ -2,7 +2,7 @@
 // Do not edit: change the models in backend/src/puptrainer/core/schemas.py and regenerate.
 
 /** What a judgement suggests trying next. */
-export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful' | 'pitch-moved' | 'pitch-too-high' | 'not-brighter';
+export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful' | 'pitch-moved' | 'pitch-too-high' | 'not-brighter' | 'r1-unreadable' | 'whisper-same';
 
 /** The latest analysis job of a take. */
 export type AnalysisOut = {
@@ -45,6 +45,7 @@ export type Demo = 'none' | 'slide-down' | 'glide' | 'hold';
 export type Details = {
 	vowels: VowelSegment[];
 	segments: VowelSegment[];
+	whisper: WhisperSpan[];
 };
 
 /** A microphone setup to create or update. */
@@ -84,7 +85,7 @@ export type Evaluation = {
 };
 
 /** Why a take of an exercise could not be judged. */
-export type EvaluationProblem = 'not-analysed' | 'no-band' | 'no-note' | 'too-little-voice' | 'not-measured' | 'unknown-exercise';
+export type EvaluationProblem = 'not-analysed' | 'no-band' | 'no-note' | 'too-little-voice' | 'not-measured' | 'too-little-whisper' | 'unknown-exercise';
 
 /** A drill, as data: what to do and why, how a take of it is judged, its sources. */
 export type Exercise = {
@@ -107,7 +108,7 @@ export type Exercise = {
 	mistakes: Record<string, string[]>;
 	why: Record<string, string>;
 	safety: Record<string, string>;
-	rule: NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule;
+	rule: NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule | WhisperRule;
 	sources: Source[];
 };
 
@@ -267,7 +268,7 @@ export type Reading = {
 };
 
 /** What a reading says in words: where the resonance sits, and what it cost. */
-export type ReadingNote = 'everyday' | 'darker' | 'brighter' | 'typical' | 'beyond' | 'r1-fell' | 'quieter' | 'less-clear';
+export type ReadingNote = 'everyday' | 'darker' | 'brighter' | 'typical' | 'beyond' | 'r1-unreadable' | 'lighter' | 'heavier' | 'quieter' | 'less-clear';
 
 /** The learner's everyday voice for one kind of take on one microphone setup. */
 export type Reference = {
@@ -419,6 +420,32 @@ export type Target = {
 	note_hz: number | null;
 };
 
+/** A take moment by moment, ready to draw. Computed from its stored series, never stored. */
+export type Trace = {
+	start_s: number;
+	step_s: number;
+	rows: TraceRow[];
+	r1_unreadable: boolean[];
+	zero: TraceZero | null;
+	spans: TraceSpan[];
+};
+
+/** One measure of a take over time. */
+export type TraceRow = {
+	key: string;
+	values: (number | null)[];
+};
+
+/** A stretch of a take that is one thing: a held sound, or a run of whispered seconds. */
+export type TraceSpan = {
+	start_s: number;
+	end_s: number;
+	kind: 'held' | 'whisper';
+};
+
+/** What the resonance rows of a trace are counted from. */
+export type TraceZero = 'first-sound' | 'first-whisper';
+
 /** One sustained vowel, or held sound, found in a take. */
 export type VowelSegment = {
 	start_s: number;
@@ -428,6 +455,23 @@ export type VowelSegment = {
 	formants_hz: number[];
 	cpps_db: number;
 	hnr_db: number;
+	h1h2_db: number | null;
+	r1_unreadable_pct: number | null;
+};
+
+/** A whispered slide read against its own start: did the resonances move. */
+export type WhisperRule = {
+	kind: 'whisper';
+	lead: number;
+	min_r1_pct: number;
+	min_bright_pct: number;
+};
+
+/** A stretch of a take that sounds without a voice: a whisper. */
+export type WhisperSpan = {
+	start_s: number;
+	duration_s: number;
+	formants_hz: number[];
 };
 
 /** A stretch of a measure's scale with a meaning, drawn on its strip. */

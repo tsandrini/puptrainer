@@ -50,3 +50,32 @@ def spacing(formants: list[float]) -> tuple[float, float]:
     x = np.array([(2 * i - 1) / 2 for i in range(1, len(formants) + 1)])
     value = float((x @ np.array(formants)) / (x @ x))
     return value, SPEED_OF_SOUND_CM_S / (2.0 * value)
+
+
+R1_MAX_LIGHTNESS_DB = 12.0
+"""From this lead of the fundamental over the second harmonic on, an F1 found by linear
+prediction is not the first resonance: the analysis is drawn to the fundamental, or to a
+harmonic near where the resonance was (it read 290-470 Hz on a held "ah" whose F1 had
+been 640 Hz a moment before, at 14-17 dB)."""
+R1_MAX_UNREADABLE_PCT = 25.0
+"""From this share of frames whose F1 cannot be told from the pitch on, a take's median
+F1 follows the pitch: the learner's everyday speech has 4-19%, their attempts 33-49%."""
+PITCH_RATIO = 1.25
+"""An F1 below this many times the pitch is the pitch itself."""
+
+
+def r1_readable(lightness_db: float | None, unreadable_pct: float | None) -> bool:
+    """Whether the first resonance of a sound, as linear prediction reads it, can be trusted.
+
+    Args:
+        lightness_db: How far the fundamental stands above the second harmonic.
+        unreadable_pct: The share of the sound's frames whose F1 cannot be told from the
+            pitch.
+
+    Returns:
+        False when either says the reading follows the pitch; a value that was not
+        measured (an older analysis) is given the benefit of the doubt.
+    """
+    light = lightness_db is not None and lightness_db >= R1_MAX_LIGHTNESS_DB
+    blurred = unreadable_pct is not None and unreadable_pct >= R1_MAX_UNREADABLE_PCT
+    return not (light or blurred)

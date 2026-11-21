@@ -14,7 +14,7 @@ from datetime import datetime
 
 import numpy as np
 
-from puptrainer.core.acoustics import BRIGHT, semitones
+from puptrainer.core.acoustics import BRIGHT, r1_readable, semitones
 from puptrainer.core.schemas import (
     Basis,
     Item,
@@ -43,7 +43,9 @@ tables of Hillenbrand et al. (1995). A convention to read a shift by, not a thre
 the learner's own everyday voice need not be the average man's."""
 R1_TYPICAL_PCT = (8.0, 29.0)
 """The same for F1 (17% in the middle)."""
-R1_DROP_PCT = 8.0
+LIGHTER_DB = 3.0
+"""A lead of the fundamental this much above the everyday one is called lighter (the
+everyday takes of one text lie within about a decibel of each other)."""
 QUIETER_DB = 3.0
 LESS_CLEAR_DB = 2.0
 
@@ -67,6 +69,7 @@ READING_MEASURES: tuple[MeasureDef, ...] = (
             Zone(key="beyond", low=R1_TYPICAL_PCT[1]),
         ],
     ),
+    MeasureDef(key="lightness_shift_db", unit="dB", decimals=1),
     MeasureDef(key="level_shift_db", unit="dB", decimals=1),
     MeasureDef(key="clarity_shift_db", unit="dB", decimals=1),
 )
@@ -184,12 +187,13 @@ def read(take: Voice, everyday: Sequence[Voice]) -> Reading | None:
 
     Returns:
         The take's distance from the everyday voice in pitch, brightness (F2 to F4), the
-        first resonance, level and clarity, with the scatter of the everyday takes
-        themselves and what the resonance numbers amount to in words. The resonance
-        numbers are left out when the everyday takes are of other words (`Basis.SPEECH`):
-        an "awww" reads a sixth darker than a sentence for its vowels alone. `None` when
-        the take is of a kind that is not read (a glide, a held drill), or nothing of it
-        could be compared.
+        first resonance, lightness, level and clarity, with the scatter of the everyday
+        takes themselves and what the numbers amount to in words. The resonance numbers
+        and the lightness are left out when the everyday takes are of other words
+        (`Basis.SPEECH`): an "awww" reads a sixth darker than a sentence for its vowels
+        alone. The first resonance is left out, with a note, when the take's voice is too
+        light and high for it to be read (`r1_readable`). `None` when the take is of a
+        kind that is not read (a glide, a held drill), or nothing of it could be compared.
     """
     if take.item == Item.SUSTAIN:
         return None
@@ -206,7 +210,8 @@ def read(take: Voice, everyday: Sequence[Voice]) -> Reading | None:
         scatter = [other[key][0] for other in others if key in other]
         wobble = float(np.std(scatter, ddof=1)) if len(scatter) >= MIN_WOBBLE_TAKES else None
         shifts.append(Shift(key=key, value=value, everyday=base, wobble=wobble))
-    return Reading(basis=basis, takes=len(takes), shifts=shifts, notes=_notes(shifts))
+    unreadable = "brightness_pct" in mine and "r1_shift_pct" not in mine
+    return Reading(basis=basis, takes=len(takes), shifts=shifts, notes=_notes(shifts, unreadable))
 
 
 def _numbers(
@@ -224,13 +229,20 @@ def _numbers(
         if shared:
             ratios = np.array([np.divide(mine[v], ref.vowels[v]) for v in shared])
             out["brightness_pct"] = (_percent(_geomean(ratios[:, BRIGHT].ravel())), None)
-            out["r1_shift_pct"] = (_percent(_geomean(ratios[:, 0])), None)
+            held = [s for s in take.vowels if s.vowel in shared]
+            if all(r1_readable(s.h1h2_db, s.r1_unreadable_pct) for s in held):
+                out["r1_shift_pct"] = (_percent(_geomean(ratios[:, 0])), None)
         return out
     if basis != Basis.SPEECH and all(key in take.metrics for key in FORMANT_KEYS):
         ratios = np.divide([take.metrics[key] for key in FORMANT_KEYS], ref.formants_hz)
         out["brightness_pct"] = (_percent(_geomean(ratios[BRIGHT])), None)
-        out["r1_shift_pct"] = (_percent(float(ratios[0])), ref.formants_hz[0])
-    for key, metric in (("level_shift_db", "speech_level_dbfs"), ("clarity_shift_db", "cpps_db")):
+        if r1_readable(take.metrics.get("lightness_db"), take.metrics.get("r1_unreadable_pct")):
+            out["r1_shift_pct"] = (_percent(float(ratios[0])), ref.formants_hz[0])
+    compared = [("level_shift_db", "speech_level_dbfs"), ("clarity_shift_db", "cpps_db")]
+    if basis != Basis.SPEECH:
+        # NOTE: like the formants, the lead of the fundamental follows the vowels
+        compared.insert(0, ("lightness_shift_db", "lightness_db"))
+    for key, metric in compared:
         values = [v.metrics[metric] for v in takes if metric in v.metrics]
         if metric in take.metrics and values:
             base = float(np.mean(values))
@@ -238,7 +250,7 @@ def _numbers(
     return out
 
 
-def _notes(shifts: Sequence[Shift]) -> list[ReadingNote]:
+def _notes(shifts: Sequence[Shift], r1_unreadable: bool = False) -> list[ReadingNote]:
     by_key = {shift.key: shift for shift in shifts}
     notes: list[ReadingNote] = []
     bright = by_key.get("brightness_pct")
@@ -254,9 +266,13 @@ def _notes(shifts: Sequence[Shift]) -> list[ReadingNote]:
             notes.append(ReadingNote.TYPICAL)
         else:
             notes.append(ReadingNote.BEYOND)
-        first = by_key.get("r1_shift_pct")
-        if bright.value > slack and first is not None and first.value <= -R1_DROP_PCT:
-            notes.append(ReadingNote.R1_FELL)
+    if r1_unreadable:
+        notes.append(ReadingNote.R1_UNREADABLE)
+    lightness = by_key.get("lightness_shift_db")
+    if lightness is not None and lightness.value >= LIGHTER_DB:
+        notes.append(ReadingNote.LIGHTER)
+    elif lightness is not None and lightness.value <= -LIGHTER_DB:
+        notes.append(ReadingNote.HEAVIER)
     level = by_key.get("level_shift_db")
     if level is not None and level.value <= -QUIETER_DB:
         notes.append(ReadingNote.QUIETER)

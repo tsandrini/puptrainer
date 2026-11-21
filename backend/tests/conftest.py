@@ -89,12 +89,14 @@ def vowel(
     noise: float = 0.0,
     wobble: float = 0.05,
     sample_rate: int = SAMPLE_RATE,
+    lead_db: float = 0.0,
 ) -> np.ndarray:
     """A synthetic vowel: harmonics of a slowly moving `f0` shaped by resonances.
 
     The given formants are continued upwards at the spacing of the last two, as a tube's
     are; without them the spectrum falls off far more steeply than a voice's. `noise`
-    adds breath.
+    adds breath; `lead_db` raises the fundamental over the other harmonics, as a light
+    voice does.
     """
     t = np.arange(int(seconds * sample_rate)) / sample_rate
     pitch = f0 * (1 + wobble * np.sin(2 * np.pi * 1.3 * t))
@@ -107,6 +109,8 @@ def vowel(
     for k in range(1, int(8000 / (f0 * (1 + wobble))) + 1):
         f = k * pitch
         gain = 1.0 / k  # the source falls off by 6 dB per octave
+        if k == 1:
+            gain *= 10 ** (lead_db / 20)
         for centre in resonances:
             width = 80.0 + 0.02 * centre
             gain = gain / np.sqrt((1 - (f / centre) ** 2) ** 2 + (f * width / centre**2) ** 2)
@@ -116,3 +120,33 @@ def vowel(
         x = x + noise * np.random.default_rng(7).standard_normal(len(x))
         x /= np.abs(x).max()
     return amplitude * x
+
+
+def whisper(
+    formants: tuple[float, ...],
+    seconds: float = 3.0,
+    amplitude: float = 0.05,
+    puff_s: float = 0.25,
+    gap_s: float = 0.25,
+    seed: int = 3,
+    sample_rate: int = SAMPLE_RATE,
+) -> np.ndarray:
+    """A synthetic whisper: noise shaped by resonances, in puffs with silence between.
+
+    The formants are continued upwards as in `vowel`.
+    """
+    count = int(seconds * sample_rate)
+    resonances = list(formants)
+    step = resonances[-1] - resonances[-2]
+    while resonances[-1] + step < 20000:
+        resonances.append(resonances[-1] + step)
+    freqs = np.fft.rfftfreq(count, 1.0 / sample_rate)
+    gain = 1.0 / np.maximum(freqs, 100.0) ** 0.5
+    for centre in resonances:
+        width = 80.0 + 0.02 * centre
+        gain = gain / np.sqrt((1 - (freqs / centre) ** 2) ** 2 + (freqs * width / centre**2) ** 2)
+    noise = np.random.default_rng(seed).standard_normal(count)
+    x = np.fft.irfft(np.fft.rfft(noise) * gain, count)
+    t = np.arange(count) / sample_rate
+    x *= ((t % (puff_s + gap_s)) < puff_s).astype(float)
+    return amplitude * x / np.abs(x).max()

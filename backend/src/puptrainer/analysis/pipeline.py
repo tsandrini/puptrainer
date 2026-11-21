@@ -1,4 +1,6 @@
-"""Pipeline 0.3: recording quality, pitch, resonance, voice quality, range, held sounds.
+"""Pipeline 0.4: what a take measures, as single numbers and frame by frame.
+
+Recording quality, pitch, resonance, voice quality, range, held sounds and whispers.
 
 Every key returned here is in `puptrainer.core.metrics.REGISTRY`. A metric that cannot
 be measured (pitch of a silent take) is left out, never reported as a placeholder.
@@ -12,9 +14,9 @@ import parselmouth
 from parselmouth.praat import call
 
 from puptrainer.core.acoustics import semitones, spacing
-from puptrainer.core.schemas import Details, Item, Series, VowelSegment
+from puptrainer.core.schemas import Details, Item, Series, VowelSegment, WhisperSpan
 
-PIPELINE_VERSION = "0.3.1"
+PIPELINE_VERSION = "0.4.0"
 
 TIME_STEP_S = 0.01
 FRAME_S = 0.02
@@ -53,6 +55,30 @@ OCTAVE_ERROR_ST = (11.3, 12.7)
 BREAK_GAP_S = 0.05
 BREAK_MERGE_S = 0.25
 SPEECH_ITEMS = (Item.PHRASE, Item.PASSAGE, Item.FREE, Item.OTHER)
+# NOTE: the stored traces keep every second frame of the pitch track
+TRACE_EVERY = 2
+LEVEL_WINDOW_S = 0.03
+SOURCE_WINDOW_S = 0.05
+# NOTE: outside a held sound there is no fit to go by (a whisper, a short voiced bit of a
+# drill): Praat's ceiling for a shorter tract, which is also what the live view uses
+LOOSE_CEILING_HZ = 5500.0
+# NOTE: linear prediction puts its lowest peak on the fundamental, or between it and the
+# first resonance, when the fundamental stands far above the harmonics over it (a light
+# voice at a raised pitch). An F1 below 1.25 times the pitch is the pitch; one below
+# 1.75 times the pitch under a fundamental that leads by 12 dB cannot be told from it.
+# On the owner's takes: everyday speech 4-19% of the vowel frames, attempts 33-49%
+PITCH_RATIO = 1.25
+NEAR_RATIO = 1.75
+DOMINANT_DB = 12.0
+# NOTE: a whisper comes in puffs: the frames within 15 dB of its loudest, well clear of
+# the room, are the sound; a second with fewer than eight of them is not measured
+WHISPER_GATE_DB = 15.0
+WHISPER_CLEAR_DB = 12.0
+# NOTE: the frames where a voice starts and stops are loud and unvoiced: not a whisper
+WHISPER_EDGE_FRAMES = 3
+WHISPER_MIN_SHARE = 0.2
+WHISPER_SPAN_S = 1.0
+WHISPER_MIN_FRAMES = 8
 
 
 @dataclass
@@ -251,7 +277,7 @@ def glide_metrics(pitch: PitchTrack) -> dict[str, float]:
 
 def formant_fit(
     sound: parselmouth.Sound, groups: list[np.ndarray]
-) -> tuple[list[list[float]], list[float]] | None:
+) -> tuple[list[list[float]], list[float], float] | None:
     """Median F1 to F4 of groups of frames, with the analysis ceiling fitted to the voice.
 
     Burg's method finds five formants below a ceiling, so the ceiling has to sit where
@@ -268,8 +294,9 @@ def formant_fit(
             or the steady middle of each sustained vowel.
 
     Returns:
-        The medians per group and their mean over the groups (four frequencies in Hz
-        each), or `None` when no run finds all four formants in ten frames of every group.
+        The medians per group, their mean over the groups (four frequencies in Hz each)
+        and the ceiling they were read at, or `None` when no run finds all four formants
+        in ten frames of every group.
     """
     runs: list[tuple[float, np.ndarray, float, float]] = []  # ceiling, medians, gap, width
     for ceiling in FORMANT_CEILINGS_HZ:
@@ -304,43 +331,61 @@ def formant_fit(
         adjacent = upper[0] - lower[0] <= CEILING_STEP_HZ
         if adjacent and lower[2] <= 0 <= upper[2] and lower[2] != upper[2]:
             weight = -lower[2] / (upper[2] - lower[2])
-            crossings.append((max(lower[3], upper[3]), lower[1] + weight * (upper[1] - lower[1])))
+            crossings.append(
+                (
+                    max(lower[3], upper[3]),
+                    lower[1] + weight * (upper[1] - lower[1]),
+                    lower[0] + weight * (upper[0] - lower[0]),
+                )
+            )
     if crossings:
-        medians = min(crossings, key=lambda crossing: crossing[0])[1]
+        _, medians, ceiling = min(crossings, key=lambda crossing: crossing[0])
     else:
-        medians = min(sound_runs, key=lambda run: abs(run[2]) / run[0])[1]
+        ceiling, medians, _, _ = min(sound_runs, key=lambda run: abs(run[2]) / run[0])
     per_group = [[float(v) for v in row] for row in medians]
-    return per_group, [float(v) for v in np.mean(medians, axis=0)]
+    return per_group, [float(v) for v in np.mean(medians, axis=0)], float(ceiling)
 
 
-def resonance_metrics(sound: parselmouth.Sound, pitch: PitchTrack, item: Item) -> dict[str, float]:
-    """Median formants of the voiced, louder frames, their spacing and the tract length.
+def louder_voiced(sound: parselmouth.Sound, pitch: PitchTrack) -> np.ndarray:
+    """Which frames of the pitch track are voiced and among the louder ones: the vowels.
 
-    Frames count when they are voiced, at least as loud as the take's 60th intensity
-    percentile, which keeps vowels and drops most consonants, and not above 300 Hz in
-    pitch, where formants cannot be measured.
+    A frame counts when it is voiced and at least as loud as the take's 60th intensity
+    percentile, which keeps vowels and drops most consonants.
     """
     intensity = sound.to_intensity(minimum_pitch=75.0, time_step=TIME_STEP_S)
     threshold = float(np.percentile(intensity.values[0], 60))
-    times = np.array(
+    return np.array(
         [
-            t
+            f > 0 and (intensity.get_value(float(t)) or -np.inf) >= threshold
             for t, f in zip(pitch.times, pitch.values, strict=True)
-            if 0 < f <= FORMANT_MAX_F0_HZ
-            and (intensity.get_value(float(t)) or -np.inf) >= threshold
-        ]
+        ],
+        dtype=bool,
     )
+
+
+def resonance_metrics(
+    sound: parselmouth.Sound, pitch: PitchTrack, item: Item, vowels: np.ndarray
+) -> tuple[dict[str, float], float | None]:
+    """Median formants of the voiced, louder frames, their spacing and the tract length.
+
+    Of the louder voiced frames (`vowels`, see `louder_voiced`) those count that are not
+    above 300 Hz in pitch, where formants cannot be measured.
+
+    Returns:
+        The metrics, and the ceiling the formants were read at (`None` without any).
+    """
+    times = pitch.times[vowels & (pitch.values <= FORMANT_MAX_F0_HZ)]
     if len(times) < MIN_VOICED_FRAMES:
-        return {}
+        return {}, None
     fit = formant_fit(sound, [times])
     if fit is None:
-        return {}
+        return {}, None
     formants = fit[1]
     width, length = spacing(formants)
     out = {"formant_spacing_hz": width, "vtl_cm": length}
     if item != Item.VOWELS:
         out |= {f"f{i}_median_hz": value for i, value in enumerate(formants, start=1)}
-    return out
+    return out, fit[2]
 
 
 def voiced_only(sound: parselmouth.Sound, pitch: PitchTrack) -> parselmouth.Sound | None:
@@ -388,7 +433,7 @@ def quality_metrics(voiced: parselmouth.Sound) -> dict[str, float]:
 
 def vowel_segments(
     sound: parselmouth.Sound, pitch: PitchTrack, classify: bool = True
-) -> tuple[list[VowelSegment], list[float] | None]:
+) -> tuple[list[VowelSegment], list[float] | None, list[float | None]]:
     """The sustained vowels, or held sounds, of a take: voiced stretches of at least 1.5 s.
 
     Each is measured over its steady middle (the central 60%). For the vowels of one
@@ -404,8 +449,9 @@ def vowel_segments(
         classify: Guess which vowel each is; off for held sounds that need not be a, i, u.
 
     Returns:
-        The segments in order, and the mean of the formants of those that could be
-        measured (`None` without any).
+        The segments in order, the mean of the formants of those that could be measured
+        (`None` without any), and the ceiling each segment's formants were read at (`None`
+        for one without formants).
     """
     values, times = pitch.values, pitch.times
     runs: list[tuple[int, int]] = []
@@ -428,7 +474,7 @@ def vowel_segments(
         if duration >= MIN_VOWEL_S:
             middles.append((begin, duration, begin + 0.2 * duration, finish - 0.2 * duration))
     if not middles:
-        return [], None
+        return [], None, []
     pitches = []
     for _, _, a, b in middles:
         inside = values[(times >= a) & (times <= b)]
@@ -440,17 +486,19 @@ def vowel_segments(
         if 0 < pitches[index] <= FORMANT_MAX_F0_HZ
     }
     formants: dict[int, list[float]] = {}
+    ceilings: dict[int, float] = {}
     if classify and groups:
         fit = formant_fit(sound, list(groups.values()))
         if fit is not None:
             formants = dict(zip(groups, fit[0], strict=True))
+            ceilings = dict.fromkeys(groups, fit[2])
     else:
         for index, group in groups.items():
             fit = formant_fit(sound, [group])
             if fit is not None:
-                formants[index] = fit[1]
+                formants[index], ceilings[index] = fit[1], fit[2]
     if classify and not formants:
-        return [], None
+        return [], None, []
     segments = []
     for index, (begin, duration, a, b) in enumerate(middles):
         quality = quality_metrics(sound.extract_part(a, b))
@@ -469,10 +517,250 @@ def vowel_segments(
                 hnr_db=quality.get("hnr_db", 0.0),
             )
         )
+    read_at = [ceilings.get(index) for index in range(len(middles))]
     if classify:
+        read_at = [c for c, segment in zip(read_at, segments, strict=True) if segment.formants_hz]
         segments = [segment for segment in segments if segment.formants_hz]
     mean = [float(v) for v in np.mean(list(formants.values()), axis=0)] if formants else None
-    return segments, mean
+    return segments, mean, read_at
+
+
+@dataclass
+class Tracks:
+    """A take frame by frame, on the times of its pitch track.
+
+    Attributes:
+        level: Level of each frame in dBFS (RMS over 30 ms).
+        formants: F1 to F4 of each frame, one row per frame; NaN where none were read.
+        lead: How far the fundamental stands above the second harmonic, in dB; NaN where
+            unvoiced, and on the frames the stored traces skip.
+        cpp: Cepstral peak prominence of the same frames, in dB.
+    """
+
+    level: np.ndarray
+    formants: np.ndarray
+    lead: np.ndarray
+    cpp: np.ndarray
+
+
+def frame_levels(samples: np.ndarray, sample_rate: float, times: np.ndarray) -> np.ndarray:
+    """The level around each time: RMS over 30 ms, in dBFS, floored at -120."""
+    half = int(LEVEL_WINDOW_S * sample_rate / 2)
+    power = np.concatenate([[0.0], np.cumsum(np.asarray(samples, dtype=float) ** 2)])
+    centre = (times * sample_rate).astype(int)
+    first = np.clip(centre - half, 0, len(samples))
+    last = np.clip(centre + half, 0, len(samples))
+    mean = (power[last] - power[first]) / np.maximum(last - first, 1)
+    return 10.0 * np.log10(np.maximum(mean, 1e-12))
+
+
+def formant_frames(sound: parselmouth.Sound, times: np.ndarray, ceiling: float) -> np.ndarray:
+    """F1 to F4 at each time, read below `ceiling`; a row is NaN unless all four exist."""
+    formant = sound.to_formant_burg(
+        time_step=TIME_STEP_S, max_number_of_formants=5, maximum_formant=ceiling
+    )
+    rows = np.array(
+        [[formant.get_value_at_time(k, float(t)) for k in (1, 2, 3, 4)] for t in times]
+    ).reshape(len(times), 4)
+    rows[np.isnan(rows).any(axis=1)] = np.nan
+    return rows
+
+
+def source_frames(
+    samples: np.ndarray, sample_rate: float, times: np.ndarray, pitch: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """What the spectrum of each voiced frame says about the source of the voice.
+
+    From a 50 ms window around each time: how far the fundamental stands above the second
+    harmonic (uncorrected: a first resonance close to either harmonic shifts it, so it is
+    compared on the same sound or the same words only), and the cepstral peak prominence
+    (the height of the cepstrum's peak at the pitch period above its trend between 1 and
+    20 ms), which falls when breath or roughness blur the harmonics.
+
+    Args:
+        samples: The take, mono.
+        sample_rate: Samples per second.
+        times: Frame times.
+        pitch: The pitch at each time, 0 where unvoiced.
+
+    Returns:
+        The two values per frame, NaN where unvoiced or too close to an end of the take.
+    """
+    size = int(SOURCE_WINDOW_S * sample_rate)
+    padded = 1 << int(np.ceil(np.log2(4 * size)))
+    window = np.hanning(size)
+    freqs = np.fft.rfftfreq(padded, 1.0 / sample_rate)
+    quefrency = np.arange(padded // 2) / sample_rate
+    trend = (quefrency >= 0.001) & (quefrency <= 0.02)
+    design = np.vstack([quefrency[trend], np.ones(int(trend.sum()))]).T
+    solve = np.linalg.pinv(design)
+    lead = np.full(len(times), np.nan)
+    cpp = np.full(len(times), np.nan)
+    for index in np.flatnonzero(pitch > 0):
+        start = int(times[index] * sample_rate) - size // 2
+        if start < 0 or start + size > len(samples):
+            continue
+        spectrum = np.abs(np.fft.rfft(samples[start : start + size] * window, padded))
+
+        def peak(centre: float, spectrum: np.ndarray = spectrum) -> float:
+            low, high = np.searchsorted(freqs, [0.9 * centre, 1.1 * centre])
+            return float(spectrum[low : max(high, low + 1)].max())
+
+        first, second = peak(pitch[index]), peak(2.0 * pitch[index])
+        if first > 0 and second > 0:
+            lead[index] = 20.0 * np.log10(first / second)
+        cepstrum = np.fft.irfft(2.0 * np.log(np.maximum(spectrum, 1e-12)))[: padded // 2]
+        levels = 20.0 * np.log10(np.maximum(np.abs(cepstrum), 1e-12))
+        period = 1.0 / pitch[index]
+        low, high = np.searchsorted(quefrency, [period / 1.1, period * 1.1])
+        if low >= len(levels) or not trend.any():
+            continue
+        at = low + int(np.argmax(levels[low : max(high, low + 1)]))
+        slope, offset = solve @ levels[trend]
+        cpp[index] = levels[at] - (slope * quefrency[at] + offset)
+    return lead, cpp
+
+
+def measure_tracks(
+    sound: parselmouth.Sound,
+    pitch: PitchTrack,
+    item: Item,
+    ceiling: float | None,
+    segments: list[VowelSegment],
+    ceilings: list[float | None],
+) -> Tracks:
+    """Measure a take frame by frame.
+
+    Formants are read on the voiced frames up to 300 Hz of pitch: for speech and a set of
+    vowels at the ceiling fitted to the take, inside a held sound of a `sustain` take at
+    that sound's own. Everything else of a `sustain` take (a whisper, a short voiced bit)
+    is read at 5500 Hz, on the frames that sound (see `whisper_frames`).
+
+    Args:
+        sound: The take, mono.
+        pitch: Its pitch track.
+        item: What the take contains.
+        ceiling: The ceiling fitted to the take (speech, vowels); `None` without one.
+        segments: The held sounds of the take.
+        ceilings: The ceiling of each held sound; `None` for one without formants.
+    """
+    samples, rate = sound.values[0], sound.sampling_frequency
+    times, values = pitch.times, pitch.values
+    level = frame_levels(samples, rate, times)
+    formants = np.full((len(times), 4), np.nan)
+    readable = voiced_frames(values)
+    if item == Item.SUSTAIN:
+        loose = readable | whisper_frames(level, values)
+        for segment, read_at in zip(segments, ceilings, strict=True):
+            inside = (times >= segment.start_s) & (times <= segment.start_s + segment.duration_s)
+            loose &= ~inside
+            if read_at is not None:
+                chosen = inside & readable
+                formants[chosen] = formant_frames(sound, times[chosen], read_at)
+        if loose.any():
+            formants[loose] = formant_frames(sound, times[loose], LOOSE_CEILING_HZ)
+    elif ceiling is not None and readable.any():
+        formants[readable] = formant_frames(sound, times[readable], ceiling)
+    kept = np.zeros(len(times), dtype=bool)
+    kept[::TRACE_EVERY] = True
+    lead, cpp = source_frames(samples, rate, times, np.where(kept, values, 0.0))
+    return Tracks(level=level, formants=formants, lead=lead, cpp=cpp)
+
+
+def voiced_frames(pitch: np.ndarray) -> np.ndarray:
+    """Which frames carry a voice whose resonances can be read: a pitch up to 300 Hz.
+
+    Noise now and then reads as a "pitch" of several hundred Hz; in a take that may be a
+    whisper such frames are noise.
+    """
+    return (pitch > 0) & (pitch <= FORMANT_MAX_F0_HZ)
+
+
+def whisper_frames(level: np.ndarray, pitch: np.ndarray) -> np.ndarray:
+    """Which unvoiced frames sound: within 15 dB of the loudest of them, clear of the room.
+
+    The loudest is the 98th percentile of the unvoiced frames' levels; the room is the 5th
+    percentile of all frames, and a frame has to stand 12 dB above it, so the steady noise
+    of a silent stretch never counts. The three frames either side of a voiced stretch are
+    left out: there a voice starts or stops.
+    """
+    voiced = voiced_frames(pitch)
+    near = voiced.copy()
+    for shift in range(1, WHISPER_EDGE_FRAMES + 1):
+        near[shift:] |= voiced[:-shift]
+        near[:-shift] |= voiced[shift:]
+    unvoiced = ~near
+    if not unvoiced.any():
+        return unvoiced
+    top = float(np.percentile(level[unvoiced], 98))
+    floor = float(np.percentile(level, 5))
+    return unvoiced & (level >= top - WHISPER_GATE_DB) & (level >= floor + WHISPER_CLEAR_DB)
+
+
+def whisper_spans(times: np.ndarray, pitch: np.ndarray, tracks: Tracks) -> list[WhisperSpan]:
+    """The whispered seconds of a take: where it sounds without a voice.
+
+    A take counts as whispered when at least a fifth of its sounding frames (voiced, or
+    unvoiced and sounding) are unvoiced; a voiced take's breaths stay below that. Each
+    second with at least eight whispered frames whose formants were found is reported
+    with their median.
+    """
+    found = ~np.isnan(tracks.formants).any(axis=1)
+    whispered = whisper_frames(tracks.level, pitch) & found
+    sounding = int(whispered.sum()) + int(voiced_frames(pitch).sum())
+    if not sounding or whispered.sum() < WHISPER_MIN_SHARE * sounding:
+        return []
+    spans = []
+    for start in np.arange(0.0, float(times[-1]), WHISPER_SPAN_S):
+        chosen = whispered & (times >= start) & (times < start + WHISPER_SPAN_S)
+        if chosen.sum() >= WHISPER_MIN_FRAMES:
+            spans.append(
+                WhisperSpan(
+                    start_s=float(start),
+                    duration_s=WHISPER_SPAN_S,
+                    formants_hz=[float(v) for v in np.median(tracks.formants[chosen], axis=0)],
+                )
+            )
+    return spans
+
+
+def unreadable_share(formants: np.ndarray, pitch: np.ndarray, lead: np.ndarray) -> float | None:
+    """The share of frames, in percent, whose F1 cannot be told from the pitch.
+
+    A frame counts when its F1 lies below 1.25 times the pitch, or below 1.75 times the
+    pitch while the fundamental leads the second harmonic by 12 dB or more: there the
+    analysis has found the fundamental, or a point between it and the first resonance.
+
+    Args:
+        formants: F1 to F4 per frame.
+        pitch: The pitch of the same frames.
+        lead: How far the fundamental stands above the second harmonic in each.
+
+    Returns:
+        The share among the frames that have all three; `None` with fewer than ten.
+    """
+    found = ~np.isnan(formants[:, 0]) & (pitch > 0) & ~np.isnan(lead)
+    if found.sum() < MIN_VOICED_FRAMES:
+        return None
+    ratio = formants[found, 0] / pitch[found]
+    doubtful = (ratio < PITCH_RATIO) | ((ratio < NEAR_RATIO) & (lead[found] >= DOMINANT_DB))
+    return 100.0 * float(doubtful.mean())
+
+
+def median_of(values: np.ndarray) -> float | None:
+    """The median of the values that were measured; `None` with fewer than ten."""
+    kept = values[~np.isnan(values)]
+    return float(np.median(kept)) if len(kept) >= MIN_VOICED_FRAMES else None
+
+
+def stored(times: np.ndarray, values: np.ndarray, decimals: int) -> Series:
+    """A track as it is stored: every second frame, rounded, `None` where unmeasured."""
+    kept = values[::TRACE_EVERY]
+    return Series(
+        start_s=float(times[0]),
+        step_s=TIME_STEP_S * TRACE_EVERY,
+        values=[None if np.isnan(v) else round(float(v), decimals) for v in kept],
+    )
 
 
 def analyse(path: Path, item: Item) -> Analysis:
@@ -505,27 +793,76 @@ def analyse(path: Path, item: Item) -> Analysis:
         step_s=TIME_STEP_S,
         values=[round(float(v), 1) if v > 0 else None for v in pitch.values],
     )
-    if len(pitch.voiced) < MIN_VOICED_FRAMES:
-        return result
-
+    times, values = pitch.times, pitch.values
+    has_voice = len(pitch.voiced) >= MIN_VOICED_FRAMES
     if item == Item.GLIDE:
-        result.metrics |= glide_metrics(pitch)
+        if has_voice:
+            result.metrics |= glide_metrics(pitch)
+        return result
+    if not len(times):
+        return result
+    if not has_voice and item != Item.SUSTAIN:
+        # nothing to measure but how loud it was; a `sustain` take may be a whisper
+        result.series["level_db"] = stored(
+            times, frame_levels(samples, sound.sampling_frequency, times), 1
+        )
         return result
 
-    if item in (Item.VOWELS, Item.SUSTAIN):
-        segments, mean_formants = vowel_segments(sound, pitch, classify=item == Item.VOWELS)
+    segments: list[VowelSegment] = []
+    ceilings: list[float | None] = []
+    ceiling = None
+    vowels = louder_voiced(sound, pitch) if has_voice else np.zeros(len(times), dtype=bool)
+    if has_voice and item in (Item.VOWELS, Item.SUSTAIN):
+        segments, mean_formants, ceilings = vowel_segments(
+            sound, pitch, classify=item == Item.VOWELS
+        )
         if item == Item.VOWELS:
             result.details.vowels = segments
+            ceiling = next((c for c in ceilings if c is not None), None)
         else:
             result.details.segments = segments
         if mean_formants is not None:
             # the tract length of a set of vowels: the spacing of their mean formants
             width, length = spacing(mean_formants)
             result.metrics |= {"formant_spacing_hz": width, "vtl_cm": length}
-    else:
-        result.metrics |= resonance_metrics(sound, pitch, item)
+    elif has_voice:
+        found, ceiling = resonance_metrics(sound, pitch, item, vowels)
+        result.metrics |= found
 
     voiced = voiced_only(sound, pitch)
     if voiced is not None:
         result.metrics |= quality_metrics(voiced)
+
+    tracks = measure_tracks(sound, pitch, item, ceiling, segments, ceilings)
+    counted = vowels
+    if segments:
+        # held sounds are read over their steady middle, as their formants are
+        counted = np.zeros(len(times), dtype=bool)
+        for segment in segments:
+            first = segment.start_s + 0.2 * segment.duration_s
+            last = segment.start_s + 0.8 * segment.duration_s
+            middle = (times >= first) & (times <= last)
+            counted |= middle
+            lead = median_of(tracks.lead[middle])
+            segment.h1h2_db = lead
+            segment.r1_unreadable_pct = unreadable_share(
+                tracks.formants[middle], values[middle], tracks.lead[middle]
+            )
+    lightness = median_of(tracks.lead[counted])
+    if lightness is not None:
+        result.metrics["lightness_db"] = lightness
+    if item in SPEECH_ITEMS:
+        unreadable = unreadable_share(
+            tracks.formants[counted], values[counted], tracks.lead[counted]
+        )
+        if unreadable is not None:
+            result.metrics["r1_unreadable_pct"] = unreadable
+    if item == Item.SUSTAIN:
+        result.details.whisper = whisper_spans(times, values, tracks)
+    result.series["level_db"] = stored(times, tracks.level, 1)
+    if not np.isnan(tracks.formants).all():
+        for index in range(4):
+            result.series[f"f{index + 1}_hz"] = stored(times, tracks.formants[:, index], 0)
+    result.series["h1h2_db"] = stored(times, tracks.lead, 1)
+    result.series["cpp_db"] = stored(times, tracks.cpp, 1)
     return result

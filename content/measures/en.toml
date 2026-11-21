@@ -34,7 +34,7 @@ description = "How much higher the resonances F2 to F4 of the last held sound si
 
 [step_r1_pct]
 title = "R1, bright against ordinary"
-description = "How much higher the lowest resonance, F1, of the last held sound sits than that of the first. This is the number the resonance lesson is about: a smaller throat raises it. On a note above about 220 Hz it is rough, because few harmonics fall near it."
+description = "How much higher the lowest resonance, F1, of the last held sound sits than that of the first. This is the number the resonance lesson is about: a smaller throat raises it. It is left out when the voice of either sound is so light that the analysis finds the pitch instead (see “R1 not readable”)."
 
 [step_dark_pct]
 title = "Dark against ordinary"
@@ -43,6 +43,14 @@ description = "The same for the darkest sound in between: how far the other way 
 [step_drift_st]
 title = "Pitch drift"
 description = "How far apart the held sounds' pitches lie, in semitones."
+
+[whisper_r1_pct]
+title = "R1, small against big"
+description = "How much higher the lowest resonance, F1, sits in the smallest seconds of the whisper than in its first three seconds, the big position. A whisper has no pitch, so here the number can be trusted. For scale: women's F1 lies 8 to 29% above the average man's. More is not better: what counts is that it moves and that it stays easy."
+
+[whisper_bright_pct]
+title = "Upper resonances, small against big"
+description = "The same for F2 to F4, the brightness: how much higher they sit in the brightest seconds of the whisper than in its first three."
 
 # --- a take read against your own everyday voice (`puptrainer.core.reading`)
 
@@ -60,11 +68,15 @@ beyond = "children's voices"
 
 [r1_shift_pct]
 title = "First resonance (R1)"
-description = "How much higher the lowest resonance, F1, sits than in your everyday voice. A smaller throat raises it; a closed jaw, a quieter voice and sound through the nose lower it. For scale: women's F1 lies 8 to 29% above the average man's on the same vowel, 17% in the middle. In running speech it follows the jaw as much as the throat, so it says most on a held or whispered vowel."
+description = "How much higher the lowest resonance, F1, sits than in your everyday voice. A smaller throat raises it; a closed jaw, a quieter voice and sound through the nose lower it. For scale: women's F1 lies 8 to 29% above the average man's on the same vowel, 17% in the middle. In running speech it follows the jaw as much as the throat, so it says most on a held or whispered vowel. It is not shown for a take whose voice is too high and light to read it."
 
 [r1_shift_pct.zones]
 typical = "where women's voices sit"
 beyond = "children's voices"
+
+[lightness_shift_db]
+title = "Lightness"
+description = "How much further the fundamental stands above the second harmonic than in your everyday voice on the same words (H1–H2). Higher is a lighter, thinner source: the “weight” teachers speak of, going down. With a lower clarity beside it, part of it is air."
 
 [level_shift_db]
 title = "Loudness"

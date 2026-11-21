@@ -94,7 +94,7 @@ relates = "Přímo ani jeden cíl: skřípání je způsob, jakým hlasivky kmit
 title = "F1, medián"
 description = "Medián první rezonance hlasového traktu ve znělých, hlasitějších částech."
 note = "Závisí na tom, které samohlásky nahrávka obsahuje: porovnávejte jen nahrávky stejného textu."
-relates = "Rezonance: ta nejnižší, které učitelé říkají R1. Menší hrdlo ji zvedá, ale otevřená čelist také, kdežto zavřená čelist nebo tichý hlas ji snižují: čtěte ji na stejném textu a vedle F2 až F4."
+relates = "Rezonance: ta nejnižší, které učitelé říkají R1. Menší hrdlo ji zvedá, ale otevřená čelist také, kdežto zavřená čelist nebo tichý hlas ji snižují: čtěte ji na stejném textu a vedle F2 až F4. Ve vysokém, lehkém hlasu najde rozbor místo ní výšku hlasu: viz „R1 nečitelná“."
 
 [f2_median_hz]
 title = "F2, medián"
@@ -128,6 +128,12 @@ relates = "Rezonance: totéž číslo jako délka. Menší znamená jasnější;
 
 # --- kvalita hlasu
 
+[r1_unreadable_pct]
+title = "R1 nečitelná"
+description = "Podíl okamžiků samohlásek, ve kterých první rezonanci nelze odlišit od výšky hlasu: její čtení leží na výšce, nebo těsně nad ní, zatímco základní tón je mnohem silnější než harmonické nad ním."
+note = "Váš běžný hlas se drží kolem 5 až 20 %. Ve vyšším, lehčím hlasu podíl roste a od čtvrtiny se R1 nahrávky neukazuje: číslo by sledovalo výšku a lehkost hlasu, ne hrdlo."
+relates = "O měření, ne o hlasu: říká, zda se dá věřit první rezonanci (R1) této nahrávky. Jasu (F2 až F4) se to netýká."
+
 [cpps_db]
 title = "CPPS"
 description = "Vyhlazená výraznost kepstrálního vrcholu ve znělých částech: jak zřetelně periodický hlas je."
@@ -139,6 +145,12 @@ title = "Poměr harmonických složek k šumu"
 description = "Kolik ze znělého zvuku tvoří harmonické složky a kolik šum."
 note = "Snižuje ho dyšnost i šum v pozadí, takže potřebuje tichou nahrávku."
 relates = "Ani jeden cíl: podmínka pro oba. Tón, který zůstává čistý, když se výška a rezonance hýbou, ukazuje, že změna není vykoupena dechem ani tlakem."
+
+[lightness_db]
+title = "Lehkost"
+description = "O kolik základní tón převyšuje druhou harmonickou v samohláskách (H1–H2, medián): tvar vlny hlasivek. Hutný, bzučivý zdroj má silné harmonické a nízkou hodnotu; tenký, lehký je hlavně svůj základní tón a vychází vysoko."
+note = "Čtěte ji jen na stejném textu nebo na stejné držené samohlásce: první rezonance blízko jedné z obou harmonických ji posouvá. Není opravená o rezonance, berte ji tedy jako vodítko. Když vedle ní klesne čistota, je část lehkosti vzduch."
+relates = "Ani jeden cíl: tohle je „váha“, o které mluví učitelé, a trénuje se spolu s výškou. K lehčímu hlasu trénink obvykle míří; od 12 dB už první rezonanci (R1) nelze přečíst."
 
 [spectral_slope_db]
 title = "Sklon spektra"

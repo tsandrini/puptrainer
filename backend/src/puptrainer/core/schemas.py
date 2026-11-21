@@ -195,6 +195,7 @@ class EvaluationProblem(StrEnum):
     NO_NOTE = "no-note"
     TOO_LITTLE_VOICE = "too-little-voice"
     NOT_MEASURED = "not-measured"
+    TOO_LITTLE_WHISPER = "too-little-whisper"
     UNKNOWN_EXERCISE = "unknown-exercise"
 
 
@@ -228,6 +229,8 @@ class Advice(StrEnum):
     PITCH_MOVED = "pitch-moved"
     PITCH_TOO_HIGH = "pitch-too-high"
     NOT_BRIGHTER = "not-brighter"
+    R1_UNREADABLE = "r1-unreadable"
+    WHISPER_SAME = "whisper-same"
 
 
 class Evaluation(Schema):
@@ -309,7 +312,9 @@ class ReadingNote(StrEnum):
     BRIGHTER = "brighter"
     TYPICAL = "typical"
     BEYOND = "beyond"
-    R1_FELL = "r1-fell"
+    R1_UNREADABLE = "r1-unreadable"
+    LIGHTER = "lighter"
+    HEAVIER = "heavier"
     QUIETER = "quieter"
     LESS_CLEAR = "less-clear"
 
@@ -455,6 +460,10 @@ class VowelSegment(Schema):
             high for formants to be measured (above 300 Hz).
         cpps_db: Smoothed cepstral peak prominence of the steady middle.
         hnr_db: Harmonics-to-noise ratio of the steady middle.
+        h1h2_db: How far the fundamental stands above the second harmonic over the steady
+            middle (lightness); unset when it was not measured (an older analysis).
+        r1_unreadable_pct: The share of the steady middle's frames whose F1 cannot be told
+            from the pitch (see the metric of the same name); unset when not measured.
     """
 
     start_s: float
@@ -464,6 +473,77 @@ class VowelSegment(Schema):
     formants_hz: list[float]
     cpps_db: float
     hnr_db: float
+    h1h2_db: float | None = None
+    r1_unreadable_pct: float | None = None
+
+
+class WhisperSpan(Schema):
+    """A stretch of a take that sounds without a voice: a whisper.
+
+    Attributes:
+        start_s: Where it starts.
+        duration_s: How long it is (a second; the whisper inside comes in puffs).
+        formants_hz: F1 to F4, the median over its sounding frames.
+    """
+
+    start_s: float
+    duration_s: float
+    formants_hz: list[float]
+
+
+class TraceZero(StrEnum):
+    """What the resonance rows of a trace are counted from."""
+
+    FIRST_SOUND = "first-sound"
+    FIRST_WHISPER = "first-whisper"
+
+
+class TraceRow(Schema):
+    """One measure of a take over time.
+
+    Attributes:
+        key: `pitch_hz`, `brightness_pct`, `r1_pct`, `lightness_db`, `clarity_db` or
+            `level_db`.
+        values: One value per step of the trace; `None` where there is nothing to read.
+    """
+
+    key: str
+    values: list[float | None]
+
+
+class TraceSpan(Schema):
+    """A stretch of a take that is one thing: a held sound, or a run of whispered seconds.
+
+    Attributes:
+        start_s: Where it starts.
+        end_s: Where it ends.
+        kind: `held` or `whisper`.
+    """
+
+    start_s: float
+    end_s: float
+    kind: Literal["held", "whisper"]
+
+
+class Trace(Schema):
+    """A take moment by moment, ready to draw. Computed from its stored series, never stored.
+
+    Attributes:
+        start_s: Time of the first step.
+        step_s: Time between steps.
+        rows: The measures, in the order they are drawn.
+        r1_unreadable: Per step, whether the first resonance cannot be read there (the
+            voice is so light that the analysis finds the pitch); `r1_pct` is `None` there.
+        zero: What `brightness_pct` and `r1_pct` are counted from; unset without them.
+        spans: The held sounds and whispered stretches of the take, in order.
+    """
+
+    start_s: float
+    step_s: float
+    rows: list[TraceRow]
+    r1_unreadable: list[bool]
+    zero: TraceZero | None
+    spans: list[TraceSpan]
 
 
 class Details(Schema):
@@ -472,10 +552,13 @@ class Details(Schema):
     Attributes:
         vowels: The sustained vowels of a `vowels` take, in order.
         segments: The held sounds of a `sustain` take, in order.
+        whisper: The whispered seconds of a `sustain` take, in order; empty unless the
+            take is a whisper for a good part.
     """
 
     vowels: list[VowelSegment] = []
     segments: list[VowelSegment] = []
+    whisper: list[WhisperSpan] = []
 
 
 class TakeOut(Schema):
@@ -790,8 +873,28 @@ class StepsRule(Schema):
     min_bright_pct: float = Field(default=3.0, ge=0, le=50)
 
 
+class WhisperRule(Schema):
+    """A whispered slide read against its own start: did the resonances move.
+
+    The first `lead` whispered seconds are the big position. Of the seconds after them,
+    the three with the highest first resonance and the three with the highest upper
+    resonances are each summed up by their median. Met when both lie above the big
+    position by the given amounts: bars for "it moved", not for how far.
+
+    Attributes:
+        lead: Whispered seconds at the start that make the big position.
+        min_r1_pct: How much higher F1 has to sit.
+        min_bright_pct: How much higher F2 to F4 have to sit.
+    """
+
+    kind: Literal["whisper"]
+    lead: int = Field(default=3, ge=1, le=10)
+    min_r1_pct: float = Field(default=8.0, ge=0, le=100)
+    min_bright_pct: float = Field(default=5.0, ge=0, le=100)
+
+
 Rule = Annotated[
-    NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule,
+    NoRule | PitchBandRule | PitchHoldRule | MetricRule | StepsRule | WhisperRule,
     Field(discriminator="kind"),
 ]
 

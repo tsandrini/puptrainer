@@ -33,8 +33,8 @@ def test_worker_analyses_a_take(client: TestClient, device_id: int) -> None:
     assert health["pipeline_version"] == PIPELINE_VERSION
 
     # the contour is stored and served; a take of speech has no vowels or held sounds
-    assert done["series"] == ["pitch_hz"]
-    assert done["details"] == {"vowels": [], "segments": []}
+    assert {"pitch_hz", "level_db", "h1h2_db", "cpp_db"} <= set(done["series"])
+    assert done["details"] == {"vowels": [], "segments": [], "whisper": []}
     contour = client.get(f"/api/v1/takes/{take['id']}/series/pitch_hz").json()
     assert contour["step_s"] == pytest.approx(0.01)
     voiced = [v for v in contour["values"] if v is not None]
@@ -42,6 +42,21 @@ def test_worker_analyses_a_take(client: TestClient, device_id: int) -> None:
     assert len(voiced) > 150
     assert sorted(voiced)[len(voiced) // 2] == pytest.approx(170.0, abs=1.0)
     assert client.get(f"/api/v1/takes/{take['id']}/series/nope").status_code == 404
+
+    # the same series as rows over time, a value every tenth of a second
+    trace = client.get(f"/api/v1/takes/{take['id']}/trace").json()
+    assert trace["step_s"] == pytest.approx(0.1)
+    rows = {row["key"]: row["values"] for row in trace["rows"]}
+    assert {"pitch_hz", "lightness_db", "clarity_db", "level_db"} <= set(rows)
+    assert len(rows["pitch_hz"]) == 20
+    assert rows["pitch_hz"][10] == pytest.approx(170.0, abs=1.0)
+    assert (trace["zero"], trace["spans"]) == (None, [])
+    assert client.get("/api/v1/takes/nope/trace").status_code == 404
+
+
+def test_a_take_has_no_trace_before_it_is_analysed(client: TestClient, device_id: int) -> None:
+    take = upload(client, device_id).json()
+    assert client.get(f"/api/v1/takes/{take['id']}/trace").status_code == 404
 
 
 def test_requeue(client: TestClient, device_id: int) -> None:
@@ -64,7 +79,7 @@ def test_requeue(client: TestClient, device_id: int) -> None:
     run_once(client)
     # without a version, everything is queued again
     assert client.post("/api/v1/analysis/requeue").json() == {"queued": 2}
-    assert client.get(f"/api/v1/takes/{second['id']}").json()["series"] == ["pitch_hz"]
+    assert "pitch_hz" in client.get(f"/api/v1/takes/{second['id']}").json()["series"]
 
 
 def test_jobs_are_handed_out_once_and_in_order(client: TestClient, device_id: int) -> None:
