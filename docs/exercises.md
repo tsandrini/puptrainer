@@ -120,7 +120,7 @@ the learner's everyday takes of the same text (free speech from everyday
 free speech); without one it says what to record. On a held sound the
 zero can also be set by hand ("Set the zero here"), and the meter says
 which zero it has: the start of a take is not the everyday voice. Every
-guide comes with a graph of the last 15 seconds (pitch, brightness, R1,
+guide comes with a graph of the last 30 seconds (pitch, brightness, R1,
 lightness, loudness; without the resonance rows for `pitch`), and a held
 sound with a map of pitch against brightness. Live guidance is on while
 skills are new; fading it is the curriculum's job later (M4).
@@ -140,9 +140,10 @@ sounds meant to be light and high. The held sounds of `steps` are read
 against the first of them, the learner's ordinary one, in the same take:
 brightness and R1 of the last, and of the darkest in between. R1 is left
 out, with a sentence saying so, when the voice of either sound is too
-light for it to be read. A `whisper` take is read against its own first
-whispered seconds. Spoken exercises are read against the everyday take of
-their text (see Readings).
+light for it to be read, and nothing is compared when the resonances of
+the first or the last sound were not read steadily. A `whisper` take is
+read against its own first whispered seconds. Spoken exercises are read
+against the everyday take of their text (see Readings).
 
 | `kind`       | Takes         | Met when                                                                                                                           |
 | ------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |

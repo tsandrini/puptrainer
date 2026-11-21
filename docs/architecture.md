@@ -40,7 +40,7 @@ than the API and its storage.
   tell whether a drill is going right, so pitch steps show the band, the
   note and the live pitch while recording, and resonance steps the live
   resonance meter with the formants spectrogram; other steps show the level
-  only. Every step with a guide also draws the last 15 seconds as rows
+  only. Every step with a guide also draws the last 30 seconds as rows
   over time (`audio/live.ts`, `LiveTraces`), and a held sound a map of
   pitch against brightness. Always-on displays help the session and hurt
   what is kept, so fading them as skills settle belongs to the curriculum
@@ -169,6 +169,12 @@ Formants are not measured where the pitch is above 300 Hz: the harmonics
 then lie too far apart to show the vocal tract, and the analysis would
 report the harmonics themselves. The held sounds of a sustain take, which
 differ in length on purpose, are each fitted with a ceiling of their own.
+A held sound is one shape, so its upper formants stay within a few percent
+from frame to frame; a ceiling at which they scatter by more than 15% (the
+analysis splits a formant in two on some frames, or drops one) is left
+out of the fit, and each held sound stores its scatter. On a real take a
+ceiling picked by spacing alone read an "ah" as 579, 1126, 1347 and 2735
+Hz and every sound after it as 20–40% "brighter".
 
 **The first resonance and the pitch.** A frame's F1 cannot be told from
 the pitch when it lies below 1.25 times the pitch, or below 1.75 times the

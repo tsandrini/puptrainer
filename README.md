@@ -53,7 +53,7 @@ every rep, and a practice log. Voice exploration and lessons come next
 - **Shows resonance while you speak**: a live meter on the same strip,
   counted from your everyday takes or, for a held sound or a whisper, from
   the first sound of the take (or from wherever you set the zero). Beside
-  it the last 15 seconds roll by as a graph of pitch, brightness, R1,
+  it the last 30 seconds roll by as a graph of pitch, brightness, R1,
   lightness and loudness, and a held sound leaves a trail on a map of
   pitch against brightness: straight up is resonance without pitch.
 - **Says when a number cannot be read.** In a high, light voice the
@@ -174,7 +174,7 @@ cannot be recreated later.
    the common starting band (F3–A3). It is a tool you can move at any time,
    not a goal.
 2. **Start a session**: "Pitch" (about 5 minutes) or "Resonance" (about
-   6 minutes). Say how your voice feels; a hoarse voice is told to rest.
+   7 minutes). Say how your voice feels; a hoarse voice is told to rest.
 3. Each step explains what to do, why, when to stop, and links to the
    teacher's own material; one with several parts shows their order as a
    small diagram. "Try it first" runs the live guides without recording.
