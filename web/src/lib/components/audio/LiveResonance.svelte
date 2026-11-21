@@ -25,11 +25,30 @@
 		type Mode
 	} from '#lib/audio/formants.js';
 	import ShiftStrip from '#lib/components/app/ShiftStrip.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { fmtNumber, fmtSigned } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { SCALE } from '#lib/targets.js';
 
-	let { mode = 'voiced', zero }: { mode?: Mode; zero: Zero } = $props();
+	let {
+		mode = 'voiced',
+		zero,
+		base = $bindable(null),
+		set = $bindable(false),
+		blurred = false
+	}: {
+		mode?: Mode;
+		zero: Zero;
+		/** What the readings are counted from, for what is drawn beside the meter. */
+		base?: Formants | null;
+		/** The zero was set by hand (`rezero`), not taken from the take's first sound. */
+		set?: boolean;
+		/**
+		 * The voice is too light for its first resonance to be read (the live graph
+		 * measures that): R1 is then said to be unreadable, not shown as a number.
+		 */
+		blurred?: boolean;
+	} = $props();
 
 	/**
 	 * How much sound sets the zero of a take read against its own start. A whisper comes
@@ -51,6 +70,21 @@
 	let whole = $state<Shown | null>(null);
 	let heard = $state(0);
 	let high = $state(false);
+	/** A zero set by hand on a held sound: it replaces the take's first sound. */
+	let manual = $state.raw<Formants | null>(null);
+
+	// the everyday voice is a zero before the first block arrives
+	$effect(() => {
+		if (zero.from === 'everyday') base = zero.reference?.formants ?? null;
+	});
+
+	/** Puts the zero on the sound of the last second: what follows is counted from it. */
+	export function rezero(): void {
+		const here = tracker.recent(1);
+		if (!here || zero.from !== 'start') return;
+		manual = here;
+		set = true;
+	}
 
 	const against = (formants: Formants | null, base: Formants | null): Shown | null =>
 		formants && base
@@ -69,10 +103,13 @@
 		if (++blocks % EVERY) return;
 		heard = tracker.heard;
 		high = mode === 'voiced' && pitchHz !== null && pitchHz > MAX_PITCH_HZ;
-		const base =
-			zero.from === 'start' ? tracker.opening(START_S) : (zero.reference?.formants ?? null);
-		now = against(tracker.recent(WINDOW_S[zero.from]), base);
-		whole = zero.from === 'everyday' ? against(tracker.whole(), base) : null;
+		const from =
+			zero.from === 'start'
+				? (manual ?? tracker.opening(START_S))
+				: (zero.reference?.formants ?? null);
+		base = from;
+		now = against(tracker.recent(WINDOW_S[zero.from]), from);
+		whole = zero.from === 'everyday' ? against(tracker.whole(), from) : null;
 	}
 
 	const measure = (key: string) => app.measures.find((m) => m.key === key);
@@ -92,7 +129,9 @@
 	});
 	const counted = $derived(
 		zero.from === 'start'
-			? i18n.t.live.fromStart
+			? manual
+				? i18n.t.live.fromSet
+				: i18n.t.live.fromStart
 			: zero.reference?.basis === 'same-kind'
 				? i18n.t.live.fromKind
 				: zero.reference
@@ -109,7 +148,13 @@
 				{i18n.t.live.brightness}
 				<span class="text-lg font-extrabold">{percent(main.bright)}</span>
 				· {i18n.t.live.first}
-				<span class="font-extrabold">{percent(main.first)}</span>
+				{#if blurred}
+					<span class="text-muted-foreground" data-testid="live-r1-unreadable">
+						{i18n.t.traces.unreadable}
+					</span>
+				{:else}
+					<span class="font-extrabold">{percent(main.first)}</span>
+				{/if}
 			{:else}
 				<span class="text-muted-foreground">{i18n.t.common.none}</span>
 			{/if}
@@ -126,11 +171,26 @@
 		<div class="pt-1">
 			<p class="text-xs font-semibold">{i18n.pick(measure('r1_shift_pct')?.titles)}</p>
 			<ShiftStrip
-				value={now?.first ?? null}
+				value={blurred ? null : (now?.first ?? null)}
 				zones={measure('r1_shift_pct')?.zones ?? []}
 				range={SCALE.r1_shift_pct}
 				label={i18n.t.live.first}
 			/>
+		</div>
+	{/if}
+	{#if zero.from === 'start'}
+		<div class="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={!now}
+				onclick={rezero}
+				data-testid="set-zero"
+				data-set={manual !== null}
+			>
+				{i18n.t.live.setZero}
+			</Button>
+			<span class="text-xs text-muted-foreground">{i18n.t.live.setZeroHint}</span>
 		</div>
 	{/if}
 	<p class="text-xs text-muted-foreground" data-testid="live-status">

@@ -25,6 +25,9 @@
 	const pitch = $derived(shiftOf(reading, 'pitch_shift_st'));
 	const bright = $derived(shiftOf(reading, 'brightness_pct'));
 	const first = $derived(shiftOf(reading, 'r1_shift_pct'));
+	const light = $derived(shiftOf(reading, 'lightness_shift_db'));
+	/** The first resonance was measured, but the voice is too light for it to mean anything. */
+	const unreadable = $derived(reading.notes.includes('r1-unreadable'));
 	const cost = $derived(
 		['level_shift_db', 'clarity_shift_db'].flatMap((key) => shiftOf(reading, key) ?? [])
 	);
@@ -74,6 +77,18 @@
 				<p class="mt-1 text-xs text-muted-foreground">
 					{i18n.pick(def('pitch_shift_st')?.descriptions)}
 				</p>
+				{#if light}
+					<p class="mt-2 text-sm tabular-nums" title={i18n.pick(def(light.key)?.descriptions)}>
+						<span class="font-semibold">{title(light.key)}:</span>
+						<span class="font-extrabold" data-shift={light.key}>{amount(light)}</span>
+						{#if scatter(light)}
+							<span class="text-xs text-muted-foreground">· {scatter(light)}</span>
+						{/if}
+					</p>
+					<p class="mt-1 text-xs text-muted-foreground">
+						{i18n.pick(def(light.key)?.descriptions)}
+					</p>
+				{/if}
 			</div>
 		{/if}
 
@@ -108,6 +123,11 @@
 							{/if}
 							{#if first.everyday !== null}{i18n.t.reading.everyday(hz(first.everyday))}{/if}
 						</span>
+					</p>
+				{:else if unreadable}
+					<p class="mt-1 text-sm" data-testid="r1-unreadable">
+						<span class="font-semibold">{title('r1_shift_pct')}:</span>
+						<span class="text-muted-foreground">{i18n.t.reading.r1Unreadable}</span>
 					</p>
 				{/if}
 				<details class="mt-1 text-xs text-muted-foreground">

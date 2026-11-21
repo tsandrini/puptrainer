@@ -1,30 +1,28 @@
 <script lang="ts">
-	// One take: the player, for a practice take its exercise, comfort and
-	// result, its reading against the learner's everyday voice (pitch and
-	// resonance), its pitch over time, every measurement in groups with what
-	// it means, the vowels (or held sounds) one by one, the labels
-	// (editable), the state of the analysis with a retry, and delete.
+	// One take: the player with the take moment by moment under it, for a
+	// practice take its exercise, comfort and result, its reading against the
+	// learner's everyday voice (pitch and resonance), every measurement in
+	// groups with what it means, the vowels (or held sounds) one by one, the
+	// labels (editable), the state of the analysis with a retry, and delete.
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { ApiError } from '#lib/api/client.js';
 	import {
 		analyseTake,
 		deleteTake,
-		fetchSeries,
 		fetchTake,
+		fetchTrace,
 		takeAudioUrl,
 		updateTake
 	} from '#lib/api/index.js';
-	import type { Intent, Item, Series, TakeOut, VowelSegment } from '#lib/api/types.js';
+	import type { Intent, Item, TakeOut, Trace, VowelSegment } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
-	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
+	import TakeReview from '#lib/components/audio/TakeReview.svelte';
 	import AnalysisBadge from '#lib/components/app/AnalysisBadge.svelte';
 	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
 	import MetricGroups from '#lib/components/app/MetricGroups.svelte';
 	import ReadingView from '#lib/components/app/ReadingView.svelte';
-	import Figure from '#lib/components/charts/Figure.svelte';
-	import PitchContour from '#lib/components/charts/PitchContour.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { fmtDateTime, fmtDuration, fmtNumber } from '#lib/format.js';
@@ -35,7 +33,7 @@
 
 	const id = $derived(page.params.id!);
 	let take = $state.raw<TakeOut | null>(null);
-	let contour = $state.raw<Series | null>(null);
+	let trace = $state.raw<Trace | null>(null);
 	let missing = $state(false);
 	let error = $state<string | null>(null);
 	let saved = $state(false);
@@ -57,6 +55,13 @@
 	);
 	const passage = $derived(app.passage(take?.content_ref));
 	const exercise = $derived(app.exerciseOf(take?.exercise_ref));
+	/** The names of the exercise's sounds, for the held sounds of its take. */
+	const sounds = $derived(
+		(exercise?.sequence ?? []).filter((part) => !part.pause).map((part) => i18n.pick(part.labels))
+	);
+	const spoken = $derived(
+		take !== null && ['phrase', 'passage', 'free', 'other'].includes(take.item)
+	);
 	const hz = (value: number) => `${Math.round(value)} Hz`;
 	/** An analysed voice with nothing to be read against: say what is missing. */
 	const unread = $derived(
@@ -89,7 +94,7 @@
 			const next = await fetchTake(id);
 			show(next, labels);
 			missing = false;
-			contour = next.series.includes('pitch_hz') ? await fetchSeries(id, 'pitch_hz') : null;
+			trace = next.series.length ? await fetchTrace(id).catch(() => null) : null;
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 404) missing = true;
 		}
@@ -98,7 +103,7 @@
 	$effect(() => {
 		void id;
 		take = null;
-		contour = null;
+		trace = null;
 		void load(true);
 	});
 
@@ -161,8 +166,19 @@
 		</span>
 	</div>
 
-	<div class="panel mb-4">
-		<TakePlayer source={takeAudioUrl(take.id)} name="{take.id}.flac" />
+	<div class="panel mb-4 space-y-2">
+		<TakeReview
+			source={takeAudioUrl(take.id)}
+			name="{take.id}.flac"
+			{trace}
+			band={take.target ? [take.target.band_low_hz, take.target.band_high_hz] : [145, 185]}
+			labels={sounds}
+		/>
+		{#if trace && trace.rows.length && spoken}
+			<p class="text-xs text-muted-foreground" data-testid="traces-speech">
+				{i18n.t.traces.speech}
+			</p>
+		{/if}
 	</div>
 
 	{#if take.exercise_ref}
@@ -223,27 +239,6 @@
 		<p class="panel mb-4 text-sm text-muted-foreground" data-testid="unread">
 			{i18n.t.reading.none}
 		</p>
-	{/if}
-
-	{#if contour && contour.values.some((v) => v !== null)}
-		{@const target = take.target}
-		<Figure
-			title={i18n.t.take.contour}
-			sub={`${i18n.t.take.contourReads} ${
-				target
-					? i18n.t.take.contourTarget(
-							Math.round(target.band_low_hz),
-							Math.round(target.band_high_hz)
-						)
-					: i18n.t.take.contourBand
-			}`}
-			class="mb-4"
-		>
-			<PitchContour
-				series={contour}
-				band={target ? [target.band_low_hz, target.band_high_hz] : undefined}
-			/>
-		</Figure>
 	{/if}
 
 	{#if Object.keys(take.metrics).length === 0}

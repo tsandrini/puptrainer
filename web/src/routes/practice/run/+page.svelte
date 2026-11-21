@@ -9,15 +9,17 @@
 	import MicIcon from '@lucide/svelte/icons/mic';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import Volume2Icon from '@lucide/svelte/icons/volume-2';
-	import { fetchTake } from '#lib/api/index.js';
-	import type { Feel, TakeMeta, TakeOut } from '#lib/api/types.js';
+	import { fetchTake, fetchTrace, takeAudioUrl } from '#lib/api/index.js';
+	import type { Feel, TakeMeta, TakeOut, Trace } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, type Recording } from '#lib/audio/capture.js';
+	import type { Formants } from '#lib/audio/formants.js';
 	import { liveReference, type LiveReference } from '#lib/audio/reference.js';
 	import { playShape, playTone, shapeOf } from '#lib/audio/tone.js';
 	import LiveResonance, { type Zero } from '#lib/components/audio/LiveResonance.svelte';
 	import LiveScope from '#lib/components/audio/LiveScope.svelte';
-	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
+	import LiveTraces from '#lib/components/audio/LiveTraces.svelte';
+	import TakeReview from '#lib/components/audio/TakeReview.svelte';
 	import BandCard from '#lib/components/app/BandCard.svelte';
 	import BandStrip from '#lib/components/app/BandStrip.svelte';
 	import ComfortPicker from '#lib/components/app/ComfortPicker.svelte';
@@ -80,6 +82,15 @@
 	let playing = $state(false);
 	let scope = $state<LiveScope | null>(null);
 	let meter = $state<LiveResonance | null>(null);
+	let graph = $state<LiveTraces | null>(null);
+	/** What the live resonance is counted from, shared by the meter and the graph. */
+	let liveBase = $state.raw<Formants | null>(null);
+	let zeroSet = $state(false);
+	/** The live graph says when the voice is too light for R1; the meter then says so too. */
+	let r1Blurred = $state(false);
+	/** The take just recorded as the live graph drew it, until the analysis has measured it. */
+	let liveTrace = $state.raw<Trace | null>(null);
+	let resultTrace = $state.raw<Trace | null>(null);
 	/** The everyday voice a spoken resonance step counts from; undefined while it is measured. */
 	let everyday = $state.raw<LiveReference | null | undefined>(undefined);
 
@@ -100,6 +111,7 @@
 		seconds = frame.seconds;
 		scope?.push(frame.samples, frame.sampleRate);
 		meter?.push(frame.samples, frame.sampleRate, frame.pitchHz);
+		graph?.push(frame.samples, frame.sampleRate, frame.pitchHz);
 	});
 
 	$effect(() => {
@@ -112,6 +124,13 @@
 	const needsNote = $derived(exercise?.rule.kind === 'pitch_hold' && exercise.rule.at === 'note');
 	const text = $derived(app.passage(exercise?.texts[language]));
 	const band = $derived(app.band);
+	const bandHz = $derived<[number, number] | undefined>(
+		band ? [band.low_hz, band.high_hz] : undefined
+	);
+	/** The names of the exercise's sounds, for the held sounds of its take. */
+	const sounds = $derived(
+		(exercise?.sequence ?? []).filter((part) => !part.pause).map((part) => i18n.pick(part.labels))
+	);
 	/** A held sound or a whisper is read against its own start; speech against the everyday takes. */
 	const zero = $derived<Zero>(
 		exercise && SPOKEN.has(exercise.item)
@@ -176,6 +195,21 @@
 			verdicts[take.client_id] = take.evaluation.met;
 	});
 
+	// the measured take, moment by moment, once the analysis is in
+	$effect(() => {
+		const take = result;
+		if (!take || take.analysis?.status !== 'done') return;
+		let current = true;
+		fetchTrace(take.id)
+			.then((trace) => current && (resultTrace = trace))
+			.catch(() => {
+				// NOTE: the live picture stays; the take page has the measured one
+			});
+		return () => {
+			current = false;
+		};
+	});
+
 	function send(event: RunEvent) {
 		if (run) run = advance(run, event);
 	}
@@ -217,6 +251,11 @@
 		listening = false;
 		recording = null;
 		result = null;
+		liveTrace = null;
+		resultTrace = null;
+		liveBase = null;
+		zeroSet = false;
+		r1Blurred = false;
 		waitingFor = null;
 		outcome = null;
 		problem = null;
@@ -249,6 +288,7 @@
 	async function stop() {
 		try {
 			recording = await recorder.stop();
+			liveTrace = graph?.history() ?? null;
 			send({ type: 'stop' });
 		} catch (e) {
 			problem = i18n.t.record.failed(e instanceof Error ? e.message : String(e));
@@ -535,13 +575,43 @@
 						pitch={pitchHz}
 						note={needsNote && note ? note.hz : null}
 					/>
+					<LiveTraces bind:this={graph} resonance={false} band={bandHz} />
 				{:else if exercise.live === 'formants'}
 					<!-- NOTE: resonance work wants the pitch held still, so the strip stays in view -->
 					<BandStrip low={band.low_hz} high={band.high_hz} pitch={pitchHz} />
-					<LiveResonance bind:this={meter} {zero} />
+					<LiveResonance
+						bind:this={meter}
+						bind:base={liveBase}
+						bind:set={zeroSet}
+						blurred={r1Blurred}
+						{zero}
+					/>
+					<LiveTraces
+						bind:this={graph}
+						bind:unreadable={r1Blurred}
+						base={liveBase}
+						speech={zero.from === 'everyday'}
+						own={zero.from === 'start' && !zeroSet}
+						band={bandHz}
+					/>
 					<LiveScope bind:this={scope} fixed="formants" />
 				{:else if exercise.live === 'whisper'}
-					<LiveResonance bind:this={meter} mode="whisper" {zero} />
+					<LiveResonance
+						bind:this={meter}
+						bind:base={liveBase}
+						bind:set={zeroSet}
+						blurred={r1Blurred}
+						mode="whisper"
+						{zero}
+					/>
+					<LiveTraces
+						bind:this={graph}
+						bind:unreadable={r1Blurred}
+						mode="whisper"
+						base={liveBase}
+						own={!zeroSet}
+						band={bandHz}
+					/>
 					<LiveScope bind:this={scope} fixed="formants" />
 				{/if}
 				<Meter {peakDb} {clipping} />
@@ -578,7 +648,13 @@
 					</div>
 					{#if listening && recording}
 						<div class="mt-3">
-							<TakePlayer source={recording.wav} name="{exercise.id}.wav" />
+							<TakeReview
+								source={recording.wav}
+								name="{exercise.id}.wav"
+								trace={liveTrace}
+								band={bandHz}
+								live
+							/>
 						</div>
 					{/if}
 				</div>
@@ -592,6 +668,17 @@
 									reading={result.reading}
 									metrics={result.metrics}
 									text={result.content_ref !== null}
+								/>
+							</div>
+						{/if}
+						{#if resultTrace && resultTrace.rows.length}
+							<div class="mt-4" data-testid="result-traces">
+								<TakeReview
+									source={recording?.wav ?? takeAudioUrl(result.id)}
+									name="{exercise.id}.wav"
+									trace={resultTrace}
+									band={bandHz}
+									labels={sounds}
 								/>
 							</div>
 						{/if}

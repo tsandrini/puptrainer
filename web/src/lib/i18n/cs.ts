@@ -76,6 +76,7 @@ export const cs: Messages = {
 		recordText:
 			'Nahrajte tento text jednou běžným hlasem (Nahrát, pod „Co nahrát“) a každá jeho nahrávka se pak přečte i v rezonanci.',
 		none: 'Zatím není žádná běžná nahrávka, proti které by se tato dala přečíst. Nahrajte tento druh nahrávky jednou běžným hlasem.',
+		r1Unreadable: 'na této nahrávce nelze přečíst',
 		notes: {
 			everyday: 'Rezonance: v rozmezí kolísání vašich běžných nahrávek. Nic se tu nepohnulo.',
 			darker: 'Rezonance: tmavší než váš běžný hlas.',
@@ -85,12 +86,55 @@ export const cs: Messages = {
 				'Rezonance: uvnitř rozmezí, kde leží ženské hlasy. Víc není potřeba; potřeba je lehkost a stálost.',
 			beyond:
 				'Rezonance: za rozmezím dospělých hlasů. Tolik už obvykle zní dětsky nebo stísněně a postojem se toho bez tlaku dosáhne málokdy: uberte.',
-			'r1-fell':
-				'První rezonance klesla, zatímco ostatní stouply: jas přichází z jazyka a zavřenějších úst, ještě ne z menšího hrdla. Nechte čelist otevírat tak jako v běžném hlasu.',
+			'r1-unreadable':
+				'První rezonance (R1) se na této nahrávce nečte: hlas je na to příliš vysoký a lehký. Rozbor najde výšku hlasu tam, kde má být rezonance, takže by číslo sledovalo výšku a o hrdle by neříkalo nic. Spolehlivě ukáže R1 šepot.',
+			lighter:
+				'Lehčí než váš běžný hlas: základní tón víc převyšuje harmonické nad sebou. To je „váha“ jdoucí dolů, kam trénink obvykle míří.',
+			heavier:
+				'Těžší než váš běžný hlas: harmonické jsou blíž základnímu tónu, jako u pevnějšího nebo hlasitějšího hlasu.',
 			quieter: 'Zřetelně tišší než váš běžný hlas: často znamení zadržování nebo svírání.',
 			'less-clear':
 				'Tón je méně čistý než ve vašem běžném hlasu: dostal se do něj dech nebo tlak. Uberte, dokud nebude zase čistý.'
 		}
+	},
+	traces: {
+		title: 'Nahrávka okamžik po okamžiku',
+		reads:
+			'Jeden řádek pro každou veličinu, na časové ose obrázku nahoře. Každý řádek říká svou hodnotu pod ukazatelem, nebo tam, kde právě stojí přehrávání; kliknutím na okamžik si ho poslechnete.',
+		live: 'Co nakreslilo živé vodítko při nahrávání, na časové ose obrázku nahoře. Uložená nahrávka se měří pečlivěji.',
+		rows: {
+			pitch_hz: 'Výška',
+			brightness_pct: 'Jas',
+			r1_pct: 'První rezonance (R1)',
+			lightness_db: 'Lehkost',
+			clarity_db: 'Čistota',
+			level_db: 'Hlasitost'
+		},
+		hints: {
+			pitch_hz:
+				'Jak rychle kmitají hlasivky. Vybarvené pásmo je pásmo výšky, proti kterému se nahrávalo, nebo 145–185 Hz.',
+			brightness_pct:
+				'O kolik výš leží horní rezonance (F2 až F4) než v nule. Vybarvený úsek je místo, kde leží ženské hlasy nad průměrným mužským.',
+			r1_pct:
+				'O kolik výš leží nejnižší rezonance než v nule. Zašedlá je tam, kde je hlas na její přečtení příliš lehký: rozbor tam najde výšku hlasu, ne rezonanci.',
+			lightness_db:
+				'O kolik základní tón převyšuje další harmonickou. Výš znamená lehčí, tenčí hlas: „váha“, o které mluví učitelé, jde dolů.',
+			clarity_db:
+				'Jak zřetelně periodický tón je. Dech a chraplavost ji snižují: pokles tady spolu s růstem lehkosti je vzduch.',
+			level_db: 'Jak je to hlasité, v dB pod plným rozsahem.'
+		},
+		zero: {
+			'first-sound': 'Jas a R1 se počítají od prvního podrženého zvuku této nahrávky.',
+			'first-whisper': 'Jas a R1 se počítají od prvních tří šeptaných vteřin této nahrávky.'
+		},
+		shaded: 'Kde je řádek R1 zašedlý, je hlas na přečtení R1 příliš lehký.',
+		unreadable: 'nelze přečíst',
+		whisper: 'šepot',
+		older:
+			'Tuto nahrávku rozebrala starší verze, která uchovala jen výšku: nechte ji rozebrat znovu a přibudou ostatní řádky.',
+		speech:
+			'Rezonance se řídí slovy, proto řeč řádek jasu nemá: její jas je jedno číslo za celou nahrávku, níže.',
+		what: 'Co řádky ukazují'
 	},
 	live: {
 		title: 'Rezonance, živě',
@@ -100,7 +144,22 @@ export const cs: Messages = {
 		brightness: 'Jas',
 		first: 'R1',
 		settingZero: (heard, need) => `Nastavuje se nula z prvního zvuku: ${heard} z ${need} s.`,
-		fromStart: 'Počítáno od prvního zvuku této nahrávky.',
+		fromStart: '0 % je první zvuk této nahrávky, ne váš běžný hlas.',
+		fromSet: '0 % je zvuk, na kterém byla nula nastavena.',
+		setZero: 'Nastavit nulu tady',
+		setZeroHint: 'Udělejte svůj obyčejný zvuk a stiskněte: všechno další se počítá od něj.',
+		graph: {
+			title: 'Posledních 15 sekund',
+			reads:
+				'Co mikrofon slyší, tak jak to přichází: nejnovější okamžik je u pravého okraje. Vodítko; uložená nahrávka se měří pečlivěji.',
+			speech:
+				'Co mikrofon slyší, tak jak to přichází. V řeči jas sleduje každou samohlásku, proto je jeho řádek posledních osm sekund, pomalá čára; výška, lehkost a hlasitost jsou okamžik.',
+			map: 'Výška proti jasu',
+			mapReads:
+				'Výška roste doprava, jas nahoru. Rovně nahoru je rezonance bez výšky; úhlopříčka je obojí najednou.',
+			pitchAxis: 'výška',
+			brightAxis: 'jasněji'
+		},
 		fromEveryday: 'Počítáno od vašich běžných nahrávek tohoto textu.',
 		fromKind: 'Počítáno od vaší běžné volné řeči: jiná slova, takže se hýbe víc než u textu.',
 		preparing: 'Měří se vaše běžné nahrávky pro živé srovnání…',
@@ -191,12 +250,6 @@ export const cs: Messages = {
 		passage: 'Čtený text',
 		confirmDelete: 'Smazat tuto nahrávku i s jejím záznamem? Nelze to vrátit.',
 		saved: 'Uloženo',
-		contour: 'Výška hlasu v průběhu nahrávky',
-		contourReads:
-			'Výška okamžik po okamžiku: sledujte, kde se čára drží, a propady na koncích vět.',
-		contourBand: 'Vybarvené pásmo je 145–185 Hz.',
-		contourTarget: (low, high) =>
-			`Vybarvené pásmo je vaše pásmo v době nahrávání: ${low}–${high} Hz.`,
 		time: 'Čas',
 		vowels: 'Samohlásky jednotlivě',
 		vowel: 'Samohláska',
@@ -323,6 +376,10 @@ export const cs: Messages = {
 				'Hlas vystoupal nad zhruba 300 Hz, kde se rezonance nedá změřit: harmonické hlasu jsou od sebe moc daleko, než aby ji ukázaly. Zvednutý hrtan s sebou rád táhne výšku; vraťte výšku dolů a jas si nechte.',
 			'not-brighter':
 				'Poslední zvuk nevyšel jasnější než váš obyčejný. Malá změna se může ztratit v šumu měření; zkuste větší rozdíl a nechte samohlásku „á“.',
+			'r1-unreadable':
+				'R1 se u této nahrávky neukazuje: v jednom z obou zvuků byl hlas tak lehký, že rozbor najde výšku hlasu tam, kde má být první rezonance. Se zvukem není nic špatně; to číslo se tam jen nedá přečíst.',
+			'whisper-same':
+				'Malá poloha nevyšla výš než začátek. Začněte třemi vteřinami obyčejného, velkého šepotu a pak nechte šum zmenšit a zvýšit; samohláska zůstává „e“.',
 			aboveNote: (semitones) =>
 				`Hlas byl asi ${semitones} půltónů nad tónem. Klouzejte dolů, až značka sedne na čáru.`,
 			belowNote: (semitones) =>
@@ -427,6 +484,8 @@ export const cs: Messages = {
 			'no-note': 'K této nahrávce nezazněl žádný tón.',
 			'too-little-voice': 'Příliš málo hlasu na posouzení.',
 			'not-measured': 'Na této nahrávce se to nedalo změřit.',
+			'too-little-whisper':
+				'Příliš málo šepotu na přečtení: je potřeba aspoň šest vteřin, ve kterých něco zní.',
 			'unknown-exercise': 'Toto cvičení už v katalogu není.'
 		},
 		session: {

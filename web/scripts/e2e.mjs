@@ -217,6 +217,25 @@ try {
 		'every picture says what it shows of the two targets',
 		(await text(page, '[data-testid=scope-reads]')).includes('Pitch is their spacing')
 	);
+	const rolling = await until(
+		() => text(page, '[data-testid=live-traces] [data-row=pitch_hz] [data-testid=trace-value]'),
+		(v) => Math.abs(hz(v) - TONE_HZ) <= 5,
+		10_000
+	);
+	check(
+		'a live graph draws the last seconds, row by row',
+		Math.abs(hz(rolling) - TONE_HZ) <= 5 &&
+			(await page.getAttribute('[data-testid=live-traces] [data-testid=traces]', 'data-rows')) ===
+				'pitch_hz brightness_pct lightness_db level_db',
+		rolling
+	);
+	check(
+		'speech gets no map of pitch against brightness, and is told why its brightness is slow',
+		(await count(page, '[data-testid=live-map]')) === 0 &&
+			(await text(page, '[data-testid=live-traces] [data-testid=traces-reads]')).includes(
+				'the last eight seconds'
+			)
+	);
 	const unanchored = await until(
 		() => text(page, '[data-testid=live-status]'),
 		(v) => v.includes('No everyday take'),
@@ -239,6 +258,14 @@ try {
 		'the review does not play by itself',
 		(await page.getAttribute('[data-testid=player-toggle]', 'data-playing')) === 'false' &&
 			(await playerSeconds(page)) === 0
+	);
+	check(
+		'the review draws the take as the live guide saw it, and says so',
+		(await page.getAttribute('[data-testid=take-review] [data-testid=traces]', 'data-live')) ===
+			'true' &&
+			(await text(page, '[data-testid=take-review] [data-testid=traces-reads]')).includes(
+				'live guide'
+			)
 	);
 	const review = await text(page, '[data-testid=review]');
 	check(
@@ -298,9 +325,18 @@ try {
 		(await count(page, '[data-metric=pitch_range_st]')) === 1 &&
 			(await count(page, '[data-metric=pitch_145_185_pct]')) === 1
 	);
-	// NOTE: attached, not visible: a steady tone draws a flat line, which has no height
-	await page.waitForSelector('[data-testid=contour] svg path.lc-path', { state: 'attached' });
-	check('the pitch contour is drawn', true);
+	await page.waitForSelector('[data-testid=traces][data-live=false]');
+	const traced = await page.getAttribute('[data-testid=traces]', 'data-rows');
+	check(
+		'the take is drawn moment by moment: pitch, the source and the level',
+		['pitch_hz', 'lightness_db', 'clarity_db', 'level_db'].every((row) => traced.includes(row)) &&
+			!traced.includes('brightness_pct'),
+		traced
+	);
+	check(
+		'and speech is told why it has no brightness row',
+		(await text(page, '[data-testid=traces-speech]')).includes('follows the words')
+	);
 	await page.waitForSelector('[data-testid=player-download]');
 	const src = await page.getAttribute('[data-testid=player-download]', 'href');
 	const audio = await context.request.get(src);
@@ -375,6 +411,20 @@ try {
 	check('a click seeks', Math.abs(sought - 0.75 * 2.6) < 0.4, `${sought} s`);
 	await page.locator('[data-testid=player-plot]').press('Home');
 	check('the keyboard seeks too', (await playerSeconds(page)) === 0);
+	// NOTE: a click through the locator: the rows may lie below the fold
+	const rows = await page.locator('[data-testid=traces-plot]').boundingBox();
+	await page
+		.locator('[data-testid=traces-plot]')
+		.click({ position: { x: rows.width * 0.5, y: rows.height - 20 } });
+	const jumped = await playerSeconds(page);
+	check(
+		'a click on the traces seeks the player',
+		Math.abs(jumped - 0.5 * 2.6) < 0.4,
+		`${jumped} s`
+	);
+	const there = await text(page, '[data-row=pitch_hz] [data-testid=trace-value]');
+	check('and each row says its value there', Math.abs(hz(there) - TONE_HZ) <= 3, there);
+	await page.locator('[data-testid=player-plot]').press('Home');
 	await page.click('[data-testid=spectrum-toggle] [data-view=formants]');
 	await page.waitForSelector('[data-testid=player][data-ready=true]');
 	check(
@@ -685,6 +735,12 @@ try {
 	await page.click('[data-testid=record]');
 	await page.waitForSelector('[data-testid=band-strip]');
 	check('a live band strip guides the slide', true);
+	await page.waitForSelector('[data-testid=live-traces] [data-testid=traces]');
+	check(
+		'and a live graph without resonance rows',
+		(await page.getAttribute('[data-testid=live-traces] [data-testid=traces]', 'data-rows')) ===
+			'pitch_hz lightness_db level_db'
+	);
 	check(
 		'pitch steps show no live spectrogram',
 		(await count(page, '[data-testid=live-scope]')) === 0
@@ -707,6 +763,17 @@ try {
 	await page.click('[data-testid=comfort-4]');
 	await page.waitForSelector('[data-testid=verdict]', { timeout: 30_000 });
 	check('a steady hold in the band is met', (await text(page, '[data-testid=verdict]')) === 'Met');
+	await page.waitForSelector('[data-testid=result-traces] [data-testid=traces][data-live=false]');
+	check(
+		'the result draws the measured take under a player that waits',
+		(
+			await page.getAttribute('[data-testid=result-traces] [data-testid=traces]', 'data-rows')
+		).includes('pitch_hz') &&
+			(await page.getAttribute(
+				'[data-testid=result-traces] [data-testid=player-toggle]',
+				'data-playing'
+			)) === 'false'
+	);
 	check(
 		'the result shows the hold and the band',
 		(await text(page, '[data-testid=result]')).includes('Steady hold')
@@ -904,6 +971,11 @@ try {
 			(await count(page, '[data-testid=band-strip]')) === 0 &&
 			(await text(page, '[data-testid=live-status]')).includes('Setting the zero')
 	);
+	check(
+		'and has its live graph, for a whisper',
+		(await page.getAttribute('[data-testid=live-traces]', 'data-mode')) === 'whisper' &&
+			(await count(page, '[data-testid=live-map]')) === 0
+	);
 	await page.getByRole('button', { name: 'Discard' }).click();
 
 	// --- practice: an exercise can be tried with its live guides, and nothing is kept
@@ -929,6 +1001,28 @@ try {
 			(await count(page, '[data-testid=stop]')) === 0 &&
 			(await count(page, '[data-testid=band-strip]')) === 1,
 		tried.replace(/\s+/g, ' ')
+	);
+	const mapped = await until(
+		() => page.getAttribute('[data-testid=live-map]', 'data-points'),
+		(points) => Number(points) > 3,
+		10_000
+	);
+	check(
+		'a held sound leaves a trail on the map of pitch against brightness',
+		Number(mapped) > 3 &&
+			(await page.getAttribute('[data-testid=live-traces] [data-testid=traces]', 'data-rows')) ===
+				'pitch_hz brightness_pct r1_pct lightness_db level_db',
+		`${mapped} points`
+	);
+	check(
+		'the meter says that its zero is the start of the take, not the everyday voice',
+		(await text(page, '[data-testid=live-status]')).includes('not your everyday voice')
+	);
+	await page.click('[data-testid=set-zero]');
+	check(
+		'and the zero can be set by hand',
+		(await page.getAttribute('[data-testid=set-zero]', 'data-set')) === 'true' &&
+			(await text(page, '[data-testid=live-status]')).includes('the zero was set on')
 	);
 	await page.click('[data-testid=done-trying]');
 	await page.waitForSelector('[data-testid=record]');
@@ -969,6 +1063,10 @@ try {
 			'same-text' &&
 			(await count(page, '[data-testid=result] [data-shift=brightness_pct]')) === 1 &&
 			(await count(page, '[data-testid=result] [data-testid=shift-strip]')) === 1
+	);
+	check(
+		'and on lightness, beside the pitch',
+		(await count(page, '[data-testid=result] [data-shift=lightness_shift_db]')) === 1
 	);
 
 	// --- practice: a miss says which way to go; a band far above the voice is flagged

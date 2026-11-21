@@ -35,12 +35,18 @@
 
 	let {
 		source,
-		name = 'take'
+		name = 'take',
+		position = $bindable(0),
+		duration = $bindable(0)
 	}: {
 		/** Where the recording is (a URL), or the recording itself. */
 		source: string | ArrayBuffer;
 		/** File name offered for the download. */
 		name?: string;
+		/** Where the playback stands, in seconds: for what is drawn beside the player. */
+		position?: number;
+		/** Length of the recording in seconds, 0 until it is decoded. */
+		duration?: number;
 	} = $props();
 
 	/** The rate takes are decoded to for the picture. */
@@ -66,6 +72,14 @@
 	let length = $state(0);
 	let hover = $state<{ x: number; seconds: number; hz: number | null } | null>(null);
 	let dragging = $state(false);
+
+	// NOTE: one way only: the page reads these, and moves the playback with `seek`
+	$effect(() => {
+		position = current;
+	});
+	$effect(() => {
+		duration = length;
+	});
 
 	const colours = $derived(ramp(theme.dark));
 	const hoverText = $derived.by(() => {
@@ -205,7 +219,12 @@
 		void audio.play().catch(() => (playing = false));
 	}
 
-	function seek(seconds: number): void {
+	/**
+	 * Moves the playback.
+	 *
+	 * @param seconds where to, from the start of the recording
+	 */
+	export function seek(seconds: number): void {
 		if (!audio || !length) return;
 		const to = Math.min(length, Math.max(0, seconds));
 		audio.currentTime = to;

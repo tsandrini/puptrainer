@@ -1,7 +1,8 @@
 <script lang="ts">
 	// Recording: pick the microphone setup, what to record and which voice
 	// it is; watch the level, the live pitch, the live resonance against the
-	// everyday voice and a live spectrogram while speaking; listen back, then
+	// everyday voice, the last seconds as a graph and a live spectrogram
+	// while speaking; listen back with the take drawn under the player, then
 	// save. A saved take goes through the upload queue, so it is never lost
 	// when the API is away.
 	import { onDestroy, onMount } from 'svelte';
@@ -10,14 +11,16 @@
 	import MicIcon from '@lucide/svelte/icons/mic';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { fetchTakes } from '#lib/api/index.js';
-	import type { Intent, Item, ProtocolItem, TakeOut } from '#lib/api/types.js';
+	import type { Intent, Item, ProtocolItem, TakeOut, Trace } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import { CaptureError, Recorder, listInputs, type Recording } from '#lib/audio/capture.js';
+	import type { Formants } from '#lib/audio/formants.js';
 	import { TARGET_DB } from '#lib/audio/meter.js';
 	import { liveReference, type LiveReference } from '#lib/audio/reference.js';
 	import LiveResonance, { type Zero } from '#lib/components/audio/LiveResonance.svelte';
 	import LiveScope from '#lib/components/audio/LiveScope.svelte';
-	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
+	import LiveTraces from '#lib/components/audio/LiveTraces.svelte';
+	import TakeReview from '#lib/components/audio/TakeReview.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Meter from '#lib/components/app/Meter.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -69,6 +72,14 @@
 	let recording = $state.raw<Recording | null>(null);
 	let scope = $state<LiveScope | null>(null);
 	let meter = $state<LiveResonance | null>(null);
+	let graph = $state<LiveTraces | null>(null);
+	/** What the live resonance is counted from, shared by the meter and the graph. */
+	let liveBase = $state.raw<Formants | null>(null);
+	let zeroSet = $state(false);
+	/** The live graph says when the voice is too light for R1; the meter then says so too. */
+	let r1Blurred = $state(false);
+	/** The take just recorded as the live graph drew it. */
+	let liveTrace = $state.raw<Trace | null>(null);
 	/** The everyday voice the live resonance counts from; undefined while it is measured. */
 	let everyday = $state.raw<LiveReference | null | undefined>(undefined);
 	let problem = $state<string | null>(null);
@@ -82,7 +93,11 @@
 		seconds = frame.seconds;
 		scope?.push(frame.samples, frame.sampleRate);
 		meter?.push(frame.samples, frame.sampleRate, frame.pitchHz);
+		graph?.push(frame.samples, frame.sampleRate, frame.pitchHz);
 	});
+	const bandHz = $derived<[number, number] | undefined>(
+		app.band ? [app.band.low_hz, app.band.high_hz] : undefined
+	);
 
 	const baseline = $derived(app.content?.protocols.find((p) => p.id === 'baseline') ?? null);
 	/** The texts of the exercises: read once in the everyday voice, they can be compared too. */
@@ -202,6 +217,10 @@
 
 	function clearReview() {
 		recording = null;
+		liveTrace = null;
+		liveBase = null;
+		zeroSet = false;
+		r1Blurred = false;
 	}
 
 	async function start() {
@@ -233,6 +252,7 @@
 	async function stop() {
 		try {
 			recording = await recorder.stop();
+			liveTrace = graph?.history() ?? null;
 			phase = 'review';
 		} catch (e) {
 			problem = i18n.t.record.failed(e instanceof Error ? e.message : String(e));
@@ -475,15 +495,38 @@
 			</div>
 			{#if zero}
 				<div class="mt-4">
-					<LiveResonance bind:this={meter} {zero} />
+					<LiveResonance
+						bind:this={meter}
+						bind:base={liveBase}
+						bind:set={zeroSet}
+						blurred={r1Blurred}
+						{zero}
+					/>
 				</div>
 			{/if}
+			<div class="mt-4">
+				<LiveTraces
+					bind:this={graph}
+					bind:unreadable={r1Blurred}
+					base={liveBase}
+					resonance={zero !== null}
+					speech={zero?.from === 'everyday'}
+					own={zero?.from === 'start' && !zeroSet}
+					band={bandHz}
+				/>
+			</div>
 			<div class="mt-4">
 				<LiveScope bind:this={scope} />
 			</div>
 		{:else if recording}
 			<h2 class="mb-2 font-medium">{i18n.t.record.review}</h2>
-			<TakePlayer source={recording.wav} name="{choice?.step?.key ?? choice?.item ?? 'take'}.wav" />
+			<TakeReview
+				source={recording.wav}
+				name="{choice?.step?.key ?? choice?.item ?? 'take'}.wav"
+				trace={liveTrace}
+				band={bandHz}
+				live
+			/>
 			<p class="mt-2 text-sm text-muted-foreground" data-testid="review">
 				{fmtDuration(recording.seconds)} · {i18n.t.record.peak(
 					fmtNumber(recording.peakDb, 1, i18n.locale)

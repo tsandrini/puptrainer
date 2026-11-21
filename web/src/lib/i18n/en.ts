@@ -70,6 +70,7 @@ export const en = {
 		recordText:
 			'Record this text once in your everyday voice (Record, under “What to record”) and every take of it will be read on resonance too.',
 		none: 'There is no everyday take to read this one against yet. Record this kind of take once in your everyday voice.',
+		r1Unreadable: 'not readable on this take',
 		notes: {
 			everyday: 'Resonance: within the scatter of your everyday takes. Nothing has moved here.',
 			darker: 'Resonance: darker than your everyday voice.',
@@ -79,13 +80,57 @@ export const en = {
 				'Resonance: inside the range where women’s voices sit. More is not needed; ease and steadiness are.',
 			beyond:
 				'Resonance: past the range of adult voices. This much tends to sound child-like or pinched, and posture rarely reaches it without strain: ease off.',
-			'r1-fell':
-				'The first resonance went down while the others went up: the brightening comes from the tongue and a more closed mouth, not yet from a smaller throat. Let the jaw open as it does in your everyday voice.',
+			'r1-unreadable':
+				'The first resonance (R1) is not read on this take: the voice is too high and light for it. The analysis finds the pitch where the resonance should be, so the number would follow the pitch and say nothing about the throat. A whisper shows R1 reliably.',
+			lighter:
+				'Lighter than your everyday voice: the fundamental stands further above the harmonics over it. This is the “weight” going down, which is where the training usually heads.',
+			heavier:
+				'Heavier than your everyday voice: the harmonics stand closer to the fundamental, as in a firmer or louder voice.',
 			quieter:
 				'Clearly quieter than your everyday voice: often a sign of holding back or squeezing.',
 			'less-clear':
 				'The tone is less clear than in your everyday voice: breath or strain got in. Ease off until it is clean again.'
 		} as Record<string, string>
+	},
+	traces: {
+		title: 'The take, moment by moment',
+		reads:
+			'One row per measure, on the time axis of the picture above. Each row says its value at the pointer, or where the playback stands; click a moment to hear it.',
+		live: 'What the live guide drew while you recorded, on the time axis of the picture above. The saved take is measured more carefully.',
+		rows: {
+			pitch_hz: 'Pitch',
+			brightness_pct: 'Brightness',
+			r1_pct: 'First resonance (R1)',
+			lightness_db: 'Lightness',
+			clarity_db: 'Clarity',
+			level_db: 'Loudness'
+		} as Record<string, string>,
+		hints: {
+			pitch_hz:
+				'How fast the vocal folds vibrate. The shaded band is the pitch band the take was recorded against, or 145–185 Hz.',
+			brightness_pct:
+				'How much higher the upper resonances (F2 to F4) sit than at the zero. The shaded stretch is where women’s voices sit above an average man’s.',
+			r1_pct:
+				'How much higher the lowest resonance sits than at the zero. Greyed out where the voice is too light for it to be read: there the analysis finds the pitch, not the resonance.',
+			lightness_db:
+				'How far the fundamental stands above the next harmonic. Higher is a lighter, thinner voice: the “weight” teachers speak of, going down.',
+			clarity_db:
+				'How clearly periodic the tone is. Breath and roughness lower it: a dip here together with a rise in lightness is air.',
+			level_db: 'How loud it is, in dB below full scale.'
+		} as Record<string, string>,
+		zero: {
+			'first-sound': 'Brightness and R1 are counted from the first held sound of this take.',
+			'first-whisper':
+				'Brightness and R1 are counted from the first three whispered seconds of this take.'
+		},
+		shaded: 'Where the R1 row is greyed out, the voice is too light for R1 to be read.',
+		unreadable: 'not readable',
+		whisper: 'whisper',
+		older:
+			'This take was analysed by an older version, which kept its pitch only: analyse it again for the other rows.',
+		speech:
+			'Resonance follows the words, so speech has no brightness row: its brightness is one number for the whole take, below.',
+		what: 'What the rows show'
 	},
 	live: {
 		title: 'Resonance, live',
@@ -97,7 +142,22 @@ export const en = {
 		first: 'R1',
 		settingZero: (heard: string, need: string) =>
 			`Setting the zero from your first sound: ${heard} of ${need} s.`,
-		fromStart: 'Counted from the first sound of this take.',
+		fromStart: '0% is the first sound of this take, not your everyday voice.',
+		fromSet: '0% is the sound the zero was set on.',
+		setZero: 'Set the zero here',
+		setZeroHint: 'Make your ordinary sound and press this: everything after is counted from it.',
+		graph: {
+			title: 'The last 15 seconds',
+			reads:
+				'What the microphone hears as it comes: the newest moment is at the right edge. A guide; the saved take is measured more carefully.',
+			speech:
+				'What the microphone hears as it comes. In speech the brightness follows every vowel, so its row is the last eight seconds, a slow line; pitch, lightness and loudness are the moment.',
+			map: 'Pitch against brightness',
+			mapReads:
+				'Pitch grows to the right, brightness upwards. Straight up is resonance without pitch; a diagonal is both together.',
+			pitchAxis: 'pitch',
+			brightAxis: 'brighter'
+		},
 		fromEveryday: 'Counted from your everyday takes of this text.',
 		fromKind:
 			'Counted from your everyday free speech: other words, so it moves more than on a text.',
@@ -190,12 +250,6 @@ export const en = {
 		passage: 'Text read',
 		confirmDelete: 'Delete this take and its recording? This cannot be undone.',
 		saved: 'Saved',
-		contour: 'Pitch over the take',
-		contourReads:
-			'Pitch, moment by moment: look for where the line lives, and for drops at the ends of phrases.',
-		contourBand: 'The shaded band is 145–185 Hz.',
-		contourTarget: (low: number, high: number) =>
-			`The shaded band is your band when this was recorded: ${low}–${high} Hz.`,
 		time: 'Time',
 		vowels: 'The vowels, one by one',
 		vowel: 'Vowel',
@@ -321,6 +375,10 @@ export const en = {
 				'This went above about 300 Hz, where resonance cannot be measured: the harmonics of the voice lie too far apart to show it. A raised larynx tends to drag the pitch up with it; bring the pitch back down and keep the brightness.',
 			'not-brighter':
 				'The last sound did not measure brighter than your ordinary one. A small change can hide in the measure’s noise; try a bigger difference, keeping the vowel an “ah”.',
+			'r1-unreadable':
+				'R1 is not shown for this take: in one of the two sounds the voice was so light that the analysis finds the pitch where the first resonance should be. Nothing is wrong with the sound; the number cannot be read there.',
+			'whisper-same':
+				'The small position did not measure higher than the start. Begin with three seconds of your ordinary, big whisper, then let the hiss get smaller and higher; the vowel stays an “eh”.',
 			aboveNote: (semitones: string) =>
 				`You were about ${semitones} semitones above the note. Slide down until the marker sits on the line.`,
 			belowNote: (semitones: string) =>
@@ -425,6 +483,8 @@ export const en = {
 			'no-note': 'No note was played for this take.',
 			'too-little-voice': 'Too little voice to judge.',
 			'not-measured': 'This could not be measured on the take.',
+			'too-little-whisper':
+				'Too little whisper to read: it takes at least six seconds with sound in them.',
 			'unknown-exercise': 'This exercise is no longer in the catalogue.'
 		} as Record<string, string>,
 		session: {

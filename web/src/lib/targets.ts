@@ -21,7 +21,7 @@ export const TARGETS: Target[] = ['pitch', 'resonance', 'condition'];
 
 /** The numbers of a reading by what they are about, in the order they are shown. */
 export const SHIFTS: Record<Target, string[]> = {
-	pitch: ['pitch_shift_st'],
+	pitch: ['pitch_shift_st', 'lightness_shift_db'],
 	resonance: ['brightness_pct', 'r1_shift_pct'],
 	condition: ['level_shift_db', 'clarity_shift_db']
 };

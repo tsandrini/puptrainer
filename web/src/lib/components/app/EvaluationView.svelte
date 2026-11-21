@@ -28,7 +28,14 @@
 	const decimalsOf = (key: string) => app.measure(key)?.decimals ?? 1;
 
 	/** Measures that are a distance from something, shown with their sign. */
-	const SIGNED = new Set(['step_bright_pct', 'step_r1_pct', 'step_dark_pct', 'note_offset_st']);
+	const SIGNED = new Set([
+		'step_bright_pct',
+		'step_r1_pct',
+		'step_dark_pct',
+		'note_offset_st',
+		'whisper_r1_pct',
+		'whisper_bright_pct'
+	]);
 
 	function number(key: string, value: number): string {
 		const unit = unitOf(key);

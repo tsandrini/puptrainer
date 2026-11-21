@@ -19,7 +19,8 @@ import type {
 	SessionOut,
 	TakeMeta,
 	TakeOut,
-	TakePatch
+	TakePatch,
+	Trace
 } from './types.js';
 
 export type * from './types.js';
@@ -83,6 +84,7 @@ export const deleteTake = (id: string) =>
 export const analyseTake = (id: string) =>
 	postJson<TakeOut>(`takes/${encodeURIComponent(id)}/analysis`, {});
 export const takeAudioUrl = (id: string) => `/api/v1/takes/${encodeURIComponent(id)}/audio`;
+export const fetchTrace = (id: string) => getJson<Trace>(`takes/${encodeURIComponent(id)}/trace`);
 export const fetchSeries = (id: string, key: string) =>
 	getJson<Series>(`takes/${encodeURIComponent(id)}/series/${encodeURIComponent(key)}`);
 
