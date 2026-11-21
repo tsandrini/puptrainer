@@ -1,0 +1,87 @@
+id = "voice-in"
+version = 1
+skill = "resonance"
+item = "sustain"
+intent = "drill"
+seconds = 15
+reps = 2
+live = "whisper"
+
+[titles]
+en = "Let the voice in"
+cs = "Pustit hlas dovnitř"
+
+[summaries]
+en = "The small whispered “eh”, with the quietest voice let in for a moment and taken out again: the shape stays, only the voice comes and goes."
+cs = "Malé šeptané „e“, do kterého na chvíli pustíte ten nejtišší hlas a zase ho vezmete pryč: tvar zůstává, jen hlas přichází a odchází."
+
+[steps]
+en = [
+  "Whisper “eh” in your ordinary way for two or three seconds, held or in puffs: this sets the zero.",
+  "Slide to the small whisper, as in the exercise before, and stay there.",
+  "Without moving anything, let the quietest voice you can make come in for about a second, on whatever note it lands. Do not aim at a note, at loudness or at “bright”.",
+  "Take the voice out again and keep whispering the same small “eh” for a second. Repeat: whisper, voice, whisper, three or four times.",
+]
+cs = [
+  "Šeptejte „e“ dvě až tři vteřiny svým obvyklým způsobem, držené nebo v dechnutích: tím se nastaví nula.",
+  "Sklouzněte k malému šepotu jako v předchozím cvičení a zůstaňte tam.",
+  "Ničím nehýbejte a nechte asi na vteřinu vejít ten nejtišší hlas, jaký jde udělat, na jakémkoli tónu. Nemiřte na tón, na hlasitost ani na „jasně“.",
+  "Hlas zase vezměte pryč a ještě vteřinu šeptejte stejné malé „e“. Opakujte: šepot, hlas, šepot, třikrát nebo čtyřikrát.",
+]
+
+[right]
+en = "The hiss sounds the same before and after the voice, and the voice in between is small and light, like a quiet “eh” said to yourself. In the trace of the take, the whispered seconds on both sides of each voiced moment sit at the same height."
+cs = "Šum zní před hlasem i po něm stejně a hlas mezi tím je malý a lehký, jako tiché „e“ řečené pro sebe. Ve stopě nahrávky leží šeptané vteřiny po obou stranách každé znělé chvíle stejně vysoko."
+
+[mistakes]
+en = [
+  "The shape lets go when the voice starts: the whisper after the voice sits lower than the one before. Make the voice even quieter and shorter; half a second is enough.",
+  "Reaching for a high note with the voice: let it land where it lands. This exercise is about the shape; the note comes later.",
+  "Pushing the voice out: it should be the quietest sound you can make that is still a voice. If the level jumps, it was too much.",
+  "Reading the voiced moments against the whispered ones: a voice reads a lower R1 than a whisper on the very same shape. Compare whisper with whisper.",
+]
+cs = [
+  "Tvar povolí, jakmile hlas začne: šepot po hlasu leží níž než ten před ním. Udělejte hlas ještě tišší a kratší; půl vteřiny stačí.",
+  "Natahování se hlasem po vysokém tónu: nechte ho dosednout, kam dosedne. V tomhle cvičení jde o tvar; tón přijde později.",
+  "Vytlačování hlasu: má to být ten nejtišší zvuk, který je ještě hlasem. Když hlasitost vyskočí, bylo toho moc.",
+  "Čtení znělých chvil proti šeptaným: hlas vychází na úplně stejném tvaru s nižší R1 než šepot. Srovnávejte šepot se šepotem.",
+]
+
+[why]
+en = "The step between a whisper and a voice. In a whisper the small shape is already there; with a voice, “bright” still comes out as a higher note and another vowel. Here the shape is made first, without a voice, and the voice only joins it. The lesson this session follows goes the same way: voiceless first, then voiced. Nothing is judged yet: the live graph and the trace of the take are the feedback. A whisper has no pitch, so its first resonance (R1) can be read, and the whispered seconds before and after the voice tell whether the shape survived it."
+cs = "Krok mezi šepotem a hlasem. V šepotu už malý tvar je; s hlasem zatím „jasně“ vychází jako vyšší tón a jiná samohláska. Tady se tvar udělá nejdřív, bez hlasu, a hlas se k němu jen přidá. Lekce, kterou toto sezení následuje, jde stejnou cestou: nejdřív nezněle, potom zněle. Zatím se nic nehodnotí: zpětnou vazbou je živý graf a stopa nahrávky. Šepot nemá výšku, takže jeho první rezonance (R1) se dá přečíst, a šeptané vteřiny před hlasem a po něm řeknou, jestli ho tvar přežil."
+
+[safety]
+en = "Whispering dries the throat: sip water, and keep it to a couple of takes. Stop if the voice turns scratchy or the throat tightens."
+cs = "Šepot vysušuje hrdlo: napijte se a zůstaňte u pár nahrávek. Přestaňte, pokud hlas začne škrábat nebo se hrdlo stahuje."
+
+[[sequence]]
+seconds = 2
+labels = { en = "Whispered “eh”, ordinary", cs = "Šeptané „e“, obyčejně" }
+
+[[sequence]]
+labels = { en = "small whisper", cs = "malý šepot" }
+
+[[sequence]]
+seconds = 1
+labels = { en = "quiet voice in", cs = "tichý hlas dovnitř" }
+
+[[sequence]]
+seconds = 1
+labels = { en = "whisper again", cs = "znovu šepot" }
+
+[[sequence]]
+labels = { en = "and again", cs = "a znovu" }
+
+[rule]
+kind = "none"
+
+[[sources]]
+author = "TransVoiceLessons (Zheanna Erose)"
+title = "The Single Most Powerful Element of Voice Feminization: Meta Resonance (voiceless first, then the voice added to the same shape)"
+url = "https://www.youtube.com/watch?v=BW8X2nXexQs"
+
+[[sources]]
+author = "Sumian Voice wiki"
+title = "Resonance: from unvoiced to voiced exercises"
+url = "https://wiki.sumianvoice.com/wiki/pages/resonance"

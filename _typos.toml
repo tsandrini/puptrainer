@@ -11,5 +11,8 @@ extend-exclude = [
 [default.extend-words]
 # NOTE: a resonance of the vocal tract, not a misspelt "format"
 formant = "formant"
-# NOTE: Czech "so", in files that hold both languages (exercises, skills)
+# NOTE: Czech "so", "sides" and "pressure", in files that hold both languages
+# (exercises, skills)
 tak = "tak"
+stran = "stran"
+tlak = "tlak"

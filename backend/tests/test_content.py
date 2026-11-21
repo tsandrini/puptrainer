@@ -35,6 +35,15 @@ def test_catalogue_loads_with_every_text_in_both_languages() -> None:
     assert by_id["resonance-contrast"].sequence[0].seconds == 3
     assert by_id["count-in-band"].sequence == []
     assert {r.id for r in content.routines} == {"pitch", "resonance"}
+    resonance = next(r for r in content.routines if r.id == "resonance")
+    # voiceless, then the voice let in, then a held sound, then speech
+    assert [step.exercise for step in resonance.steps] == [
+        "whisper-slide",
+        "voice-in",
+        "resonance-edge",
+        "bright-phrase",
+    ]
+    assert by_id["voice-in"].live == "whisper" and by_id["voice-in"].rule.kind == "none"
     for exercise in content.exercises:
         for field in ("titles", "summaries", "steps", "right", "why"):
             assert set(getattr(exercise, field)) == LANGUAGES, (exercise.id, field)

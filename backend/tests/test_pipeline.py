@@ -5,7 +5,7 @@ import parselmouth
 import pytest
 import soundfile as sf
 
-from puptrainer.analysis.pipeline import analyse, spacing
+from puptrainer.analysis.pipeline import analyse, held_spread, spacing
 from puptrainer.core.metrics import KEYS, REGISTRY
 from puptrainer.core.schemas import Item
 
@@ -400,3 +400,32 @@ def test_a_silent_sustain_take_is_no_whisper(tmp_path: Path) -> None:
     analysis = analyse(write(tmp_path, np.zeros(2 * SAMPLE_RATE)), Item.SUSTAIN)
     assert analysis.details.whisper == []
     assert "f1_hz" not in analysis.series
+
+
+def test_a_held_sound_whose_reading_flips_is_told_from_a_steady_one() -> None:
+    # NOTE: found on a real take: at too low a ceiling the analysis split the second
+    # formant in two on half the frames of one steady "ah", and the medians of the mixture
+    # (579, 1126, 1347, 2735 Hz) made every sound after it read 20-40% "brighter"
+    rng = np.random.default_rng(1)
+    steady = np.array([650.0, 1200.0, 2400.0, 3450.0]) * (1 + 0.01 * rng.standard_normal((80, 4)))
+    assert held_spread(steady) < 5
+    split = steady.copy()
+    split[::2] = np.array([640.0, 1130.0, 1350.0, 2400.0]) * (
+        1 + 0.01 * rng.standard_normal((40, 4))
+    )
+    assert held_spread(split) > 30
+
+
+def test_held_sounds_say_how_steady_their_reading_was(tmp_path: Path) -> None:
+    gap = np.zeros(int(0.6 * SAMPLE_RATE))
+    take = np.concatenate(
+        [
+            vowel(AH, f0=180.0, seconds=2.5, wobble=0.0),
+            gap,
+            vowel(SHORT, f0=180.0, seconds=2.5, wobble=0.0),
+        ]
+    )
+    for item, found in ((Item.SUSTAIN, "segments"), (Item.VOWELS, "vowels")):
+        sounds = getattr(analyse(write(tmp_path, take), item).details, found)
+        assert len(sounds) == 2
+        assert all(s.formant_spread_pct is not None and s.formant_spread_pct < 15 for s in sounds)

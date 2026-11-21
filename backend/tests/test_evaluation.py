@@ -189,6 +189,34 @@ def test_resonance_contrast(catalogue: dict[str, Exercise]) -> None:
     assert measures(airy)["step_bright_pct"] == pytest.approx(8.0)
     firm = [s.model_copy(update={"h1h2_db": 9.0, "r1_unreadable_pct": 0.0}) for s in good]
     assert "step_r1_pct" in measures(evaluate(ref, exercise, facts(None, segments=firm)))
+    # a sound whose resonances were not read steadily is not compared: no numbers from it
+    flipping = [good[0].model_copy(update={"formant_spread_pct": 66.0}), *good[1:]]
+    mixed = evaluate(ref, exercise, facts(None, segments=flipping))
+    assert (mixed.met, mixed.advice) == (False, ["resonance-unsteady"])
+    assert [m.key for m in mixed.measures] == ["step_drift_st"]
+    calm = [s.model_copy(update={"formant_spread_pct": 6.0}) for s in good]
+    assert evaluate(ref, exercise, facts(None, segments=calm)).met is True
+
+
+def test_resonance_edge_is_judged_on_the_note_staying(catalogue: dict[str, Exercise]) -> None:
+    exercise = catalogue["resonance-edge"]
+    ref = "exercise:resonance-edge@1"
+    # the learner's own afternoon: 190, 199 and 216 Hz, the last sound 6% brighter
+    close = [segment(0, 1000, 190), segment(3, 920, 199), segment(6, 1060, 216)]
+    result = evaluate(ref, exercise, facts(None, segments=close))
+    assert result.met is True and result.advice == []
+    assert measures(result)["step_drift_st"] == pytest.approx(2.2, abs=0.05)
+    assert measures(result)["step_bright_pct"] == pytest.approx(6.0)
+    # no brighter at all still counts when the note stayed: the step may be that small
+    level = [segment(0, 1000, 190), segment(3, 920, 190), segment(6, 1000, 192)]
+    assert evaluate(ref, exercise, facts(None, segments=level)).met is True
+    # the note going along does not
+    apart = [segment(0, 1000, 189), segment(3, 920, 192), segment(6, 1070, 229)]
+    drift = evaluate(ref, exercise, facts(None, segments=apart))
+    assert (drift.met, drift.advice) == (False, ["pitch-moved"])
+    # and a last sound darker than the first is not a step towards bright
+    darker = [segment(0, 1000, 190), segment(3, 920, 190), segment(6, 980, 190)]
+    assert evaluate(ref, exercise, facts(None, segments=darker)).advice == ["not-brighter"]
 
 
 def whispered(*positions: tuple[float, float]) -> list[WhisperSpan]:

@@ -231,6 +231,7 @@ class Advice(StrEnum):
     NOT_BRIGHTER = "not-brighter"
     R1_UNREADABLE = "r1-unreadable"
     WHISPER_SAME = "whisper-same"
+    RESONANCE_UNSTEADY = "resonance-unsteady"
 
 
 class Evaluation(Schema):
@@ -464,6 +465,10 @@ class VowelSegment(Schema):
             middle (lightness); unset when it was not measured (an older analysis).
         r1_unreadable_pct: The share of the steady middle's frames whose F1 cannot be told
             from the pitch (see the metric of the same name); unset when not measured.
+        formant_spread_pct: How far the upper formants scatter from frame to frame over
+            the steady middle (90th over 10th percentile of their geometric mean); a held
+            sound stays within a few percent, and a larger value means the analysis found
+            no steady reading. Unset when not measured.
     """
 
     start_s: float
@@ -475,6 +480,7 @@ class VowelSegment(Schema):
     hnr_db: float
     h1h2_db: float | None = None
     r1_unreadable_pct: float | None = None
+    formant_spread_pct: float | None = None
 
 
 class WhisperSpan(Schema):

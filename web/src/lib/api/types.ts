@@ -2,7 +2,7 @@
 // Do not edit: change the models in backend/src/puptrainer/core/schemas.py and regenerate.
 
 /** What a judgement suggests trying next. */
-export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful' | 'pitch-moved' | 'pitch-too-high' | 'not-brighter' | 'r1-unreadable' | 'whisper-same';
+export type Advice = 'above-band' | 'below-band' | 'above-note' | 'below-note' | 'unsteady' | 'effortful' | 'pitch-moved' | 'pitch-too-high' | 'not-brighter' | 'r1-unreadable' | 'whisper-same' | 'resonance-unsteady';
 
 /** The latest analysis job of a take. */
 export type AnalysisOut = {
@@ -457,6 +457,7 @@ export type VowelSegment = {
 	hnr_db: number;
 	h1h2_db: number | null;
 	r1_unreadable_pct: number | null;
+	formant_spread_pct: number | null;
 };
 
 /** A whispered slide read against its own start: did the resonances move. */

@@ -1,20 +1,23 @@
 id = "resonance"
-version = 1
-minutes = 5
+version = 2
+minutes = 7
 
 [titles]
 en = "Resonance"
 cs = "Rezonance"
 
 [summaries]
-en = "Resonance, at an easy pitch: find the smaller sound in a whisper, hold it on one note, then keep it in a phrase."
-cs = "Rezonance, ve snadné výšce: najít menší zvuk v šepotu, podržet ho na jednom tónu a pak ho udržet ve větě."
+en = "Resonance, at an easy pitch: find the smaller sound in a whisper, let the voice into it, hold it on one note, then keep it in a phrase."
+cs = "Rezonance, ve snadné výšce: najít menší zvuk v šepotu, pustit do něj hlas, podržet ho na jednom tónu a pak ho udržet ve větě."
 
 [[steps]]
 exercise = "whisper-slide"
 
 [[steps]]
-exercise = "resonance-contrast"
+exercise = "voice-in"
+
+[[steps]]
+exercise = "resonance-edge"
 
 [[steps]]
 exercise = "bright-phrase"

@@ -50,6 +50,9 @@ MEASURES: tuple[MeasureDef, ...] = (
 
 MIN_VOICED_FRAMES = 10
 HOLD_GAP_S = 0.05
+MAX_HELD_SPREAD_PCT = 15.0
+"""Above this scatter of a held sound's upper formants from frame to frame, the analysis
+found no steady reading of it (as in the pipeline): its resonances are not compared."""
 STRAINED = 1
 """The lowest comfort rating: a rep rated so is never met."""
 EFFORTFUL = 2
@@ -327,6 +330,11 @@ def _steps(rule: StepsRule, facts: TakeFacts, out: Evaluation) -> None:
         # a sound pitched too high to show its resonances: nothing to compare
         out.met = False
         out.advice.append(Advice.PITCH_TOO_HIGH)
+        return
+    if any((s.formant_spread_pct or 0.0) > MAX_HELD_SPREAD_PCT for s in (chosen[0], chosen[-1])):
+        # the analysis flipped between two readings of one sound: a number would be a mix
+        out.met = False
+        out.advice.append(Advice.RESONANCE_UNSTEADY)
         return
     bright = brightness_pct(last, first)
     brighter = bright >= rule.min_bright_pct

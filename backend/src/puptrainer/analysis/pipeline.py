@@ -16,7 +16,7 @@ from parselmouth.praat import call
 from puptrainer.core.acoustics import semitones, spacing
 from puptrainer.core.schemas import Details, Item, Series, VowelSegment, WhisperSpan
 
-PIPELINE_VERSION = "0.4.0"
+PIPELINE_VERSION = "0.4.1"
 
 TIME_STEP_S = 0.01
 FRAME_S = 0.02
@@ -42,6 +42,11 @@ CEILING_STEP_HZ = 250.0
 FORMANT_CEILINGS_HZ = tuple(float(c) for c in range(4500, 6501, int(CEILING_STEP_HZ)))
 CEILING_PER_SPACING = 5.0
 MAX_BANDWIDTH_HZ = 500.0
+# NOTE: one held sound is one shape: its upper formants stay within a few percent from
+# frame to frame (2-9% between the 10th and 90th percentile on real takes). Where a
+# ceiling splits a formant in two, or drops one, the frames flip between two readings
+# and scatter by 30% and more; such a run says nothing, whatever its spacing
+MAX_HELD_SPREAD_PCT = 15.0
 MIN_VOWEL_S = 1.5
 # NOTE: a spectrum only shows the vocal tract at the harmonics of the pitch. Above about
 # 300 Hz they lie too far apart: the analysis then finds the harmonics themselves (a
@@ -275,9 +280,23 @@ def glide_metrics(pitch: PitchTrack) -> dict[str, float]:
     }
 
 
+def held_spread(frames: np.ndarray) -> float:
+    """How far the upper formants of one held sound scatter from frame to frame, in percent.
+
+    The geometric mean of F2 to F4 of each frame, against the sound's median: the 90th
+    percentile over the 10th.
+
+    Args:
+        frames: F1 to F4 per frame, complete rows only.
+    """
+    upper = np.exp(np.log(frames[:, 1:4] / np.median(frames[:, 1:4], axis=0)).mean(axis=1))
+    low, high = np.percentile(upper, [10, 90])
+    return 100.0 * (float(high / low) - 1.0)
+
+
 def formant_fit(
-    sound: parselmouth.Sound, groups: list[np.ndarray]
-) -> tuple[list[list[float]], list[float], float] | None:
+    sound: parselmouth.Sound, groups: list[np.ndarray], held: bool = False
+) -> tuple[list[list[float]], list[float], float, float] | None:
     """Median F1 to F4 of groups of frames, with the analysis ceiling fitted to the voice.
 
     Burg's method finds five formants below a ceiling, so the ceiling has to sit where
@@ -286,24 +305,29 @@ def formant_fit(
     result is interpolated between the two neighbouring runs where "ceiling minus five
     spacings" changes sign. Runs with a median bandwidth above 500 Hz are discarded: a
     ceiling that is too low merges two formants into one wide one and then reads a short
-    vocal tract as a long one.
+    vocal tract as a long one. For held sounds, runs whose frames scatter (`held_spread`
+    above 15%) are discarded before that: there the analysis flips between two readings
+    of the same shape, and the medians of such a run are a mixture of both.
 
     Args:
         sound: The audio to analyse.
         groups: Frame times, one array per group: all voiced frames of a take of speech,
             or the steady middle of each sustained vowel.
+        held: Each group is one held sound, whose formants should stay put.
 
     Returns:
-        The medians per group, their mean over the groups (four frequencies in Hz each)
-        and the ceiling they were read at, or `None` when no run finds all four formants
-        in ten frames of every group.
+        The medians per group, their mean over the groups (four frequencies in Hz each),
+        the ceiling they were read at and, for held sounds, the largest spread of a
+        group in the chosen run (0 for speech); `None` when no run finds all four
+        formants in ten frames of every group.
     """
-    runs: list[tuple[float, np.ndarray, float, float]] = []  # ceiling, medians, gap, width
+    # ceiling, medians, gap, width, spread
+    runs: list[tuple[float, np.ndarray, float, float, float]] = []
     for ceiling in FORMANT_CEILINGS_HZ:
         formant = sound.to_formant_burg(
             time_step=TIME_STEP_S, max_number_of_formants=5, maximum_formant=ceiling
         )
-        medians, widths = [], []
+        medians, widths, spreads = [], [], [0.0]
         for times in groups:
             rows = np.array(
                 [
@@ -317,12 +341,15 @@ def formant_fit(
                 break
             medians.append(np.median(complete[:, :4], axis=0))
             widths.append(np.median(complete[:, 4:], axis=0).max())
+            if held:
+                spreads.append(held_spread(complete[:, :4]))
         if len(medians) < len(groups) or not medians:
             continue
         overall = [float(v) for v in np.mean(medians, axis=0)]
         gap = ceiling - CEILING_PER_SPACING * spacing(overall)[0]
-        runs.append((ceiling, np.array(medians), gap, float(max(widths))))
-    sound_runs = [run for run in runs if run[3] <= MAX_BANDWIDTH_HZ] or runs
+        runs.append((ceiling, np.array(medians), gap, float(max(widths)), max(spreads)))
+    steady = [run for run in runs if run[4] <= MAX_HELD_SPREAD_PCT] or runs
+    sound_runs = [run for run in steady if run[3] <= MAX_BANDWIDTH_HZ] or steady
     if not sound_runs:
         return None
 
@@ -336,14 +363,15 @@ def formant_fit(
                     max(lower[3], upper[3]),
                     lower[1] + weight * (upper[1] - lower[1]),
                     lower[0] + weight * (upper[0] - lower[0]),
+                    max(lower[4], upper[4]),
                 )
             )
     if crossings:
-        _, medians, ceiling = min(crossings, key=lambda crossing: crossing[0])
+        _, medians, ceiling, spread = min(crossings, key=lambda crossing: crossing[0])
     else:
-        ceiling, medians, _, _ = min(sound_runs, key=lambda run: abs(run[2]) / run[0])
+        ceiling, medians, _, _, spread = min(sound_runs, key=lambda run: abs(run[2]) / run[0])
     per_group = [[float(v) for v in row] for row in medians]
-    return per_group, [float(v) for v in np.mean(medians, axis=0)], float(ceiling)
+    return per_group, [float(v) for v in np.mean(medians, axis=0)], float(ceiling), float(spread)
 
 
 def louder_voiced(sound: parselmouth.Sound, pitch: PitchTrack) -> np.ndarray:
@@ -487,16 +515,18 @@ def vowel_segments(
     }
     formants: dict[int, list[float]] = {}
     ceilings: dict[int, float] = {}
+    spreads: dict[int, float] = {}
     if classify and groups:
-        fit = formant_fit(sound, list(groups.values()))
+        fit = formant_fit(sound, list(groups.values()), held=True)
         if fit is not None:
             formants = dict(zip(groups, fit[0], strict=True))
             ceilings = dict.fromkeys(groups, fit[2])
+            spreads = dict.fromkeys(groups, fit[3])
     else:
         for index, group in groups.items():
-            fit = formant_fit(sound, [group])
+            fit = formant_fit(sound, [group], held=True)
             if fit is not None:
-                formants[index], ceilings[index] = fit[1], fit[2]
+                formants[index], ceilings[index], spreads[index] = fit[1], fit[2], fit[3]
     if classify and not formants:
         return [], None, []
     segments = []
@@ -515,6 +545,7 @@ def vowel_segments(
                 formants_hz=found,
                 cpps_db=quality.get("cpps_db", 0.0),
                 hnr_db=quality.get("hnr_db", 0.0),
+                formant_spread_pct=spreads.get(index),
             )
         )
     read_at = [ceilings.get(index) for index in range(len(middles))]
