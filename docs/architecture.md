@@ -40,7 +40,7 @@ than the API and its storage.
   tell whether a drill is going right, so pitch steps show the band, the
   note and the live pitch while recording, and resonance steps the live
   resonance meter with the formants spectrogram; other steps show the level
-  only. Every step with a guide also draws the last 30 seconds as rows
+  only. Every step with a guide also draws the last 30 seconds as grids
   over time (`audio/live.ts`, `LiveTraces`), and a held sound a map of
   pitch against brightness. Always-on displays help the session and hurt
   what is kept, so fading them as skills settle belongs to the curriculum
@@ -49,8 +49,19 @@ than the API and its storage.
   happened in it. The pipeline keeps what it measures frame by frame, the
   API turns it into rows over time when asked (`core.trace`, never
   stored), and every player draws them under its picture on one time axis
-  (`Traces`). Right after recording, before the analysis is in, the rows
-  come from what the live graph drew, and say so.
+  (`Traces`): three grids, one per unit (pitch in Hz; brightness and R1 in
+  percent; lightness, loudness and clarity in dB against the take's first
+  sound). Right after recording, before the analysis is in, the grids come
+  from what the live graph drew, and say so.
+- **The data in detail, like with like.** There is no teacher to say what
+  changed, so the Progress page shows every take as data: its distance
+  from the everyday voice in grids by unit, any two measures against each
+  other with their correlation, every measurement and every exercise's
+  judgement over time. Always for one microphone setup and one kind of
+  take, over a chosen stretch of time (`GET /api/v1/takes` takes `since`
+  and `until`); all kinds together show only the distances, which are
+  each counted from the everyday takes of the take's own kind. A point
+  names its take, plays it, and a click pins it to a card that opens it.
 - **A number that cannot be read is not shown.** Linear prediction puts
   its lowest peak on the fundamental when that stands far above the
   harmonics over it, as in a light voice at a raised pitch: the "first
@@ -189,7 +200,10 @@ and their median F1 read a fifth lower for that reason alone.
 its sounding frames are unvoiced. Its unvoiced frames within 15 dB of the
 loudest (and 12 dB above the room) are read at a 5500 Hz ceiling, and each
 second with eight or more of them is stored with its median formants. A
-pitch above 300 Hz found in such a take is noise, not a voice.
+pitch above 300 Hz found in such a take is noise, not a voice, and the 0.2 s
+either side of a voiced stretch of a quarter of a second or more are
+neither voice nor whisper: there a soft voice reads its pitch as a
+resonance.
 
 **Voice quality** is measured on the voiced stretches joined together, never
 over pauses. CPPS uses the settings of the Acoustic Voice Quality Index.

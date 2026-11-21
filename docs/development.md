@@ -111,10 +111,22 @@ A test compares the migrated schema with the models.
 
 The theme (colours for light and dark, the font, the paw motif) is in
 `web/src/routes/layout.css`; components use its tokens, never raw colours.
-Charts are built with layerchart in `web/src/lib/components/charts/`. The two
-series colours (`--series-1` for the everyday voice, `--series-2` for
-attempts) are a validated pair: a colour follows the voice it stands for,
-and a third series needs a new validated colour, not a guess.
+Charts are in `web/src/lib/components/charts/`. Everything that runs along
+an x axis is a `Plot`: a thin wrapper around
+[uPlot](https://github.com/leeoniya/uPlot) (canvas) with the theme's
+colours, a text legend that says each line's value at the pointer, shaded
+zones and stretches, a pointer shared between plots (`sync`) and a zoom
+shared by the plots bound to one `shown`. `Plot` sets the ends of the x
+axis itself (a margin around a point per take, half a day around a lone
+one). `Scatter` (SVG) puts two measures against each other.
+
+The rules the charts keep: one value axis per grid, so two units are two
+grids; a hue says which measure a line is, never its position in a list;
+where two voices share a chart, attempts are filled and everyday takes
+hollow and fainter; text wears text colours. The six series colours
+(`--series-1` to `--series-6`, light and dark) are a validated set, for
+colour-blind separation and for contrast against both surfaces: a seventh
+needs a new validated colour, not a guess.
 
 Spectrograms (`web/src/lib/audio/spectrum.ts`, drawn by the components in
 `web/src/lib/components/audio/`) are computed in the browser with the

@@ -91,10 +91,11 @@ sounds (each held sound of 1.5 s or more is measured on its own), `phrase`
 for short speech, `glide` for a slide through the range; `vowels`,
 `passage` and `free` as in the lab.
 
-**Intent.** `drill` marks a sound made for an exercise, not a voice: it
-never draws a line on the Progress page. Speech in the voice being trained
-(counting, phrases) is an `attempt`; Progress shows such attempts from
-practice only when asked to.
+**Intent.** `drill` marks a sound made for an exercise, not a voice: the
+Progress page never charts it as a voice, only under its exercise, as
+what the rule measured. Speech in the voice being trained (counting,
+phrases) is an `attempt`; Progress shows such attempts from practice among
+the voice's takes only when asked to.
 
 **Versions.** Takes store `exercise:<id>@<version>`. Raise the version when
 what the learner is asked to do changes; a fixed typo needs none. Takes are

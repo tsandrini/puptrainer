@@ -34,10 +34,11 @@ every rep, and a practice log. Voice exploration and lessons come next
 - **Plays takes over a picture of them**: a spectrogram of the whole take
   with the level under it, a playhead, click to seek. One switch shows
   either the voice's harmonics or its resonances (formants).
-- **Shows a take moment by moment**: under the player, one row each for
-  pitch, brightness, the first resonance (R1), lightness, clarity and
-  loudness, on the picture's time axis, with the playback position running
-  through them. Click a moment to hear what you did there.
+- **Shows a take moment by moment**: under the player, three grids on the
+  picture's time axis: pitch; brightness and the first resonance (R1);
+  lightness, loudness and clarity. The playback position runs through
+  them and the legends say the values there. Click a moment to hear what
+  you did there; drag to zoom in.
 - **Labels every take**: the microphone setup, what was spoken, the
   language, and whether it was your everyday voice or an attempt at the
   voice you are training.
@@ -60,9 +61,13 @@ every rep, and a practice log. Voice exploration and lessons come next
   analysis finds the pitch where the first resonance should be; R1 is then
   marked "not readable" instead of being shown as a fall. A whisper has no
   pitch, so whispered takes are where R1 is measured.
-- **Shows progress** by target: the distance from your everyday voice over
-  time, then each measurement behind it, per microphone setup and kind of
-  take; and any two takes side by side.
+- **Shows progress as data to dig into**: per microphone setup and kind of
+  take (or all kinds together), over a stretch of time you pick, every
+  take against your everyday voice (pitch, resonance and the source, a
+  grid each), any two measures against each other with their correlation,
+  and every measurement and every exercise's result over time. Rest the
+  pointer on a point to see and hear its take, click to pin it, drag to
+  zoom every chart; and any two takes side by side.
 - **Guides practice**: two short sessions, one for pitch and one for
   resonance, of drills that end in speech, after the teachers of the trans
   voice community, each rep judged on the one or two numbers it is about.
@@ -158,8 +163,9 @@ listening does not. `services.puptrainer.api.enable` and
 4. **Takes** lists everything; a take's page has the player with the take
    moment by moment under it, the take read against your everyday voice,
    its numbers and its labels. Tick two takes to compare them.
-5. **Progress** charts pitch and resonance over time, each against your
-   everyday voice first, then measurement by measurement.
+5. **Progress** charts every take over time: against your everyday voice
+   first, then any two measures against each other, then measurement by
+   measurement and exercise by exercise. Point at a take to hear it.
 
 The texts of the exercises ("Anchor phrases") have buttons of their own
 under the baseline: read one in your everyday voice, and every take of it
