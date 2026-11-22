@@ -54,14 +54,18 @@ than the API and its storage.
   sound). Right after recording, before the analysis is in, the grids come
   from what the live graph drew, and say so.
 - **The data in detail, like with like.** There is no teacher to say what
-  changed, so the Progress page shows every take as data: its distance
-  from the everyday voice in grids by unit, any two measures against each
-  other with their correlation, every measurement and every exercise's
-  judgement over time. Always for one microphone setup and one kind of
-  take, over a chosen stretch of time (`GET /api/v1/takes` takes `since`
-  and `until`); all kinds together show only the distances, which are
-  each counted from the everyday takes of the take's own kind. A point
-  names its take, plays it, and a click pins it to a card that opens it.
+  changed, so every take is data to work with: a table to search, filter
+  and sort, and a Progress page with its distance from the everyday voice
+  over time, how each voice spreads, how the measures go together, every
+  measurement and every exercise's judgement. Always for one microphone
+  setup and one kind of take, over a chosen stretch of time; all kinds
+  together show only the distances, which are each counted from the
+  everyday takes of the take's own kind. A point is a take: the pointer
+  names it and a click plays it.
+- **Listening is part of reading the data.** A number says what changed,
+  the recording says how it sounded, so a take is one click from any
+  place it appears: the player is a dock in the app's shell that goes on
+  while pages change, and walks through the list a take came from.
 - **A number that cannot be read is not shown.** Linear prediction puts
   its lowest peak on the fundamental when that stands far above the
   harmonics over it, as in a light voice at a raised pitch: the "first

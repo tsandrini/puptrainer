@@ -61,13 +61,29 @@ every rep, and a practice log. Voice exploration and lessons come next
   analysis finds the pitch where the first resonance should be; R1 is then
   marked "not readable" instead of being shown as a fall. A whisper has no
   pitch, so whispered takes are where R1 is measured.
+- **Lists every take in a table to work in**: search (the words it found
+  are marked), filters with counts, sorting by any column, the distances
+  from your everyday voice as columns, pages, a column picker. The view
+  is kept in the address, so coming back from a take finds it as it was.
+  Ticked takes can be played in a row, compared, analysed again or saved
+  as CSV.
+- **Plays takes from a dock at the bottom of every page**: a play button
+  in a table row or a click on a chart's point sends a take there, and it
+  goes on playing while you open other pages. Its seek bar is the take's
+  loudness and pitch; previous and next walk through the list the take
+  came from. Nothing plays by itself.
 - **Shows progress as data to dig into**: per microphone setup and kind of
-  take (or all kinds together), over a stretch of time you pick, every
-  take against your everyday voice (pitch, resonance and the source, a
-  grid each), any two measures against each other with their correlation,
-  and every measurement and every exercise's result over time. Rest the
-  pointer on a point to see and hear its take, click to pin it, drag to
-  zoom every chart; and any two takes side by side.
+  take (or all kinds together), over a stretch of time you pick. The
+  latest attempt on tiles; every take against your everyday voice over
+  time, with the ranges it is read by drawn and named; how each voice
+  spreads; how the measures go together (a grid of correlations, and any
+  two against each other, with a rectangle to select takes); every
+  measurement and every exercise's result with its pass bar. Every chart
+  opens over the whole screen and gives its numbers as a table, CSV or
+  picture. Attempts are solid lines and filled marks, the everyday voice
+  dashed and hollow, on every chart.
+- **Keeps explanations a click away**: pages show data and controls; what
+  a number means and how far to trust it is behind the "?" beside it.
 - **Guides practice**: two short sessions, one for pitch and one for
   resonance, of drills that end in speech, after the teachers of the trans
   voice community, each rep judged on the one or two numbers it is about.
@@ -160,12 +176,15 @@ listening does not. `services.puptrainer.api.enable` and
    (−12 to −6 dBFS). The resonance meter, the graph of the last seconds and
    the spectrogram under it are guides, not measurements. Listen back (the
    take is drawn under the player as the live guide saw it), then save.
-4. **Takes** lists everything; a take's page has the player with the take
-   moment by moment under it, the take read against your everyday voice,
-   its numbers and its labels. Tick two takes to compare them.
-5. **Progress** charts every take over time: against your everyday voice
-   first, then any two measures against each other, then measurement by
-   measurement and exercise by exercise. Point at a take to hear it.
+4. **Takes** is a table of everything: search with `/`, filter, sort, and
+   press play on a row to hear it in the dock (`K` pauses, `J` and `L`
+   move five seconds, `P` and `N` step through the table). A take's page
+   has the player with the take moment by moment under it, the take read
+   against your everyday voice, its numbers and its labels; `[` and `]`
+   step to its neighbours in the table. Tick two takes to compare them.
+5. **Progress** has four tabs: the takes against your everyday voice, the
+   measurements one by one, the measures against each other, and the
+   exercises. Point at a take to see what it is, click it to hear it.
 
 The texts of the exercises ("Anchor phrases") have buttons of their own
 under the baseline: read one in your everyday voice, and every take of it
