@@ -37,8 +37,8 @@
 <div class="space-y-3" data-testid="take-review">
 	<TakePlayer bind:this={player} bind:position bind:duration {source} {name} />
 	{#if trace && trace.rows.length}
-		<h3 class="text-sm font-bold">{i18n.t.traces.title}</h3>
 		<Traces
+			heading={i18n.t.traces.title}
 			{trace}
 			{duration}
 			{position}

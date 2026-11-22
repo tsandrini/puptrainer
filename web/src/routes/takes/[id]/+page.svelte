@@ -23,15 +23,20 @@
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
 	import MetricGroups from '#lib/components/app/MetricGroups.svelte';
 	import ReadingView from '#lib/components/app/ReadingView.svelte';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { fmtDateTime, fmtDuration, fmtNumber } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { passageFor, passageRef } from '#lib/labels.js';
+	import { trailAround } from '#lib/trail.js';
 
 	const POLL_MS = 2_000;
 
 	const id = $derived(page.params.id!);
+	/** Where this take sits in the list it was opened from (the takes table as it stood). */
+	const trail = $derived(trailAround(id));
 	let take = $state.raw<TakeOut | null>(null);
 	let trace = $state.raw<Trace | null>(null);
 	let missing = $state(false);
@@ -150,6 +155,17 @@
 		});
 </script>
 
+<svelte:window
+	onkeydown={(event) => {
+		// NOTE: [ and ] step through the list the take was opened from
+		if (!trail || event.ctrlKey || event.metaKey || event.altKey) return;
+		if ((event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable]'))
+			return;
+		const to = event.key === '[' ? trail.previous : event.key === ']' ? trail.next : null;
+		if (to) void goto(`/takes/${to}`);
+	}}
+/>
+
 {#if missing}
 	<p class="text-muted-foreground">{i18n.t.take.notFound}</p>
 {:else if take === null}
@@ -160,6 +176,35 @@
 			{i18n.t.item[take.item]}{#if take.language}, {i18n.language(take.language)}{/if}
 		</h1>
 		<AnalysisBadge analysis={take.analysis} />
+		{#if trail && trail.length > 1}
+			<div class="flex items-center gap-1" data-testid="trail">
+				<Button
+					variant="outline"
+					size="icon-sm"
+					href={trail.previous ? `/takes/${trail.previous}` : undefined}
+					disabled={!trail.previous}
+					aria-label={i18n.t.take.previous}
+					title={i18n.t.take.previous}
+					data-testid="trail-previous"
+				>
+					<ChevronLeftIcon />
+				</Button>
+				<span class="text-xs text-muted-foreground tabular-nums" data-testid="trail-place">
+					{trail.place} / {trail.length}
+				</span>
+				<Button
+					variant="outline"
+					size="icon-sm"
+					href={trail.next ? `/takes/${trail.next}` : undefined}
+					disabled={!trail.next}
+					aria-label={i18n.t.take.next}
+					title={i18n.t.take.next}
+					data-testid="trail-next"
+				>
+					<ChevronRightIcon />
+				</Button>
+			</div>
+		{/if}
 		<span class="ml-auto text-sm text-muted-foreground">
 			{fmtDateTime(take.recorded_at, i18n.locale)} · {i18n.t.intent[take.intent]} · {take.device_name}
 			· {fmtDuration(take.duration_s)}

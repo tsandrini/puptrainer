@@ -118,9 +118,9 @@
 	data-mode={mode}
 >
 	<div>
-		<p class="mb-1 text-sm font-bold">{i18n.t.live.graph.title(WINDOW_S)}</p>
 		{#if shown}
 			<Traces
+				heading={i18n.t.live.graph.title(WINDOW_S)}
 				trace={shown}
 				duration={WINDOW_S}
 				position={WINDOW_S - STEP_S / 2}
@@ -131,6 +131,7 @@
 				reads={speech && resonance ? i18n.t.live.graph.speech : i18n.t.live.graph.reads}
 			/>
 		{:else}
+			<p class="mb-1 text-sm font-bold">{i18n.t.live.graph.title(WINDOW_S)}</p>
 			<p class="text-xs text-muted-foreground">{i18n.t.live.waiting}</p>
 		{/if}
 	</div>

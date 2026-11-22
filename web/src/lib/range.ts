@@ -45,3 +45,21 @@ export function rangeProblem(from: number | null, to: number | null): RangeProbl
 	if (from === null || to === null) return 'incomplete';
 	return to > from ? null : 'backwards';
 }
+
+/** A range as a short text for a link: `all`, `30d`, or `<from>~<to>` in ms. */
+export const encodeRange = (range: TimeRange): string =>
+	range.kind === 'all'
+		? 'all'
+		: range.kind === 'quick'
+			? `${range.days}d`
+			: `${range.from}~${range.to}`;
+
+/** A range from its text; anything else is everything. */
+export function decodeRange(text: string): TimeRange {
+	const quick = /^(\d{1,4})d$/.exec(text);
+	if (quick && Number(quick[1]) > 0) return { kind: 'quick', days: Number(quick[1]) };
+	const exact = /^(\d{9,15})~(\d{9,15})$/.exec(text);
+	if (exact && Number(exact[1]) < Number(exact[2]))
+		return { kind: 'absolute', from: Number(exact[1]), to: Number(exact[2]) };
+	return { kind: 'all' };
+}

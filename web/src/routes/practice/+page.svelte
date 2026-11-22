@@ -9,6 +9,7 @@
 	import BandCard from '#lib/components/app/BandCard.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import ExerciseDetails from '#lib/components/app/ExerciseDetails.svelte';
+	import Help from '#lib/components/app/Help.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { fmtDateTime } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
@@ -43,8 +44,10 @@
 	});
 </script>
 
-<h1 class="mb-1 text-2xl">{i18n.t.practice.title}</h1>
-<p class="mb-4 max-w-2xl text-sm text-muted-foreground">{i18n.t.practice.intro}</p>
+<h1 class="mb-3 flex items-center gap-2 text-2xl">
+	{i18n.t.practice.title}
+	<Help title={i18n.t.practice.title} text={i18n.t.practice.intro} />
+</h1>
 
 {#if !app.loaded}
 	<p class="text-muted-foreground">{i18n.t.common.loading}</p>
@@ -90,13 +93,17 @@
 	<div class="space-y-4" data-testid="catalogue">
 		{#each skills as { skill, exercises } (skill.key)}
 			<section class="panel" data-skill={skill.key}>
-				<h3 class="text-base">{i18n.pick(skill.titles)}</h3>
-				<p class="mt-0.5 text-sm text-muted-foreground">{i18n.pick(skill.descriptions)}</p>
-				{#if skill.aliases.length}
-					<p class="mt-1 text-xs text-muted-foreground">
-						{i18n.t.practice.aliases}: {skill.aliases.join(', ')}
-					</p>
-				{/if}
+				<h3 class="flex items-center gap-1 text-base">
+					{i18n.pick(skill.titles)}
+					<Help
+						title={i18n.pick(skill.titles)}
+						text={[
+							i18n.pick(skill.descriptions),
+							skill.aliases.length ? `${i18n.t.practice.aliases}: ${skill.aliases.join(', ')}` : ''
+						]}
+						wide
+					/>
+				</h3>
 				<div class="mt-2 divide-y">
 					{#each exercises as exercise (exercise.id)}
 						<details class="py-2" data-exercise={exercise.id}>

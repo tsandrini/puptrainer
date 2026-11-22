@@ -235,18 +235,43 @@ export const cs: Messages = {
 		duration: 'Délka',
 		pitch: 'Výška',
 		status: 'Analýza',
-		allItems: 'Všechno',
-		allIntents: 'Jakýkoli hlas',
-		allLanguages: 'Jakýkoli jazyk',
-		select: 'Vybrat k porovnání',
+		text: 'Text nebo cvičení',
+		origin: 'Zdroj',
+		from: { lab: 'Stránka Nahrát', practice: 'Cvičení' },
+		gone: 'dřívější cvičení',
+		comfort: 'Pohodlí',
+		result: 'Výsledek',
+		met: 'splněno',
+		notYet: 'zatím ne',
+		listen: 'Poslechnout',
+		against: 'proti vašemu běžnému hlasu',
+		shifts: {
+			pitch_shift_st: 'Δ výška',
+			brightness_pct: 'Δ jas',
+			r1_shift_pct: 'Δ R1',
+			lightness_shift_db: 'Δ lehkost',
+			level_shift_db: 'Δ hlasitost',
+			clarity_shift_db: 'Δ čistota'
+		},
+		unreadable: 'nelze',
+		unreadableHint:
+			'Na této nahrávce nelze přečíst: hlas je příliš vysoký a lehký, než aby se jeho první rezonance dala odlišit od výšky.',
+		exportHint: 'Uložit to, co tabulka vypisuje, jako soubor CSV',
+		help: [
+			'Každá nahrávka je řádek. Tlačítko přehrát pošle nahrávku do přehrávače dole na stránce; předchozí a další tam procházejí tabulku tak, jak je právě vyfiltrovaná a seřazená.',
+			'Sloupce Δ jsou vzdálenost nahrávky od vašeho běžného hlasu u stejného druhu nahrávky: výška v půltónech, rezonance v procentech, ostatní v decibelech. Další sloupce jsou pod „Sloupce“.',
+			'Kliknutí na záhlaví řadí, kliknutí se Shiftem na další přidá druhý klíč. Zaškrtnuté řádky lze přehrát, dvě porovnat, analyzovat znovu nebo uložit jako CSV. Pohled je v adrese: odkaz na ni ukáže stejnou tabulku.'
+		],
 		compare: 'Porovnat',
-		compareHint: 'Zaškrtněte dvě nahrávky, které chcete porovnat.',
+		compareHint: 'K porovnání zaškrtněte právě dvě nahrávky.',
 		outdated: (n) =>
 			`${n} ${plural(n, 'nahrávka byla analyzována', 'nahrávky byly analyzovány', 'nahrávek bylo analyzováno')} starší verzí analýzy.`,
 		reanalyse: 'Analyzovat znovu'
 	},
 	take: {
 		notFound: 'Tato nahrávka neexistuje.',
+		previous: 'Předchozí nahrávka v tabulce ( [ )',
+		next: 'Následující nahrávka v tabulce ( ] )',
 		labels: 'Popis',
 		note: 'Poznámka',
 		metrics: 'Měření',
@@ -271,40 +296,69 @@ export const cs: Messages = {
 	},
 	progress: {
 		title: 'Pokrok',
-		intro:
-			'Jeden bod za každou nahrávku, vždy pro jedno nastavení mikrofonu a jeden druh nahrávky, za zvolený úsek času. Nejdřív každá nahrávka proti vašemu běžnému hlasu, potom libovolné dvě veličiny proti sobě, potom každé měření a každé cvičení zvlášť.',
-		against: 'proti vašemu běžnému hlasu',
-		hear: 'Přehrát nahrávku, když ukazatel spočine na jejím bodu',
-		zoomHint:
-			'Tažením přes graf se všechny grafy přiblíží na ten úsek; dvojklik je zase oddálí. Kliknutí na bod připne jeho nahrávku do karty nahoře; další kliknutí na něj nebo klávesa Esc ji odepne.',
-		zoomOut: 'Zobrazit zase celý úsek',
-		everydayGroup: 'Proti vašemu běžnému hlasu',
-		everydayReads:
-			'Každá nahrávka jako vzdálenost od vašeho běžného hlasu, jedna mřížka pro každou jednotku. Plné body jsou pokusy; prázdné jsou běžné nahrávky, které kolísají kolem nuly.',
-		grids: {
-			pitch: 'Výška (půltóny)',
-			resonance: 'Rezonance (%)',
-			source: 'Zdroj (dB)'
-		},
-		cross: 'Jedna veličina proti druhé',
-		crossReads:
-			'Jeden bod za nahrávku. Vyberte libovolné dvě veličiny a uvidíte, jestli spolu napříč nahrávkami souvisejí. Čárkovaná přímka je jejich proložení; r říká, jak těsně se jí drží (0: vůbec, ±1: přesně). Se zaškrtnutými oběma hlasy r říká hlavně to, čím se pokusy liší od běžných nahrávek; pohled dovnitř jednoho hlasu dá odškrtnutí toho druhého. Z hrstky nahrávek je to náznak, ne zákon.',
-		crossX: 'Vodorovně',
-		crossY: 'Svisle',
-		crossStat: (r, n) => `r = ${r} z ${n} nahrávek`,
-		crossFew: 'Obě veličiny tu mají méně než tři nahrávky.',
-		measures: 'Veličinu po veličině',
-		drills: 'Cvičení',
-		drillsReads:
-			'Podle čeho se každé cvičení hodnotilo, nahrávku po nahrávce, v této sestavě mikrofonu a v tomto úseku času.',
-		empty: 'Těmto filtrům zatím neodpovídá žádná analyzovaná nahrávka.',
 		kind: 'Druh nahrávky',
-		allKinds: 'Všechny druhy, proti běžnému hlasu',
-		allReads:
-			'Všechny druhy nahrávek dohromady, každá jako vzdálenost od vašeho běžného hlasu stejného druhu. Samotná měření se dají srovnávat jen v rámci jednoho druhu, proto tu chybí; druhy se liší i mezi sebou (krátká fráze se říká hlasitěji než úryvek).',
-		latest: 'poslední',
+		allKinds: 'Všechny druhy',
+		practice: 'I pokusy ze cvičení',
+		empty: 'Těmto filtrům zatím neodpovídá žádná analyzovaná nahrávka.',
+		noReading:
+			'Tyto nahrávky zatím není s čím srovnat: nahrajte stejný druh nahrávky běžným hlasem.',
+		oneKind: 'Měření se dají srovnávat jen v rámci jednoho druhu nahrávky: vyberte jeden nahoře.',
+		noDrills: 'V tomto úseku času nebylo hodnoceno žádné cvičení.',
+		tabs: {
+			voice: 'Proti běžnému hlasu',
+			measures: 'Měření',
+			relations: 'Souvislosti',
+			exercises: 'Cvičení'
+		},
 		taken: 'Nahráno',
-		withPractice: 'Zahrnout pokusy ze sezení cvičení'
+		takes: (n) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}`,
+		trend: 'V čase',
+		by: 'Bod za',
+		bys: { take: 'každou nahrávku', day: 'každý den' },
+		spread: 'Jak se který hlas rozprostírá',
+		source: 'Zdroj',
+		before: 'proti předchozímu pokusu',
+		middle: (n, value) => (n === 1 ? 'jeden pokus' : `medián z ${n}: ${value}`),
+		unreadable: 'na vašich pokusech nelze přečíst',
+		noAttempt: 'žádný pokus v pohledu',
+		matrix: 'Jak spolu vzdálenosti souvisejí',
+		scatter: 'Jedna veličina proti druhé',
+		across: 'Vodorovně',
+		upwards: 'Svisle',
+		stat: (r, n) => `r = ${r} z ${n} nahrávek`,
+		few: 'obě veličiny mají méně než tři nahrávky',
+		inBox: (n) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')} v obdélníku`,
+		clickToListen: 'Kliknutím přehrát',
+		clickToPlot: 'Kliknutím vykreslit ty dvě proti sobě',
+		dayTakes: (n) =>
+			n === 1
+				? '1 nahrávka toho dne'
+				: `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')} toho dne: jejich medián`,
+		reps: (n, met) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}, splněno ${met}`,
+		atLeast: (value) => `nejméně ${value}`,
+		atMost: (value) => `nejvýše ${value}`,
+		yourBand: 'vaše pásmo',
+		help: {
+			page: [
+				'Každá nahrávka jako data, vždy pro jedno nastavení mikrofonu a jeden druh nahrávky, za zvolený úsek času. Čísla se srovnávají jen stejné se stejným; „Všechny druhy“ ukazují vzdálenosti od vašeho běžného hlasu, které se napříč druhy srovnávat dají.',
+				'Bod je nahrávka. Ukazatel ji pojmenuje; kliknutí ji přehraje v přehrávači dole a seznamem jsou nahrávky toho grafu. Každý graf jde otevřít přes celou obrazovku, ukáže svá čísla jako tabulku a uloží je jako CSV nebo jako obrázek.',
+				'Čára a značka říkají na každém grafu, o který hlas jde:'
+			],
+			tile: 'Dlaždice ukazuje poslední pokus, jak se pohnul proti předchozímu, medián pokusů v pohledu a jejich průběh jako malou čáru (vystínováno: kde leží ženské hlasy).',
+			trend: [
+				'Každá nahrávka jako vzdálenost od vašeho běžného hlasu u stejného druhu nahrávky: výška v půltónech, rezonance v procentech, zdroj v decibelech. Běžné nahrávky kolísají kolem nuly; to kolísání je šum, který musí pokus překonat.',
+				'Vystínováno: kde leží ženské hlasy proti průměrnému mužskému (10 až 23 % u horních rezonancí, 8 až 29 % u první) a nad tím dětské. Okolí, ne čára: váš běžný hlas nemusí být průměrný mužský.',
+				'Kliknutí na název v legendě veličinu skryje. Tažením se graf posouvá, Ctrl + kolečko přibližuje (přes celou obrazovku stačí kolečko); proužek dole ukazuje celý úsek a část v pohledu. „Každý den“ kreslí medián dne a rozpětí dne jako úsečku.'
+			],
+			spread:
+				'Každá nahrávka jako bod, řádek pro každý hlas: pruh je prostřední polovina nahrávek hlasu, čárka jeho medián. Když se řádky nepřekrývají, je rozdíl větší než vaše kolísání ze dne na den.',
+			matrix:
+				'Pro každé dvě vzdálenosti r říká, jak těsně se napříč nahrávkami v pohledu pohybují spolu: +1 přesně spolu (modrá), −1 přesně proti sobě (oranžová), 0 vůbec. Se zapnutými oběma hlasy r říká hlavně to, čím se pokusy liší od běžných nahrávek; pohled dovnitř jednoho hlasu dá vypnutí toho druhého. Z hrstky nahrávek je to náznak, ne zákon.',
+			scatter:
+				'Jeden bod za nahrávku a přímka, která jimi prochází nejlépe. Dvě veličiny se vybírají tady, nebo kliknutím do mřížky vedle. Obdélník (vpravo nahoře) vybere nahrávky k poslechu za sebou.',
+			exercises:
+				'Podle čeho se cvičení hodnotilo, nahrávku po nahrávce. Plný zelený bod svou laťku splnil, prázdný ne; čárkovaná čára je laťka sama.'
+		}
 	},
 	range: {
 		label: 'Čas',
@@ -321,16 +375,62 @@ export const cs: Messages = {
 			backwards: 'Konec musí ležet po začátku.'
 		}
 	},
-	card: {
-		none: 'Zastavte ukazatel na bodu grafu a jeho nahrávka se ukáže tady; kliknutí na bod ji připne.',
-		open: 'Otevřít nahrávku',
-		unpin: 'Odepnout',
-		unpinHint: 'Karta zase sleduje ukazatel (Esc)',
-		comfort: (rating) => `pohodlí ${rating}`,
+	help: {
+		about: (title) => `O čem je: ${title}`
+	},
+	chart: {
+		full: 'Přes celou obrazovku',
+		more: 'Další: čísla, soubory',
+		asTable: 'Zobrazit čísla jako tabulku',
+		asChart: 'Zobrazit graf',
+		csv: 'Uložit čísla jako CSV',
+		png: 'Uložit graf jako obrázek'
+	},
+	table: {
+		search: 'Hledat',
+		searchHint: 'Hledat…  ( / )',
+		columns: 'Sloupce',
+		chosen: (n) => `vybráno ${n}`,
+		clear: 'Vymazat',
+		nothing: 'Není co zobrazit.',
+		nothingFound: 'Hledání nic neodpovídá.',
+		showing: (from, to, all) => `${from}–${to} z ${all}`,
+		of: (all) => `vyfiltrováno z ${all}`,
+		perPage: 'Řádků na stránku',
+		page: (at, all) => `Strana ${at} z ${all}`,
+		first: 'První strana',
+		previous: 'Předchozí strana',
+		next: 'Další strana',
+		last: 'Poslední strana',
+		tick: 'Zaškrtnout tento řádek',
+		tickAll: 'Zaškrtnout všechny řádky tabulky',
+		ticked: (n) => `zaškrtnuto ${n}`,
+		untick: 'Odškrtnout vše',
+		reset: 'Výchozí pohled'
+	},
+	dock: {
+		label: 'Přehrávač',
+		previous: 'Předchozí nahrávka seznamu',
+		next: 'Další nahrávka seznamu',
+		close: 'Zavřít přehrávač',
+		seek: 'Pozice v nahrávce',
+		speed: 'Rychlost',
+		loop: 'Po skončení přehrát nahrávku znovu',
+		onward: 'Po skončení pokračovat další nahrávkou',
+		place: (at, all) => `${at} / ${all}`,
 		problems: {
-			blocked: 'Prohlížeč přehrává zvuk až po kliknutí na stránku: klikněte kamkoli.',
+			blocked: 'Prohlížeč přehrává zvuk až po kliknutí na stránku: stiskněte přehrát ještě jednou.',
 			failed: 'Tuto nahrávku se nepodařilo přehrát.'
-		}
+		},
+		help: [
+			'Nahrávka poslaná sem z řádku tabulky nebo z grafu hraje dál, i když otevřete jinou stránku. Lišta je sama nahrávka: hlasitost jako tvar, výška jako čára. Kliknutím nebo tažením v ní se posunete.',
+			'Předchozí a další procházejí seznam, ze kterého nahrávka přišla, v jeho pořadí.'
+		],
+		keys: [
+			['K', 'přehrát nebo pozastavit (i mezerník, když nic nemá fokus)'],
+			['J / L', 'pět sekund zpět / vpřed'],
+			['P / N', 'předchozí / další nahrávka']
+		]
 	},
 	compare: {
 		title: 'Porovnání dvou nahrávek',

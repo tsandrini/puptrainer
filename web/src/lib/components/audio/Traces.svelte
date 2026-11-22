@@ -22,6 +22,7 @@
 	import { stepDecimals } from '#lib/charts.js';
 	import { app } from '#lib/app.svelte.js';
 	import Plot, { type PlotSeries, type PlotSpan } from '#lib/components/charts/Plot.svelte';
+	import Help from '#lib/components/app/Help.svelte';
 	import { fmtNumber, fmtSigned } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 
@@ -35,7 +36,8 @@
 		live = false,
 		scales,
 		base,
-		reads
+		reads,
+		heading
 	}: {
 		trace: Trace;
 		/** Length of the take in seconds: the grids span what the player's picture spans. */
@@ -56,6 +58,8 @@
 		base?: Record<string, number>;
 		/** What to say under the grids instead of the usual line. */
 		reads?: string;
+		/** A heading over the grids; the help button sits beside it. */
+		heading?: string;
 	} = $props();
 
 	const SOURCE = ['lightness_db', 'level_db', 'clarity_db'] as const;
@@ -268,6 +272,19 @@
 		data-zero={trace.zero}
 		data-live={live}
 	>
+		<div class="flex items-center gap-1">
+			{#if heading}<h3 class="text-sm font-bold">{heading}</h3>{/if}
+			<Help title={heading ?? i18n.t.traces.title} text={reads ?? i18n.t.traces.reads} wide>
+				<dl class="space-y-1 text-sm text-muted-foreground" data-testid="traces-rows">
+					{#each shownKeys as key (key)}
+						<div>
+							<dt class="inline font-semibold text-foreground">{i18n.t.traces.rows[key]}:</dt>
+							<dd class="inline">{i18n.t.traces.hints[key]}</dd>
+						</div>
+					{/each}
+				</dl>
+			</Help>
+		</div>
 		<div class="rounded-lg border bg-card p-2" data-testid="traces-plot">
 			{#if named.some((s) => s.label) && shown === null}
 				<!-- NOTE: the plotting area starts 48 px in and ends 10 px short, as in `Plot` -->
@@ -342,22 +359,12 @@
 				</div>
 			{/if}
 		</div>
+		<!-- NOTE: what this picture is counted from and what it leaves out: state, not explanation -->
 		<p class="text-xs text-muted-foreground" data-testid="traces-reads">
-			{reads ?? (live ? i18n.t.traces.live : i18n.t.traces.reads)}
+			{#if live && !reads}{i18n.t.traces.live}{/if}
 			{#if trace.zero && !reads}{i18n.t.traces.zero[trace.zero]}{/if}
 			{#if muted.length}{i18n.t.traces.shaded}{/if}
 			{#if !live && present.length === 1 && present[0] === 'pitch_hz'}{i18n.t.traces.older}{/if}
 		</p>
-		<details class="text-xs text-muted-foreground">
-			<summary class="cursor-pointer">{i18n.t.traces.what}</summary>
-			<dl class="mt-1 space-y-1">
-				{#each shownKeys as key (key)}
-					<div>
-						<dt class="inline font-semibold text-foreground">{i18n.t.traces.rows[key]}:</dt>
-						<dd class="inline">{i18n.t.traces.hints[key]}</dd>
-					</div>
-				{/each}
-			</dl>
-		</details>
 	</div>
 {/if}

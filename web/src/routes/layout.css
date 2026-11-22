@@ -4,6 +4,58 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The states the UI kit's components (shadcn-svelte on bits-ui) style by:
+ * bits-ui says them as `data-state` or `data-orientation`, the components
+ * as `data-open:` and the like.
+ */
+@custom-variant data-open {
+	&:where([data-state='open']),
+	&:where([data-open]:not([data-open='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-closed {
+	&:where([data-state='closed']),
+	&:where([data-closed]:not([data-closed='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-checked {
+	&:where([data-state='checked']),
+	&:where([data-checked]:not([data-checked='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-unchecked {
+	&:where([data-state='unchecked']),
+	&:where([data-unchecked]:not([data-unchecked='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-disabled {
+	&:where([data-disabled='true']),
+	&:where([data-disabled]:not([data-disabled='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-active {
+	&:where([data-state='active']),
+	&:where([data-active]:not([data-active='false'])) {
+		@slot;
+	}
+}
+@custom-variant data-horizontal {
+	&:where([data-orientation='horizontal']) {
+		@slot;
+	}
+}
+@custom-variant data-vertical {
+	&:where([data-orientation='vertical']) {
+		@slot;
+	}
+}
+
 /* The puptrainer theme: warm rose on blush paper by day, on aubergine by night. */
 :root {
 	--radius: 0.9rem;
@@ -36,6 +88,7 @@
 	--series-4: #eda100;
 	--series-5: #e87ba4;
 	--series-6: #008300;
+	--highlight: #ffe59a;
 	--chart-grid: oklch(0.93 0.012 345);
 	--chart-band: oklch(0.56 0.2 355 / 9%);
 	/* the paw prints on the page */
@@ -70,6 +123,7 @@
 	--series-4: #c98500;
 	--series-5: #d55181;
 	--series-6: #2f9e2f;
+	--highlight: #6b5413;
 	--chart-grid: oklch(1 0 0 / 9%);
 	--chart-band: oklch(0.75 0.14 355 / 12%);
 	--paw-ink: oklch(1 0 0 / 3.5%);
@@ -103,6 +157,11 @@
 	--color-critical: var(--critical);
 	--color-series-1: var(--series-1);
 	--color-series-2: var(--series-2);
+	--color-series-3: var(--series-3);
+	--color-series-4: var(--series-4);
+	--color-series-5: var(--series-5);
+	--color-series-6: var(--series-6);
+	--color-highlight: var(--highlight);
 	--color-chart-grid: var(--chart-grid);
 	--color-chart-band: var(--chart-band);
 	--font-sans: 'Nunito Variable', ui-rounded, 'Segoe UI', system-ui, sans-serif;

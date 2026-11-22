@@ -4,6 +4,7 @@
 // in a 24-bit WAV file. While recording, every block reports its level and
 // a live pitch estimate.
 
+import { hush } from './focus.js';
 import { levelOf, type Level } from './meter.js';
 import { detectPitch } from './pitch.js';
 import { encodeWav } from './wav.js';
@@ -70,6 +71,8 @@ export class Recorder {
 		if (!navigator.mediaDevices?.getUserMedia) {
 			throw new CaptureError('insecure', 'getUserMedia is not available');
 		}
+		// NOTE: echo cancellation is off: anything still playing would be recorded
+		hush();
 		try {
 			this.#stream = await navigator.mediaDevices.getUserMedia({
 				audio: {

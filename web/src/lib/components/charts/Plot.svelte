@@ -7,10 +7,6 @@
 		color: string;
 		/** One value per `x`; `null` where there is nothing. */
 		values: (number | null)[];
-		/** A marker on every value, and a line through the gaps: a point per take, not a stream. */
-		points?: boolean;
-		/** Markers drawn hollow: the second of two things that share a colour. */
-		hollow?: boolean;
 		/** A fainter line: a reference beside the main ones. */
 		faint?: boolean;
 		/** What the legend says for a value. */
@@ -25,8 +21,8 @@
 </script>
 
 <script lang="ts">
-	// Several lines on one grid with one value axis, over time or over a
-	// take: the app's chart for everything that runs along an x axis. Drawn
+	// Several lines on one grid with one value axis along a take: the app's
+	// chart for a signal over time (statistics over takes are `Chart`). Drawn
 	// by uPlot on a canvas; the legend under it is text and says each line's
 	// value at the pointer, or at the position marked from outside (a
 	// player's playhead). Plots that share a `sync` key share the pointer,
@@ -48,9 +44,7 @@
 		height = 150,
 		range,
 		include = [],
-		least = 0,
 		zero = false,
-		time = false,
 		cursor = null,
 		sync,
 		spans = [],
@@ -61,7 +55,7 @@
 		onpick,
 		onhover
 	}: {
-		/** Where each value sits: seconds of a take, or Unix seconds with `time`. */
+		/** Where each value sits, in seconds of the take. */
 		x: number[];
 		series: PlotSeries[];
 		/** What the plot shows, for assistive technology. */
@@ -75,12 +69,8 @@
 		range?: readonly [number, number];
 		/** Values the axis covers whatever the lines do, when it follows the values. */
 		include?: number[];
-		/** The least the value axis spans when it follows the values: less is not blown up. */
-		least?: number;
 		/** Draw the zero of the value axis as a line of its own. */
 		zero?: boolean;
-		/** `x` is a moment in time (Unix seconds), not seconds of a take. */
-		time?: boolean;
 		/** A position on the x axis marked from outside, e.g. where a player stands. */
 		cursor?: number | null;
 		/** Plots with the same key show the pointer of each other. */
@@ -116,8 +106,7 @@
 
 	const shape = $derived(
 		[
-			series.map((s) => `${s.key}:${s.color}:${s.points}:${s.hollow}:${s.faint}`).join('|'),
-			time,
+			series.map((s) => `${s.key}:${s.color}:${s.faint}`).join('|'),
 			axis,
 			zoomable,
 			sync ?? '',
@@ -187,17 +176,13 @@
 						: {})
 				},
 				scales: {
-					x: { time },
+					x: { time: false },
 					y: {
 						range: (_u, low, high) => {
 							if (range) return [range[0], range[1]];
 							const values = [low, high, ...include].filter((v) => Number.isFinite(v));
 							if (!values.length) return [0, 1];
-							let [from, to] = [Math.min(...values), Math.max(...values)];
-							if (to - from < least) {
-								const middle = (from + to) / 2;
-								[from, to] = [middle - least / 2, middle + least / 2];
-							}
+							const [from, to] = [Math.min(...values), Math.max(...values)];
 							const pad = (to - from) * 0.12 || Math.abs(to) * 0.1 || 1;
 							return [from - pad, to + pad];
 						}
@@ -224,14 +209,8 @@
 						stroke: colour(s.color),
 						width: 2,
 						alpha: s.faint ? 0.45 : 1,
-						spanGaps: s.points ?? false,
-						points: {
-							show: s.points ?? false,
-							size: 9,
-							width: 2,
-							stroke: colour(s.color),
-							fill: s.hollow ? token('--card') : colour(s.color)
-						}
+						spanGaps: false,
+						points: { show: false }
 					}))
 				],
 				hooks: {
@@ -299,18 +278,11 @@
 		);
 	}
 
-	/**
-	 * The ends of the x axis with everything in view: a margin around a point
-	 * per take, so that the first and the last are whole; none around a stream.
-	 */
+	/** The ends of the x axis with everything in view. */
 	function ends(): [number, number] | null {
 		if (!x.length) return null;
 		const [from, to] = [x[0], x[x.length - 1]];
-		const spread = to - from;
-		if (!series.some((s) => s.points)) return spread > 0 ? [from, to] : [from - 1, from + 1];
-		// NOTE: a lone take gets half a day either side; uPlot's own guess is a thousand days
-		const margin = spread > 0 ? spread * 0.04 : time ? 43_200 : 1;
-		return [from - margin, to + margin];
+		return to > from ? [from, to] : [from - 1, from + 1];
 	}
 
 	/** Put the plot to the stretch it was told, or to all of its values. */

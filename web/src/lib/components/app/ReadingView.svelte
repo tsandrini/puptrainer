@@ -8,6 +8,7 @@
 	import { fmtNumber, fmtSigned } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { SCALE, shiftOf } from '#lib/targets.js';
+	import Help from './Help.svelte';
 	import ShiftStrip from './ShiftStrip.svelte';
 
 	let {
@@ -62,7 +63,16 @@
 		{#if pitch}
 			<div data-target="pitch">
 				<div class="flex items-baseline justify-between gap-3">
-					<h3 class="text-sm font-bold">{i18n.t.targets.pitch}</h3>
+					<h3 class="flex items-center gap-1 text-sm font-bold">
+						{i18n.t.targets.pitch}
+						<Help
+							title={i18n.t.targets.pitch}
+							text={[
+								i18n.pick(def('pitch_shift_st')?.descriptions),
+								light ? `${title(light.key)}: ${i18n.pick(def(light.key)?.descriptions)}` : ''
+							]}
+						/>
+					</h3>
 					<span class="text-lg font-extrabold tabular-nums" data-shift="pitch_shift_st">
 						{amount(pitch)}
 					</span>
@@ -74,19 +84,13 @@
 					{#if scatter(pitch)}
 						· {scatter(pitch)}{/if}
 				</p>
-				<p class="mt-1 text-xs text-muted-foreground">
-					{i18n.pick(def('pitch_shift_st')?.descriptions)}
-				</p>
 				{#if light}
-					<p class="mt-2 text-sm tabular-nums" title={i18n.pick(def(light.key)?.descriptions)}>
+					<p class="mt-2 text-sm tabular-nums">
 						<span class="font-semibold">{title(light.key)}:</span>
 						<span class="font-extrabold" data-shift={light.key}>{amount(light)}</span>
 						{#if scatter(light)}
 							<span class="text-xs text-muted-foreground">· {scatter(light)}</span>
 						{/if}
-					</p>
-					<p class="mt-1 text-xs text-muted-foreground">
-						{i18n.pick(def(light.key)?.descriptions)}
 					</p>
 				{/if}
 			</div>
@@ -94,7 +98,17 @@
 
 		<div data-target="resonance">
 			<div class="flex items-baseline justify-between gap-3">
-				<h3 class="text-sm font-bold">{i18n.t.targets.resonance}</h3>
+				<h3 class="flex items-center gap-1 text-sm font-bold">
+					{i18n.t.targets.resonance}
+					<Help
+						title={i18n.t.targets.resonance}
+						text={[
+							`${title('brightness_pct')}: ${i18n.pick(def('brightness_pct')?.descriptions)}`,
+							`${title('r1_shift_pct')}: ${i18n.pick(def('r1_shift_pct')?.descriptions)}`
+						]}
+						wide
+					/>
+				</h3>
 				{#if bright}
 					<span class="text-lg font-extrabold tabular-nums" data-shift="brightness_pct">
 						{amount(bright)}
@@ -130,13 +144,6 @@
 						<span class="text-muted-foreground">{i18n.t.reading.r1Unreadable}</span>
 					</p>
 				{/if}
-				<details class="mt-1 text-xs text-muted-foreground">
-					<summary class="cursor-pointer"
-						>{title('brightness_pct')}, {title('r1_shift_pct')}</summary
-					>
-					<p class="mt-1">{i18n.pick(def('brightness_pct')?.descriptions)}</p>
-					<p class="mt-1">{i18n.pick(def('r1_shift_pct')?.descriptions)}</p>
-				</details>
 			{:else}
 				<p class="mt-1 text-sm text-muted-foreground" data-testid="no-resonance">
 					{#if reading.basis === 'speech'}
@@ -152,10 +159,21 @@
 
 	{#if cost.length}
 		<div data-target="condition">
-			<h3 class="text-sm font-bold">{i18n.t.targets.condition}</h3>
+			<h3 class="flex items-center gap-1 text-sm font-bold">
+				{i18n.t.targets.condition}
+				<Help
+					title={i18n.t.targets.condition}
+					text={[
+						i18n.t.targets.intro.condition,
+						...cost.map(
+							(shift) => `${title(shift.key)}: ${i18n.pick(def(shift.key)?.descriptions)}`
+						)
+					]}
+				/>
+			</h3>
 			<p class="text-sm tabular-nums">
 				{#each cost as shift (shift.key)}
-					<span class="mr-4 inline-block" title={i18n.pick(def(shift.key)?.descriptions)}>
+					<span class="mr-4 inline-block">
 						{title(shift.key)}:
 						<span class="font-extrabold" data-shift={shift.key}>{amount(shift)}</span>
 					</span>

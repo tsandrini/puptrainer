@@ -6,6 +6,7 @@
 	import { fetchTakes } from '#lib/api/index.js';
 	import type { TakeOut } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
+	import Help from '#lib/components/app/Help.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { fmtNumber } from '#lib/format.js';
@@ -65,8 +66,10 @@
 </script>
 
 <section class="panel" data-testid="band-card">
-	<h2 class="mb-1 text-base">{i18n.t.practice.band.title}</h2>
-	<p class="mb-3 text-sm text-muted-foreground">{i18n.t.practice.band.intro}</p>
+	<h2 class="mb-2 flex items-center gap-1 text-base">
+		{i18n.t.practice.band.title}
+		<Help title={i18n.t.practice.band.title} text={i18n.t.practice.band.intro} />
+	</h2>
 	<p class="mb-3 text-lg font-extrabold tabular-nums" data-testid="band">
 		{#if app.band}
 			{hz(app.band.low_hz)} – {hz(app.band.high_hz)}

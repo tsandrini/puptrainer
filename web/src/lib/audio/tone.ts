@@ -3,6 +3,8 @@
 // It is played before recording starts, never during: the recorder's echo
 // cancellation is off, so a tone from the speakers would be recorded.
 
+import { hush } from './focus.js';
+
 /** Relative amplitudes of the first harmonics. */
 const HARMONICS = [1, 0.5, 0.25, 0.12];
 const FADE_S = 0.04;
@@ -45,6 +47,7 @@ export function shapeOf(demo: string, low: number, high: number): Shape | null {
  * @returns when it has finished
  */
 export async function playShape(shape: Shape, volume = 0.25): Promise<void> {
+	hush();
 	const context = new AudioContext();
 	try {
 		const real = new Float32Array([0, ...HARMONICS]);
@@ -79,6 +82,7 @@ export async function playShape(shape: Shape, volume = 0.25): Promise<void> {
  * @returns when it has finished
  */
 export async function playTone(hz: number, seconds = 1.5, volume = 0.25): Promise<void> {
+	hush();
 	const context = new AudioContext();
 	try {
 		const real = new Float32Array([0, ...HARMONICS]);

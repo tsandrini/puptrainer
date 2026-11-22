@@ -233,12 +233,35 @@ export const en = {
 		duration: 'Length',
 		pitch: 'Pitch',
 		status: 'Analysis',
-		allItems: 'Everything',
-		allIntents: 'Any voice',
-		allLanguages: 'Any language',
-		select: 'Select to compare',
+		text: 'Text or exercise',
+		origin: 'Source',
+		from: { lab: 'Record page', practice: 'Practice' } as Record<string, string>,
+		gone: 'an earlier exercise',
+		comfort: 'Comfort',
+		result: 'Result',
+		met: 'met',
+		notYet: 'not yet',
+		listen: 'Listen',
+		against: 'against your everyday voice',
+		shifts: {
+			pitch_shift_st: 'Δ pitch',
+			brightness_pct: 'Δ brightness',
+			r1_shift_pct: 'Δ R1',
+			lightness_shift_db: 'Δ lightness',
+			level_shift_db: 'Δ loudness',
+			clarity_shift_db: 'Δ clarity'
+		} as Record<string, string>,
+		unreadable: 'n/r',
+		unreadableHint:
+			'Not readable on this take: the voice is too high and light for its first resonance to be told from the pitch.',
+		exportHint: 'Save what the table lists as a CSV file',
+		help: [
+			'Every recording is a row. The play button sends a take to the player at the bottom of the page; previous and next there walk through the table as it is filtered and sorted now.',
+			'The Δ columns are a take’s distance from your own everyday voice of the same kind of take: pitch in semitones, the resonances in percent, the rest in decibels. More columns are behind “Columns”.',
+			'Click a header to sort, shift-click another for a second key. Tick rows to play just those, compare two, analyse them again or save them as CSV. The view is kept in the address: a link to it shows the same table.'
+		],
 		compare: 'Compare',
-		compareHint: 'Tick two takes to compare them.',
+		compareHint: 'Tick exactly two takes to compare them.',
 		outdated: (n: number) =>
 			n === 1
 				? '1 take was analysed by an older version of the analysis.'
@@ -247,6 +270,8 @@ export const en = {
 	},
 	take: {
 		notFound: 'This take does not exist.',
+		previous: 'The take before it in the table ( [ )',
+		next: 'The take after it in the table ( ] )',
 		labels: 'Labels',
 		note: 'Note',
 		metrics: 'Measurements',
@@ -271,40 +296,66 @@ export const en = {
 	},
 	progress: {
 		title: 'Progress',
-		intro:
-			'One point per take, for one microphone setup and one kind of take at a time, over the stretch of time you choose. First each take against your everyday voice, then any two measures against each other, then every measurement and every exercise by itself.',
-		against: 'against your everyday voice',
-		hear: 'Hear a take when the pointer rests on its point',
-		zoomHint:
-			'Drag across a chart to zoom every chart into that stretch; double-click to zoom back out. Click a point to pin its take to the card above; click it again, or press Esc, to unpin.',
-		zoomOut: 'Show the whole stretch again',
-		everydayGroup: 'Against your everyday voice',
-		everydayReads:
-			'Each take as its distance from your everyday voice, one grid per unit. Filled points are attempts; hollow ones are everyday takes, which scatter around zero.',
-		grids: {
-			pitch: 'Pitch (semitones)',
-			resonance: 'Resonance (%)',
-			source: 'The source (dB)'
-		},
-		cross: 'One measure against another',
-		crossReads:
-			'One point per take. Pick any two measures to see whether they go together across your takes. The dashed line is their straight-line fit; r says how closely they follow it (0: not at all, ±1: exactly). With both voices ticked, r mostly says how your attempts differ from your everyday takes; untick one to look inside a voice. A handful of takes makes a hint, not a law.',
-		crossX: 'Across',
-		crossY: 'Upwards',
-		crossStat: (r: string, n: number) => `r = ${r} over ${n} takes`,
-		crossFew: 'Fewer than three takes have both measures here.',
-		measures: 'Measure by measure',
-		drills: 'Exercises',
-		drillsReads:
-			'What each exercise was judged on, take by take, on this microphone setup and in this stretch of time.',
-		empty: 'No analysed take matches these filters yet.',
 		kind: 'Kind of take',
-		allKinds: 'All kinds, against the everyday voice',
-		allReads:
-			'Every kind of take together, each as its distance from your everyday voice of the same kind. The measurements themselves only compare within one kind, so they are left out here; kinds also differ among themselves (a short phrase is spoken louder than a passage).',
-		latest: 'latest',
+		allKinds: 'All kinds',
+		practice: 'With practice attempts',
+		empty: 'No analysed take matches these filters.',
+		noReading:
+			'These takes have nothing to be read against yet: record the same kind of take in your everyday voice.',
+		oneKind: 'Measurements only compare within one kind of take: choose one above.',
+		noDrills: 'No exercise has been judged in this stretch of time.',
+		tabs: {
+			voice: 'Against everyday',
+			measures: 'Measures',
+			relations: 'Relations',
+			exercises: 'Exercises'
+		} as Record<string, string>,
 		taken: 'Recorded',
-		withPractice: 'Include attempts from practice sessions'
+		takes: (n: number) => (n === 1 ? '1 take' : `${n} takes`),
+		trend: 'Over time',
+		by: 'A point for',
+		bys: { take: 'every take', day: 'every day' },
+		spread: 'How each voice spreads',
+		source: 'Source',
+		before: 'against the attempt before',
+		middle: (n: number, value: string) => (n === 1 ? 'one attempt' : `median of ${n}: ${value}`),
+		unreadable: 'not readable on your attempts',
+		noAttempt: 'no attempt in view',
+		matrix: 'How the distances go together',
+		scatter: 'One measure against another',
+		across: 'Across',
+		upwards: 'Upwards',
+		stat: (r: string, n: number) => `r = ${r} over ${n} takes`,
+		few: 'fewer than three takes have both',
+		inBox: (n: number) => (n === 1 ? '1 take in the rectangle' : `${n} takes in the rectangle`),
+		clickToListen: 'Click to listen',
+		clickToPlot: 'Click to plot the two against each other',
+		dayTakes: (n: number) => (n === 1 ? '1 take that day' : `${n} takes that day: their median`),
+		reps: (n: number, met: number) => `${n} takes, ${met} met`,
+		atLeast: (value: string) => `at least ${value}`,
+		atMost: (value: string) => `at most ${value}`,
+		yourBand: 'your band',
+		help: {
+			page: [
+				'Every take as data, for one microphone setup and one kind of take at a time, over the stretch of time you choose. Numbers only compare like with like; “All kinds” shows the distances from your everyday voice, which do compare across kinds.',
+				'A point is a take. The pointer names it; a click plays it in the player below, with the chart’s takes as the list. Every chart opens over the whole screen, shows its numbers as a table, and saves them as CSV or as a picture.',
+				'The line and the mark say which voice, on every chart:'
+			],
+			tile: 'The tile shows your latest attempt, how it moved against the one before, the median of the attempts in view, and their course as a small line (shaded: where women’s voices sit).',
+			trend: [
+				'Each take as its distance from your own everyday voice of the same kind of take: pitch in semitones, the resonances in percent, the source in decibels. Everyday takes scatter around zero; that scatter is the noise an attempt has to clear.',
+				'Shaded: where women’s voices sit against the average man’s (10 to 23% for the upper resonances, 8 to 29% for the first one), and above it children’s. A neighbourhood, not a line: your everyday voice need not be the average man’s.',
+				'Click a name in the legend to hide a measure. Drag to move, Ctrl + wheel to zoom (over the whole screen: the wheel alone); the strip below shows the whole stretch and the part in view. “Every day” draws a day’s median with the day’s range as a bar.'
+			],
+			spread:
+				'Every take as a point, a row per voice: the bar is the middle half of a voice’s takes, the tick its median. When the rows do not overlap, the difference is larger than your day-to-day scatter.',
+			matrix:
+				'For every two distances, r says how closely they move together across the takes in view: +1 exactly together (blue), −1 exactly against each other (orange), 0 not at all. With both voices switched on, r mostly says how attempts differ from everyday takes; switch one off to look inside a voice. A handful of takes makes a hint, not a law.',
+			scatter:
+				'One point per take, with the straight line that fits them best. Pick the two measures here or by a click in the grid beside it. The rectangle tool (top right) selects takes to listen to in a row.',
+			exercises:
+				'What the exercise was judged on, take by take. A filled green point met its bar, a hollow one did not; the dashed line is the bar itself.'
+		}
 	},
 	range: {
 		label: 'Time',
@@ -321,16 +372,62 @@ export const en = {
 			backwards: 'The end has to lie after the start.'
 		}
 	},
-	card: {
-		none: 'Rest the pointer on a point of a chart to see its take here; click the point to pin it.',
-		open: 'Open the take',
-		unpin: 'Unpin',
-		unpinHint: 'The card follows the pointer again (Esc)',
-		comfort: (rating: number) => `comfort ${rating}`,
+	help: {
+		about: (title: string) => `About: ${title}`
+	},
+	chart: {
+		full: 'Over the whole screen',
+		more: 'More: the numbers, files',
+		asTable: 'Show the numbers as a table',
+		asChart: 'Show the chart',
+		csv: 'Save the numbers as CSV',
+		png: 'Save the chart as a picture'
+	},
+	table: {
+		search: 'Search',
+		searchHint: 'Search…  ( / )',
+		columns: 'Columns',
+		chosen: (n: number) => `${n} chosen`,
+		clear: 'Clear',
+		nothing: 'Nothing to show.',
+		nothingFound: 'Nothing matches the search.',
+		showing: (from: number, to: number, all: number) => `${from}–${to} of ${all}`,
+		of: (all: number) => `filtered from ${all}`,
+		perPage: 'Rows per page',
+		page: (at: number, all: number) => `Page ${at} of ${all}`,
+		first: 'First page',
+		previous: 'Previous page',
+		next: 'Next page',
+		last: 'Last page',
+		tick: 'Tick this row',
+		tickAll: 'Tick every row the table lists',
+		ticked: (n: number) => `${n} ticked`,
+		untick: 'Untick all',
+		reset: 'Reset the view'
+	},
+	dock: {
+		label: 'Player',
+		previous: 'Previous take of the list',
+		next: 'Next take of the list',
+		close: 'Close the player',
+		seek: 'Position in the take',
+		speed: 'Speed',
+		loop: 'Play the take again when it ends',
+		onward: 'Go on to the next take when one ends',
+		place: (at: number, all: number) => `${at} / ${all}`,
 		problems: {
-			blocked: 'The browser plays sound only after a click on the page: click anywhere once.',
+			blocked: 'The browser plays sound only after a click on the page: press play once more.',
 			failed: 'This recording could not be played.'
-		}
+		},
+		help: [
+			'A take sent here from a table row or a chart goes on playing while you open other pages. The bar is the take: its loudness as a shape, its pitch as a line. Click or drag in it to move.',
+			'Previous and next walk through the list the take came from, in that list’s order.'
+		],
+		keys: [
+			['K', 'play or pause (Space too, when nothing has the focus)'],
+			['J / L', 'five seconds back / on'],
+			['P / N', 'the previous / the next take']
+		] as [string, string][]
 	},
 	compare: {
 		title: 'Compare two takes',

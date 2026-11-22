@@ -1,8 +1,3 @@
-<script lang="ts" module>
-	/** The player that sounds; starting another one pauses it. */
-	let sounding: HTMLAudioElement | null = null;
-</script>
-
 <script lang="ts">
 	// Plays a take, stored or not yet saved, over a picture of the whole of
 	// it: a spectrogram with the level under it. A playhead moves across
@@ -13,6 +8,7 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import PauseIcon from '@lucide/svelte/icons/pause';
 	import PlayIcon from '@lucide/svelte/icons/play';
+	import { claimSound, releaseSound } from '#lib/audio/focus.js';
 	import { levelOf } from '#lib/audio/meter.js';
 	import {
 		Analyser,
@@ -193,6 +189,7 @@
 	});
 
 	// --- playback
+	const owner = Symbol('take player');
 	$effect(() => {
 		if (!playing) return;
 		let frame = requestAnimationFrame(function tick() {
@@ -204,7 +201,7 @@
 
 	onDestroy(() => {
 		audio?.pause();
-		if (sounding === audio) sounding = null;
+		releaseSound(owner);
 	});
 
 	function toggle(): void {
@@ -213,8 +210,9 @@
 			audio.pause();
 			return;
 		}
-		if (sounding && sounding !== audio) sounding.pause();
-		sounding = audio;
+		// NOTE: one thing sounds at a time: another player on the page, or the dock, stops
+		const element = audio;
+		claimSound(owner, () => element.pause());
 		if (length && audio.currentTime >= length - 0.02) audio.currentTime = 0;
 		void audio.play().catch(() => (playing = false));
 	}
@@ -374,9 +372,6 @@
 					</span>
 				{/if}
 			</div>
-			<p class="text-xs text-muted-foreground" data-testid="player-reads">
-				{i18n.t.player.viewHint[spectrumView.value]}
-			</p>
 			<Meter peakDb={levelDb} />
 		{/if}
 	{/if}

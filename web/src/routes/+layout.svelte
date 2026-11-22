@@ -1,8 +1,10 @@
 <script lang="ts">
 	// The shell: the paw and the navigation, the language and theme
-	// switches, and the banners that say when the API or its worker is away
-	// or takes are waiting to upload. The shared state (content, devices,
-	// queue, service worker, theme) starts here.
+	// switches, the banners that say when the API or its worker is away or
+	// takes are waiting to upload, and the player's dock along the bottom.
+	// The shared state (content, devices, queue, service worker, theme)
+	// starts here. Pages of data get the width of the screen; pages to read
+	// keep a column.
 	import './layout.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
@@ -13,6 +15,9 @@
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { app } from '#lib/app.svelte.js';
 	import Login from '#lib/components/app/Login.svelte';
+	import PlayerDock from '#lib/components/audio/PlayerDock.svelte';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { player } from '#lib/player.svelte.js';
 	import { isTake } from '#lib/store.js';
 	import Paw from '#lib/components/app/Paw.svelte';
 	import ThemeToggle from '#lib/components/app/ThemeToggle.svelte';
@@ -51,6 +56,9 @@
 		{ href: '/devices', label: i18n.t.nav.devices, Icon: SlidersIcon, active: starts('/devices') }
 	]);
 
+	/** The pages that are tables and charts: they take the room there is. */
+	const wide = $derived(page.url.pathname === '/' || page.url.pathname.startsWith('/progress'));
+
 	onMount(() => {
 		document.documentElement.lang = i18n.locale;
 		const stopTheme = theme.start();
@@ -63,121 +71,132 @@
 
 <div class="paw-trail"></div>
 
-<div class="mx-auto flex min-h-full max-w-5xl flex-col px-4">
-	<header class="flex flex-wrap items-center gap-x-3 gap-y-2 py-4">
-		<a href="/" class="flex items-center gap-2 text-lg font-black tracking-tight">
-			<span
-				class="grid size-9 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm"
-			>
-				<Paw class="size-5" />
-			</span>
-			puptrainer
-		</a>
-		<nav
-			class="order-last flex w-full gap-1 overflow-x-auto rounded-full border bg-card p-1 shadow-xs sm:order-none sm:ml-3 sm:w-auto"
-			aria-label="Main"
-		>
-			{#each links as link (link.href)}
-				<a
-					href={link.href}
-					aria-current={link.active(page.url.pathname) ? 'page' : undefined}
-					class={cn(
-						'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground',
-						link.active(page.url.pathname) &&
-							'bg-primary text-primary-foreground hover:text-primary-foreground'
-					)}
+<Tooltip.Provider delayDuration={300}>
+	<div
+		class={cn(
+			'mx-auto flex min-h-full flex-col px-4 transition-[max-width]',
+			wide ? 'max-w-[110rem]' : 'max-w-5xl'
+		)}
+	>
+		<header class="flex flex-wrap items-center gap-x-3 gap-y-2 py-4">
+			<a href="/" class="flex items-center gap-2 text-lg font-black tracking-tight">
+				<span
+					class="grid size-9 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm"
 				>
-					<link.Icon class="size-4" />
-					{link.label}
-				</a>
-			{/each}
-		</nav>
-		<div class="ml-auto flex items-center gap-2">
-			{#if pwa.installPrompt}
-				<Button variant="outline" size="sm" onclick={() => pwa.install()}>
-					{i18n.t.common.install}
-				</Button>
-			{/if}
-			{#if app.loginRequired && !app.needLogin}
-				<Button variant="ghost" size="sm" onclick={() => app.signOut()} data-testid="sign-out">
-					{i18n.t.login.signOut}
-				</Button>
-			{/if}
-			<ThemeToggle />
-			<select
-				class="select h-8 rounded-full"
-				aria-label={i18n.t.common.language}
-				value={i18n.locale}
-				onchange={(event) => i18n.set(event.currentTarget.value as Locale)}
-				data-testid="locale"
+					<Paw class="size-5" />
+				</span>
+				puptrainer
+			</a>
+			<nav
+				class="order-last flex w-full gap-1 overflow-x-auto rounded-full border bg-card p-1 shadow-xs sm:order-none sm:ml-3 sm:w-auto"
+				aria-label="Main"
 			>
-				{#each Object.keys(locales) as code (code)}
-					<option value={code}>{code.toUpperCase()}</option>
+				{#each links as link (link.href)}
+					<a
+						href={link.href}
+						aria-current={link.active(page.url.pathname) ? 'page' : undefined}
+						class={cn(
+							'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground',
+							link.active(page.url.pathname) &&
+								'bg-primary text-primary-foreground hover:text-primary-foreground'
+						)}
+					>
+						<link.Icon class="size-4" />
+						{link.label}
+					</a>
 				{/each}
-			</select>
-		</div>
-	</header>
+			</nav>
+			<div class="ml-auto flex items-center gap-2">
+				{#if pwa.installPrompt}
+					<Button variant="outline" size="sm" onclick={() => pwa.install()}>
+						{i18n.t.common.install}
+					</Button>
+				{/if}
+				{#if app.loginRequired && !app.needLogin}
+					<Button variant="ghost" size="sm" onclick={() => app.signOut()} data-testid="sign-out">
+						{i18n.t.login.signOut}
+					</Button>
+				{/if}
+				<ThemeToggle />
+				<select
+					class="select h-8 rounded-full"
+					aria-label={i18n.t.common.language}
+					value={i18n.locale}
+					onchange={(event) => i18n.set(event.currentTarget.value as Locale)}
+					data-testid="locale"
+				>
+					{#each Object.keys(locales) as code (code)}
+						<option value={code}>{code.toUpperCase()}</option>
+					{/each}
+				</select>
+			</div>
+		</header>
 
-	{#if !app.reachable}
-		<p
-			class="mb-3 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
-			role="status"
-			data-testid="api-down"
-		>
-			{i18n.t.status.apiDown}
-		</p>
-	{:else if app.workerDown}
-		<p
-			class="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
-			role="status"
-			data-testid="worker-down"
-		>
-			{i18n.t.status.workerDown}
-		</p>
-	{/if}
-	{#if app.error}
-		<p
-			class="mb-3 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
-			role="alert"
-		>
-			{app.error}
-		</p>
-	{/if}
-
-	{#if queue.items.length}
-		<section class="panel mb-3 text-sm" data-testid="queue">
-			<p class="font-bold">
-				{queue.takes.length
-					? i18n.t.status.queued(queue.takes.length)
-					: i18n.t.status.practiceQueued}
+		{#if !app.reachable}
+			<p
+				class="mb-3 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
+				role="status"
+				data-testid="api-down"
+			>
+				{i18n.t.status.apiDown}
 			</p>
-			<ul class="mt-1 space-y-1">
-				{#each queue.items as item (item.id)}
-					<li class="flex flex-wrap items-center gap-2">
-						<span class="font-mono text-xs">{isTake(item) ? item.name : i18n.t.queue.practice}</span
-						>
-						{#if item.rejected}
-							<span class="text-critical">{i18n.t.queue.rejected}: {item.error}</span>
-						{/if}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="ml-auto"
-							onclick={() => queue.discard(item.id)}
-						>
-							{i18n.t.common.discard}
-						</Button>
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
-
-	<main class="flex-1 pt-2 pb-10">
-		{#if app.needLogin}
-			<Login />
-		{:else}
-			{@render children()}
+		{:else if app.workerDown}
+			<p
+				class="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
+				role="status"
+				data-testid="worker-down"
+			>
+				{i18n.t.status.workerDown}
+			</p>
 		{/if}
-	</main>
-</div>
+		{#if app.error}
+			<p
+				class="mb-3 rounded-xl border border-critical/40 bg-critical/10 px-3 py-2 text-sm"
+				role="alert"
+			>
+				{app.error}
+			</p>
+		{/if}
+
+		{#if queue.items.length}
+			<section class="panel mb-3 text-sm" data-testid="queue">
+				<p class="font-bold">
+					{queue.takes.length
+						? i18n.t.status.queued(queue.takes.length)
+						: i18n.t.status.practiceQueued}
+				</p>
+				<ul class="mt-1 space-y-1">
+					{#each queue.items as item (item.id)}
+						<li class="flex flex-wrap items-center gap-2">
+							<span class="font-mono text-xs"
+								>{isTake(item) ? item.name : i18n.t.queue.practice}</span
+							>
+							{#if item.rejected}
+								<span class="text-critical">{i18n.t.queue.rejected}: {item.error}</span>
+							{/if}
+							<Button
+								variant="ghost"
+								size="sm"
+								class="ml-auto"
+								onclick={() => queue.discard(item.id)}
+							>
+								{i18n.t.common.discard}
+							</Button>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+
+		<main class={cn('flex-1 pt-2', player.take ? 'pb-32' : 'pb-10')}>
+			{#if app.needLogin}
+				<Login />
+			{:else}
+				{@render children()}
+			{/if}
+		</main>
+	</div>
+	{#if !app.needLogin}
+		<PlayerDock />
+	{/if}
+</Tooltip.Provider>

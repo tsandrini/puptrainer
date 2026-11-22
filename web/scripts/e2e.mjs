@@ -112,6 +112,42 @@ const colours = (page, selector) =>
 const playerSeconds = async (page) =>
 	Number(await page.locator('[data-testid=player-time]').first().getAttribute('data-seconds'));
 const count = (page, selector) => page.locator(selector).count();
+/** What a help button says when it is opened; it is closed again. */
+async function helpText(page, trigger) {
+	await page.locator(trigger).first().click();
+	const said = await text(page, '[data-testid=help-content]');
+	await page.keyboard.press('Escape');
+	await page.waitForSelector('[data-testid=help-content]', { state: 'detached' });
+	return said;
+}
+/** The players of a page; the dock's own element is always there and is not one of them. */
+const AUDIO = 'audio:not([data-testid=dock-audio])';
+/** A chart's series as the chart library holds them (the instance sits on the chart's element). */
+const chartSeries = (page, selector) =>
+	page
+		.locator(`${selector} [data-testid=chart]`)
+		.first()
+		.evaluate((element) =>
+			element.chart.getOption().series.map((series) => ({
+				id: series.id,
+				dash: series.lineStyle?.type ?? null,
+				zones: (series.markArea?.data ?? []).map((area) => area[0].name),
+				bars: (series.markLine?.data ?? []).map((line) => line.label?.formatter ?? ''),
+				takes: (series.data ?? []).map((datum) => datum?.take ?? datum?.takes ?? null)
+			}))
+		);
+/** Where a chart draws the first point that is a take, in the chart's own pixels. */
+const chartPoint = (page, selector) =>
+	page
+		.locator(`${selector} [data-testid=chart]`)
+		.first()
+		.evaluate((element) => {
+			const option = element.chart.getOption();
+			const index = option.series.findIndex((series) => series.data?.[0]?.take);
+			const datum = option.series[index].data[0];
+			const [x, y] = element.chart.convertToPixel({ seriesIndex: index }, datum.value);
+			return { x, y, take: datum.take };
+		});
 const hz = (value) => Number.parseInt(value.replace(/\s/g, ''), 10);
 
 /** Records for `seconds` on the record page and stops; leaves the review open. */
@@ -215,7 +251,9 @@ try {
 	check('a live spectrogram follows the microphone', scope > 20, `${scope} colours`);
 	check(
 		'every picture says what it shows of the two targets',
-		(await text(page, '[data-testid=scope-reads]')).includes('Pitch is their spacing')
+		(await helpText(page, '[data-testid=spectrum-toggle] + [data-testid=help]')).includes(
+			'Pitch is their spacing'
+		)
 	);
 	const rolling = await until(
 		() => text(page, '[data-testid=live-traces] li[data-series=pitch_hz] [data-testid=plot-value]'),
@@ -232,7 +270,7 @@ try {
 	check(
 		'speech gets no map of pitch against brightness, and is told why its brightness is slow',
 		(await count(page, '[data-testid=live-map]')) === 0 &&
-			(await text(page, '[data-testid=live-traces] [data-testid=traces-reads]')).includes(
+			(await helpText(page, '[data-testid=live-traces] [data-testid=help]')).includes(
 				'the last eight seconds'
 			)
 	);
@@ -361,12 +399,14 @@ try {
 	);
 	check(
 		'every group and measurement says how it stands to the two targets',
-		(await text(page, '[data-group=pitch] [data-testid=group-intro]')).startsWith(
+		(await helpText(page, '[data-group=pitch] h2 [data-testid=help]')).includes(
 			'The first target'
 		) &&
-			(await text(page, '[data-group=pitch] [data-testid=relates]')).startsWith(
+			(await helpText(page, '[data-group=pitch] dt [data-testid=help]')).includes(
 				'Pitch: the headline'
-			)
+			) &&
+			// NOTE: behind the buttons, not on the page
+			!(await text(page, '[data-group=pitch]')).includes('The first target')
 	);
 
 	await page.selectOption('#labels-intent', 'attempt');
@@ -483,64 +523,85 @@ try {
 	);
 	await page.unroute(takeApi);
 
-	// --- progress: one chart per measurement of the kind of take
+	// --- progress: the takes as statistics, a tab at a time
 	await page.goto('/progress');
-	await page.waitForSelector('[data-testid=trends] [data-testid=trend] .uplot canvas');
+	await page.click('[data-testid=tab-measures]');
+	await page.waitForSelector('[data-testid=trends] [data-chart=pitch_median_hz] canvas');
 	const trends = await text(page, '[data-testid=trends]');
 	check('progress charts the pitch of the take', trends.includes('Median pitch'));
 	check(
 		'progress is laid out by target',
 		(await count(page, '[data-testid=trends] [data-target=pitch]')) === 1 &&
-			(await count(page, '[data-testid=trends] [data-target=condition]')) === 1 &&
-			trends.includes('The first target')
+			(await count(page, '[data-testid=trends] [data-target=condition]')) === 1
 	);
 	check('progress leaves recording quality out', !trends.includes('Noise floor'));
 	check(
-		'any two measures can be put against each other',
-		(await count(page, '[data-testid=cross] [data-testid=scatter]')) === 1 &&
-			(await count(page, '[data-testid=cross-x] option')) > 3 &&
-			(await text(page, '[data-testid=cross-stat]')).includes('Fewer than three')
+		'what a target and a measurement mean waits behind help buttons',
+		!trends.includes('The first target') &&
+			(await helpText(page, '[data-target=pitch] h2 [data-testid=help]')).includes(
+				'The first target'
+			) &&
+			(await helpText(page, '[data-chart=pitch_median_hz] [data-testid=help]')).includes(
+				'Pitch: the headline'
+			)
 	);
-	// the take under the pointer is named in the card, can be heard and opened
-	check(
-		'the card waits for a point',
-		(await text(page, '[data-testid=take-card]')).includes('Rest the pointer')
-	);
-	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').hover();
-	await page.waitForSelector('[data-testid=take-card][data-take]:not([data-take=""])');
-	const carded = await text(page, '[data-testid=take-card]');
-	check('a point names its take in the card', /Reading|Attempt|Everyday/.test(carded), carded);
-	const sounded = await until(
-		() => page.getAttribute('[data-testid=take-card-toggle]', 'data-playing'),
-		(v) => v === 'true',
-		8_000
-	);
-	check('a take is heard when the pointer rests on its point', sounded === 'true');
-	await page.mouse.move(5, 5);
-	const hushed = await until(
-		() => page.getAttribute('[data-testid=take-card-toggle]', 'data-playing'),
-		(v) => v === 'false',
+	check('only the open tab is drawn', (await count(page, '[data-chart=against-everyday]')) === 0);
+	// a point is a take: the pointer names it, a click plays it, nothing plays by itself
+	const pitchChart = page.locator('[data-chart=pitch_median_hz] [data-testid=chart]');
+	const spot = await chartPoint(page, '[data-chart=pitch_median_hz]');
+	await pitchChart.hover({ position: { x: spot.x, y: spot.y } });
+	const named = await until(
+		() => text(page, '[data-chart=pitch_median_hz] [data-testid=chart-tip]').catch(() => ''),
+		(said) => said.includes('Click to listen'),
 		5_000
 	);
-	check('and falls silent when the pointer leaves', hushed === 'false');
-	await page.click('[data-testid=hear-on-hover]');
-	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').hover();
-	await pause(0.8);
 	check(
-		'hearing on hover can be switched off, and the button still plays',
-		(await page.getAttribute('[data-testid=take-card-toggle]', 'data-playing')) === 'false'
+		'the pointer names the take under it',
+		/Everyday voice|Attempt/.test(named),
+		named.replace(/\s+/g, ' ')
 	);
-	await page.click('[data-testid=take-card-toggle]');
-	await page.waitForSelector('[data-testid=take-card-toggle][data-playing=true]');
-	await page.click('[data-testid=take-card-toggle]');
-	await page.click('[data-testid=hear-on-hover]');
+	await pause(0.6);
+	check('nothing plays on hover', (await count(page, '[data-testid=dock]')) === 0);
+	await pitchChart.click({ position: { x: spot.x, y: spot.y } });
+	await page.waitForSelector('[data-testid=dock][data-playing=true]');
+	check(
+		'a click on a point plays its take in the dock',
+		(await page.getAttribute('[data-testid=dock]', 'data-take')) === spot.take
+	);
+	await page.click('[data-testid=dock-close]');
+	// every chart: over the whole screen, as a table, as a file
+	await page.click('[data-chart=pitch_median_hz] [data-testid=chart-full]');
+	await page.waitForSelector('[data-testid=chart-dialog] [data-testid=chart] canvas');
+	check('a chart opens over the whole screen', true);
+	await page.keyboard.press('Escape');
+	await page.waitForSelector('[data-testid=chart-dialog]', { state: 'detached' });
+	await page.click('[data-chart=pitch_median_hz] [data-testid=chart-more]');
+	await page.click('[data-testid=chart-table-toggle]');
+	await page.waitForSelector('[data-chart=pitch_median_hz] [data-testid=chart-table]');
+	check(
+		'a chart shows its numbers as a table',
+		/1[67]\d/.test(await text(page, '[data-chart=pitch_median_hz] [data-testid=chart-table]'))
+	);
+	await page.click('[data-chart=pitch_median_hz] [data-testid=chart-more]');
+	const [saved] = await Promise.all([
+		page.waitForEvent('download'),
+		page.click('[data-testid=chart-csv]')
+	]);
+	check(
+		'and saves them as a file',
+		/^puptrainer-pitch_median_hz-\d{4}-\d\d-\d\d\.csv$/.test(saved.suggestedFilename()),
+		saved.suggestedFilename()
+	);
+	await page.click('[data-chart=pitch_median_hz] [data-testid=chart-more]');
+	await page.click('[data-testid=chart-table-toggle]');
 	// a stretch of time: quick ranges, and an exact one that holds nothing
 	await page.click('[data-testid=date-range-open]');
 	await page.click('[data-testid=date-range-panel] [data-quick="7"]');
 	check(
 		'a quick range keeps the recent take',
 		(await page.getAttribute('[data-testid=date-range]', 'data-kind')) === 'quick' &&
-			(await count(page, '[data-testid=trends] [data-testid=trend]')) > 0
+			(await count(page, '[data-testid=trends] [data-testid=chart-card]')) > 0 &&
+			new URL(page.url()).searchParams.get('range') === '7d'
 	);
 	await page.click('[data-testid=date-range-open]');
 	await page.fill('[data-testid=date-range-from]', '2020-01-02T10:00');
@@ -558,30 +619,27 @@ try {
 		(await count(page, '[data-testid=trends]')) === 0 &&
 			(await page.getByText('No analysed take matches').count()) === 1
 	);
-	await page.click('[data-testid=date-range-open]');
-	await page.click('[data-testid=date-range-panel] [data-quick=all]');
-	await page.waitForSelector('[data-testid=trends] [data-testid=trend] .uplot canvas');
-	// a click pins the take to the card, whatever the pointer does next; the card opens it
-	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').click();
-	await page.waitForSelector('[data-testid=take-card][data-pinned=true]');
-	const held = await page.getAttribute('[data-testid=take-card]', 'data-take');
-	await page.mouse.move(5, 5);
+	// the view is the page's state: a reload and a return through the navigation find it
+	await page.click('nav a[href="/practice"]');
+	await page.waitForSelector('[data-testid=catalogue]');
+	await page.click('nav a[href="/progress"]');
+	await page.waitForSelector('[data-testid=date-range][data-kind=absolute]');
+	check('coming back finds the range and the tab as they were', true);
+	await page.click('[data-testid=view-reset]');
+	await page.waitForSelector('[data-testid=panel-voice]');
 	check(
-		'a click on a point pins its take to the card',
-		/^[0-9a-f]{32}$/.test(held ?? '') &&
-			(await count(page, '[data-metric-trend=pitch_median_hz] [data-testid=plot-cursor]')) === 1,
-		held
+		'a reset is the first tab over everything; a take with nothing to be read against says what to record',
+		new URL(page.url()).search === '' &&
+			(await text(page, '[data-testid=panel-voice]')).includes('record the same kind of take')
 	);
-	await page.keyboard.press('Escape');
-	await page.waitForSelector('[data-testid=take-card][data-pinned=false]');
+	await page.click('[data-testid=tab-relations]');
+	await page.waitForSelector('[data-testid=cross] [data-chart=scatter] canvas');
 	check(
-		'Esc unpins it',
-		(await count(page, '[data-testid=trends] [data-testid=plot-cursor]')) === 0
+		'any two measures can be put against each other',
+		(await count(page, '[data-testid=cross-x] option')) > 3 &&
+			(await text(page, '[data-chart=scatter]')).includes('fewer than three')
 	);
-	await page.locator('[data-metric-trend=pitch_median_hz] .u-over').click();
-	await page.click('[data-testid=take-card-open]');
-	await page.waitForURL(new RegExp(`/takes/${held}$`));
-	check('the card opens the take', true);
+	await page.click('[data-testid=view-reset]');
 
 	// --- the theme
 	await page.goto('/');
@@ -698,7 +756,9 @@ try {
 		60_000
 	);
 	check('imported takes are analysed', four === 4, `${four} done`);
-	await page.selectOption('select[aria-label=Language]:not([data-testid=locale])', 'cs');
+	await page.click('[data-testid=filter-language]');
+	await page.click('[data-option=cs]');
+	await page.keyboard.press('Escape');
 	const czech = await until(
 		() => count(page, '[data-testid=takes] tbody tr'),
 		(n) => n === 1,
@@ -715,17 +775,129 @@ try {
 		imported.replace(/\s+/g, ' ')
 	);
 
-	// --- two takes side by side
-	await page.selectOption('select[aria-label=Language]:not([data-testid=locale])', '');
+	// --- the table keeps its view: in the address, and across a visit to a take
+	check('the view is in the address', new URL(page.url()).searchParams.get('lang') === 'cs');
+	await page.click('[data-testid=takes] tbody tr a');
+	await page.waitForSelector('[data-metric=pitch_median_hz]');
+	check(
+		'a take opened from a list of one has nowhere to step to',
+		(await count(page, '[data-testid=trail]')) === 0
+	);
+	await page.click('nav a[href="/"]');
+	await page.waitForSelector('[data-testid=takes] tbody tr a');
+	check(
+		'coming back from a take finds the filters as they were',
+		(await page.getAttribute('[data-testid=filter-language]', 'data-chosen')) === 'cs' &&
+			(await count(page, '[data-testid=takes] tbody tr')) === 1
+	);
+	await page.click('[data-testid=view-reset]');
 	await until(
 		() => count(page, '[data-testid=takes] tbody tr'),
 		(n) => n === 4,
 		5_000
 	);
+	// search folds case and accents and marks what it found
+	await page.fill('[data-testid=table-search]', 'FREE cestina'.replace('cestina', 'czech'));
+	const hits = await until(
+		() => count(page, '[data-testid=takes] tbody tr'),
+		(n) => n === 1,
+		5_000
+	);
+	check(
+		'search narrows the table and marks its words',
+		hits === 1 && (await count(page, '[data-testid=takes] tbody mark')) >= 2,
+		`${hits} rows`
+	);
+	await page.fill('[data-testid=table-search]', 'nothing like this');
+	await page.waitForSelector('[data-testid=table-empty]');
+	check(
+		'a search without a match says so',
+		(await text(page, '[data-testid=table-empty]')).includes('Nothing matches')
+	);
+	await page.fill('[data-testid=table-search]', '');
+	await until(
+		() => count(page, '[data-testid=takes] tbody tr'),
+		(n) => n === 4,
+		5_000
+	);
+	// a header sorts; the longest take comes first, then last
+	await page.click('[data-sort=duration]');
+	const [once, onceOrder] = [
+		await text(page, '[data-testid=takes] tbody tr'),
+		await page.getAttribute('[data-sort=duration]', 'data-order')
+	];
+	await page.click('[data-sort=duration]');
+	const [twice, twiceOrder] = [
+		await text(page, '[data-testid=takes] tbody tr'),
+		await page.getAttribute('[data-sort=duration]', 'data-order')
+	];
+	check(
+		'a click on a header sorts, another turns it round',
+		once !== twice &&
+			onceOrder !== twiceOrder &&
+			[onceOrder, twiceOrder].sort().join() === 'asc,desc' &&
+			new URL(page.url()).searchParams.get('sort')?.endsWith('duration') === true,
+		`${onceOrder} / ${twiceOrder}`
+	);
+	await page.click('[data-testid=view-reset]');
+	// a row's play button sends the take to the dock, with the table as its list
+	check('nothing plays before it is asked for', (await count(page, '[data-testid=dock]')) === 0);
+	await page.locator('[data-testid=row-play]').first().click();
+	await page.waitForSelector('[data-testid=dock][data-playing=true]');
+	check(
+		'a row plays in the dock, which knows the table behind it',
+		(await page.getAttribute('[data-testid=dock]', 'data-queue')) === '4' &&
+			(await page.getAttribute('[data-testid=row-play]', 'data-playing')) === 'true'
+	);
+	const firstTake = await page.getAttribute('[data-testid=dock]', 'data-take');
+	await page.click('[data-testid=dock-next]');
+	await page.waitForFunction(
+		(first) => document.querySelector('[data-testid=dock]')?.dataset.take !== first,
+		firstTake
+	);
+	check(
+		'next walks down the table',
+		(await text(page, '[data-testid=dock-place]')).replace(/\s/g, '') === '2/4' &&
+			(await page.locator('[data-testid=row-play]').nth(1).getAttribute('data-playing')) === 'true'
+	);
+	await page.click('nav a[href="/devices"]');
+	await page.waitForSelector('[data-testid=dock][data-playing=true]');
+	check('the dock goes on playing while other pages open', true);
+	await page.keyboard.press('k');
+	await page.waitForSelector('[data-testid=dock][data-playing=false]');
+	check('K pauses it', true);
+	await page.click('[data-testid=dock-close]');
+	check('and it closes', (await count(page, '[data-testid=dock]')) === 0);
+	await page.click('nav a[href="/"]');
+	await page.waitForSelector('[data-testid=takes] tbody tr a');
+
+	// a take's page steps through the table it was opened from
+	await page.click('[data-testid=takes] tbody tr a');
+	await page.waitForSelector('[data-testid=trail]');
+	const here = page.url();
+	check(
+		'a take knows its place in the table',
+		(await text(page, '[data-testid=trail-place]')).replace(/\s/g, '') === '1/4' &&
+			(await page.locator('[data-testid=trail-previous]').getAttribute('href')) === null
+	);
+	await page.keyboard.press(']');
+	await page.waitForFunction((from) => location.href !== from, here);
+	await page.waitForSelector('[data-testid=trail-place]');
+	check(
+		'] steps to the next take of the table',
+		(await text(page, '[data-testid=trail-place]')).replace(/\s/g, '') === '2/4'
+	);
+	await page.click('[data-testid=trail-previous]');
+	await page.waitForURL(here);
+	await page.click('nav a[href="/"]');
+	await page.waitForSelector('[data-testid=takes] tbody tr a');
+
+	// --- two takes side by side
+	const boxes = page.locator('[data-testid=takes] [data-testid=tick]');
+	await boxes.nth(0).click();
+	await page.waitForSelector('[data-testid=table-bulk]');
 	check('compare needs two takes', await page.locator('[data-testid=compare]').isDisabled());
-	const boxes = page.locator('[data-testid=takes] tbody input[type=checkbox]');
-	await boxes.nth(0).check();
-	await boxes.nth(1).check();
+	await boxes.nth(1).click();
 	await page.click('[data-testid=compare]');
 	await page.waitForSelector('[data-testid=comparison] [data-metric=duration_s]');
 	const difference = await text(page, '[data-testid=comparison] [data-metric=duration_s]');
@@ -734,7 +906,7 @@ try {
 		/\d s .*\d s .*[+−±]\d/.test(difference.replace(/\s+/g, ' ')),
 		difference.replace(/\s+/g, ' ')
 	);
-	check('comparison has both players', (await count(page, 'audio')) === 2);
+	check('comparison has both players', (await count(page, AUDIO)) === 2);
 	await page.waitForFunction(
 		() => document.querySelectorAll('[data-testid=player][data-ready=true]').length === 2
 	);
@@ -842,9 +1014,9 @@ try {
 		'comfort is asked before any number',
 		(await count(page, '[data-testid=evaluation]')) === 0
 	);
-	check('playback is never automatic', (await count(page, 'audio')) === 0);
+	check('playback is never automatic', (await count(page, AUDIO)) === 0);
 	await page.click('[data-testid=listen]');
-	check('playback is there when asked for', (await count(page, 'audio')) === 1);
+	check('playback is there when asked for', (await count(page, AUDIO)) === 1);
 	await page.waitForSelector('[data-testid=player][data-ready=true]');
 	check(
 		'and still waits to be started',
@@ -1217,63 +1389,67 @@ try {
 		'practice attempts join when asked for',
 		(await text(page, '[data-testid=kind]')).includes('Short phrase')
 	);
-	check(
-		'each exercise charts what it was judged on',
-		(await count(
-			page,
-			'[data-testid=drills] [data-drill=slide-down-hold] [data-drill-measure=hold_s]'
-		)) === 1 && (await text(page, '[data-drill=slide-down-hold]')).includes('Steady hold')
-	);
 	// every kind together: only the distances from the everyday voice compare
 	await page.selectOption('[data-testid=kind]', 'all');
-	await page.waitForSelector('[data-testid=all-kinds-note]');
+	await page.click('[data-testid=tab-measures]');
+	await page.waitForSelector('[data-testid=panel-measures]');
 	check(
-		'all kinds together show the distances and leave the measurements out',
-		(await count(page, '[data-testid=against-everyday] [data-shift-grid=pitch]')) === 1 &&
-			(await count(page, '[data-testid=by-measure]')) === 0
+		'all kinds together leave the measurements out and say why',
+		(await count(page, '[data-testid=trends]')) === 0 &&
+			(await text(page, '[data-testid=panel-measures]')).includes('one kind of take')
 	);
-	// a text read in both voices: its attempt against the everyday take, a grid per unit
+	// a text read in both voices: the voice is the line, the range is drawn and named
 	await page.selectOption('[data-testid=kind]', 'phrase:en');
-	await page.waitForSelector(
-		'[data-testid=against-everyday] [data-shift-grid=pitch] .uplot canvas'
-	);
-	const both = await text(page, '[data-shift-grid=pitch] [data-testid=plot-legend]');
+	await page.click('[data-testid=tab-voice]');
+	await page.waitForSelector('[data-chart=against-everyday] canvas');
 	check(
-		'takes are charted against the everyday voice, a grid per unit',
-		both.includes('Attempt') &&
-			both.includes('Everyday voice') &&
-			(await count(page, '[data-testid=against-everyday] [data-shift-grid=resonance]')) === 1 &&
-			(await count(page, '[data-testid=against-everyday] [data-shift-grid=source]')) === 1,
-		both.replace(/\s+/g, ' ')
+		'the latest attempt is on tiles, one per distance',
+		(await count(page, '[data-testid=tiles] [data-testid=stat-tile]')) === 6 &&
+			/\d/.test(await text(page, '[data-testid=tiles] [data-testid=stat-value]'))
 	);
-	// a stretch dragged in one chart is the stretch of every chart
-	const grid = page.locator('[data-shift-grid=pitch] .u-over');
-	await grid.scrollIntoViewIfNeeded();
-	const area = await grid.boundingBox();
-	await page.mouse.move(area.x + area.width * 0.2, area.y + area.height / 2);
-	await page.mouse.down();
-	await page.mouse.move(area.x + area.width * 0.8, area.y + area.height / 2, { steps: 6 });
-	await page.mouse.up();
-	await page.waitForSelector('[data-shift-grid=source] [data-testid=plot][data-zoomed=true]');
+	const drawn = await chartSeries(page, '[data-chart=against-everyday]');
+	const lineOf = (list, voice) =>
+		list.find((s) => s.id === `pitch_shift_st:pitch_shift_st:${voice}`);
 	check(
-		'a drag zooms every chart into the stretch, and pins nothing',
-		(await count(page, '[data-testid=trends] [data-testid=plot][data-zoomed=false]')) === 0 &&
-			(await page.getAttribute('[data-testid=take-card]', 'data-pinned')) === 'false'
+		'an attempt is a solid line, the everyday voice a dashed one',
+		lineOf(drawn, 'attempt')?.dash === 'solid' && Array.isArray(lineOf(drawn, 'habitual')?.dash),
+		JSON.stringify(drawn.map((s) => [s.id, s.dash]))
 	);
-	await page.click('[data-testid=zoom-out]');
-	await page.waitForSelector('[data-shift-grid=source] [data-testid=plot][data-zoomed=false]');
+	const zones = drawn.find((s) => s.id === 'brightness_pct:ground')?.zones ?? [];
 	check(
-		'and one button shows the whole stretch again',
-		(await count(page, '[data-testid=trends] [data-testid=plot][data-zoomed=true]')) === 0
+		'the ranges a resonance is read by are drawn and named',
+		zones.some((zone) => zone.includes('where women')) &&
+			zones.some((zone) => zone.includes('children')),
+		zones.join(' | ')
 	);
 	await page.click('[data-testid=voice-attempt]');
-	const one = await text(page, '[data-shift-grid=pitch] [data-testid=plot-legend]');
+	const without = await chartSeries(page, '[data-chart=against-everyday]');
 	check(
 		'a voice can be left out of the charts',
-		!one.includes('Attempt') && one.includes('Everyday voice'),
-		one.replace(/\s+/g, ' ')
+		!without.some((s) => `${s.id}`.endsWith(':attempt')) && Boolean(lineOf(without, 'habitual'))
 	);
 	await page.click('[data-testid=voice-attempt]');
+	await page.click('[data-testid=by-day]');
+	const daily = await chartSeries(page, '[data-chart=against-everyday]');
+	check(
+		'a point per day gathers the takes of that day',
+		Array.isArray(lineOf(daily, 'attempt')?.takes[0]),
+		JSON.stringify(lineOf(daily, 'attempt')?.takes)
+	);
+	await page.click('[data-testid=by-take]');
+	// what each exercise was judged on, with the bar it sets
+	await page.click('[data-testid=tab-exercises]');
+	await page.waitForSelector('[data-drill=slide-down-hold] canvas');
+	const hold = await chartSeries(page, '[data-drill=slide-down-hold]');
+	check(
+		'each exercise charts what it was judged on, with its bar',
+		hold.some((s) => s.id === 'hold_s:hold_s') &&
+			(hold.find((s) => s.id === 'hold_s:ground')?.bars ?? []).some((bar) =>
+				bar.startsWith('at least')
+			),
+		JSON.stringify(hold.map((s) => [s.id, s.bars]))
+	);
+	await page.click('[data-testid=view-reset]');
 
 	// --- the installed app
 	check(
