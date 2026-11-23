@@ -81,9 +81,17 @@ every rep, and a practice log. Voice exploration and lessons come next
   measurement and every exercise's result with its pass bar. Every chart
   opens over the whole screen and gives its numbers as a table, CSV or
   picture. Attempts are solid lines and filled marks, the everyday voice
-  dashed and hollow, on every chart.
+  dashed and hollow, on every chart. A tab for practice itself: minutes
+  per day, a calendar of practice days, comfort and results session by
+  session, and a row per exercise.
+- **Compares two takes moment by moment**: their graphs overlaid on one
+  time axis (the second can be lined up with the first), both recordings
+  with a switch that goes on in the other take at the same place, and
+  every measurement they share with the difference.
 - **Keeps explanations a click away**: pages show data and controls; what
   a number means and how far to trust it is behind the "?" beside it.
+- **Is driven from the keyboard too**: `Ctrl K` opens one box to go to a
+  page, find a take or start an exercise; `?` lists the keys.
 - **Guides practice**: two short sessions, one for pitch and one for
   resonance, of drills that end in speech, after the teachers of the trans
   voice community, each rep judged on the one or two numbers it is about.
@@ -181,10 +189,13 @@ listening does not. `services.puptrainer.api.enable` and
    move five seconds, `P` and `N` step through the table). A take's page
    has the player with the take moment by moment under it, the take read
    against your everyday voice, its numbers and its labels; `[` and `]`
-   step to its neighbours in the table. Tick two takes to compare them.
-5. **Progress** has four tabs: the takes against your everyday voice, the
-   measurements one by one, the measures against each other, and the
-   exercises. Point at a take to see what it is, click it to hear it.
+   step to its neighbours in the table. Tick two takes to compare them:
+   their graphs lie over each other, and `X` goes on in the other take
+   at the same place.
+5. **Progress** has five tabs: the takes against your everyday voice, the
+   measurements one by one, the measures against each other, the
+   exercises, and practice itself. Point at a take to see what it is,
+   click it to hear it.
 
 The texts of the exercises ("Anchor phrases") have buttons of their own
 under the baseline: read one in your everyday voice, and every take of it
