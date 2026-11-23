@@ -39,6 +39,7 @@ from puptrainer.api.db import (
     AnalysisSeries,
     Device,
     MetricValue,
+    Person,
     PracticeSession,
     Take,
     TargetBand,
@@ -73,6 +74,8 @@ from puptrainer.core.schemas import (
     Login,
     MeasureDef,
     MetricDef,
+    PersonIn,
+    PersonOut,
     PracticeIn,
     PracticeOut,
     Reading,
@@ -174,7 +177,7 @@ def take_out(
         take: The take, with its jobs, their metrics and series loaded.
         exercises: The catalogue by id, to judge a practice take; without it, or for a
             take of no exercise, there is no evaluation.
-        reading: The take read against the learner's everyday voice, if it can be.
+        reading: The take read against the default person's everyday voice, if it can be.
     """
     latest = take.jobs[-1] if take.jobs else None
     done = finished(take)
@@ -202,6 +205,7 @@ def take_out(
         recorded_at=take.recorded_at,
         device_id=take.device_id,
         device_name=take.device.name,
+        person_id=take.person_id,
         item=Item(take.item),
         intent=Intent(take.intent),
         language=take.language,
@@ -349,17 +353,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "no such take")
         return take
 
-    def everyday(db: Session, device_id: int, cache: dict[int, list[Voice]]) -> list[Voice]:
-        """The learner's analysed everyday lab takes on a microphone setup.
+    def forget(db: Session, hashes: set[str]) -> None:
+        """Delete the recordings no take points to any more."""
+        for sha256 in hashes:
+            left = db.scalar(select(func.count()).select_from(Take).where(Take.sha256 == sha256))
+            if left == 0:
+                store.delete(sha256)
 
-        What every other take on the setup is read against: takes labelled as the
-        everyday voice and recorded in the lab, not for an exercise.
+    def learner(db: Session) -> Person:
+        """The default person: the one whose everyday voice every take is read against."""
+        return db.scalars(select(Person).where(Person.is_default)).one()
+
+    def everyday(db: Session, device_id: int, cache: dict[int, list[Voice]]) -> list[Voice]:
+        """The default person's analysed everyday lab takes on a microphone setup.
+
+        What every take on the setup is read against, whoever's voice it is: the default
+        person's takes labelled as the everyday voice and recorded in the lab, not for
+        an exercise. Nobody else's take is ever part of it.
         """
         if device_id not in cache:
             query = (
                 select(Take)
                 .where(
                     Take.device_id == device_id,
+                    Take.person_id == learner(db).id,
                     Take.intent == Intent.HABITUAL,
                     Take.exercise_ref.is_(None),
                 )
@@ -387,9 +404,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         content_ref: str | None,
         session_id: str | None = None,
         exercise_ref: str | None = None,
+        person_id: int | None = None,
     ) -> None:
         if device_id is not None and db.get(Device, device_id) is None:
             raise HTTPException(422, "no such device")
+        if person_id is not None and db.get(Person, person_id) is None:
+            raise HTTPException(422, "no such person")
         if content_ref is not None and content_ref not in content_refs:
             raise HTTPException(422, f"unknown content reference: {content_ref}")
         if session_id is not None and db.get(PracticeSession, session_id) is None:
@@ -562,6 +582,99 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(409, "a device with this name exists") from None
         return DeviceOut.model_validate(device)
 
+    # --- people ---
+
+    def person_out(person: Person, takes: int) -> PersonOut:
+        return PersonOut(
+            id=person.id,
+            name=person.name,
+            note=person.note,
+            is_default=person.is_default,
+            created_at=person.created_at,
+            take_count=takes,
+        )
+
+    def get_person(db: Session, person_id: int) -> Person:
+        person = db.get(Person, person_id)
+        if person is None:
+            raise HTTPException(404, "no such person")
+        return person
+
+    def takes_of(db: Session, person_id: int) -> int:
+        query = select(func.count()).select_from(Take).where(Take.person_id == person_id)
+        return db.scalar(query) or 0
+
+    @router.get("/people", operation_id="listPeople")
+    def list_people(db: Db) -> list[PersonOut]:
+        """Everyone whose voice is here; the default person first."""
+        counts = {
+            person_id: count
+            for person_id, count in db.execute(
+                select(Take.person_id, func.count()).group_by(Take.person_id)
+            )
+        }
+        query = select(Person).order_by(Person.is_default.desc(), Person.id)
+        return [person_out(p, counts.get(p.id, 0)) for p in db.scalars(query)]
+
+    @router.post("/people", status_code=201, operation_id="createPerson")
+    def create_person(body: PersonIn, db: Db) -> PersonOut:
+        person = Person(name=body.name.strip(), note=body.note)
+        db.add(person)
+        try:
+            db.commit()
+        except IntegrityError:
+            raise HTTPException(409, "a person with this name exists") from None
+        return person_out(person, 0)
+
+    @router.put("/people/{person_id}", operation_id="updatePerson")
+    def update_person(person_id: int, body: PersonIn, db: Db) -> PersonOut:
+        person = get_person(db, person_id)
+        person.name, person.note = body.name.strip(), body.note
+        try:
+            db.commit()
+        except IntegrityError:
+            raise HTTPException(409, "a person with this name exists") from None
+        return person_out(person, takes_of(db, person_id))
+
+    @router.post("/people/{person_id}/default", operation_id="makeDefaultPerson")
+    def make_default_person(person_id: int, db: Db) -> list[PersonOut]:
+        """Make this person the default one; returns everyone.
+
+        From then on every take is read against this person's everyday voice.
+        """
+        person = get_person(db, person_id)
+        current = learner(db)
+        if current.id != person.id:
+            current.is_default = False
+            # NOTE: the index allows one default person: the old one has to go first
+            db.flush()
+            person.is_default = True
+            db.commit()
+        return list_people(db)
+
+    @router.delete("/people/{person_id}", status_code=204, operation_id="deletePerson")
+    def delete_person(person_id: int, db: Db, takes: bool = False) -> Response:
+        """Delete a person, and with `takes=true` their takes and recordings with them.
+
+        Refused (409) for the default person, and for a person who has takes unless
+        `takes=true` says they are to go too.
+        """
+        person = get_person(db, person_id)
+        if person.is_default:
+            raise HTTPException(409, "the default person stays: make someone else the default")
+        theirs = list(db.scalars(select(Take).where(Take.person_id == person_id)))
+        if theirs and not takes:
+            raise HTTPException(409, f"this person has takes: {len(theirs)}")
+        hashes = {take.sha256 for take in theirs}
+        for take in theirs:
+            db.delete(take)
+        # NOTE: the takes have to be gone before the person they point to
+        db.flush()
+        db.delete(person)
+        db.commit()
+        forget(db, hashes)
+        return Response(status_code=204)
+
     # --- takes ---
 
     @router.post(
@@ -587,7 +700,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 response.status_code = 200
                 return out(db, get_take(db, stored))
         check_labels(
-            db, labels.device_id, labels.content_ref, labels.session_id, labels.exercise_ref
+            db,
+            labels.device_id,
+            labels.content_ref,
+            labels.session_id,
+            labels.exercise_ref,
+            labels.person_id,
         )
         try:
             info = store.ingest(file.file.read())
@@ -596,6 +714,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         take = Take(
             recorded_at=as_utc(labels.recorded_at) if labels.recorded_at else now(),
             device_id=labels.device_id,
+            person_id=learner(db).id if labels.person_id is None else labels.person_id,
             item=labels.item,
             intent=labels.intent,
             language=labels.language,
@@ -624,6 +743,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         intent: Intent | None = None,
         language: str | None = None,
         device_id: int | None = None,
+        person_id: int | None = None,
         session_id: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
@@ -640,6 +760,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             query = query.where(Take.language == language)
         if device_id is not None:
             query = query.where(Take.device_id == device_id)
+        if person_id is not None:
+            query = query.where(Take.person_id == person_id)
         if session_id is not None:
             query = query.where(Take.session_id == session_id)
         if since is not None:
@@ -658,8 +780,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def update_take(take_id: str, body: TakePatch, db: Db) -> TakeOut:
         take = get_take(db, take_id)
         changes = body.model_dump(exclude_unset=True)
-        check_labels(db, changes.get("device_id"), changes.get("content_ref"))
-        for field in ("device_id", "item", "intent", "recorded_at", "note"):
+        check_labels(
+            db,
+            changes.get("device_id"),
+            changes.get("content_ref"),
+            person_id=changes.get("person_id"),
+        )
+        for field in ("device_id", "person_id", "item", "intent", "recorded_at", "note"):
             if field in changes and changes[field] is None:
                 raise HTTPException(422, f"{field} cannot be empty")
         if "recorded_at" in changes:
@@ -676,8 +803,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         sha256 = take.sha256
         db.delete(take)
         db.commit()
-        if db.scalar(select(func.count()).select_from(Take).where(Take.sha256 == sha256)) == 0:
-            store.delete(sha256)
+        forget(db, {sha256})
         return Response(status_code=204)
 
     @router.get("/takes/{take_id}/audio", operation_id="takeAudio", response_class=FileResponse)

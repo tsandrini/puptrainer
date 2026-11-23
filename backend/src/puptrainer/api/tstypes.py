@@ -24,6 +24,7 @@ HEADER = """\
 REQUESTS: tuple[type[BaseModel], ...] = (
     schemas.BandIn,
     schemas.DeviceIn,
+    schemas.PersonIn,
     schemas.PracticeIn,
     schemas.TakeMeta,
     schemas.TakePatch,

@@ -16,6 +16,7 @@ from sqlalchemy import (
     Dialect,
     Engine,
     ForeignKey,
+    Index,
     LargeBinary,
     String,
     Text,
@@ -23,6 +24,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
     event,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -71,6 +73,25 @@ class Device(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
 
 
+class Person(Base):
+    """Someone whose voice is recorded.
+
+    Exactly one person is the default one: the learner, whose everyday voice every take
+    is read against. A partial unique index keeps it to one.
+    """
+
+    __tablename__ = "person"
+    __table_args__ = (
+        Index("ix_person_one_default", "is_default", unique=True, sqlite_where=text("is_default")),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    note: Mapped[str] = mapped_column(String(2000), default="")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
+
+
 class PracticeSession(Base):
     """A guided practice session; its takes point to it.
 
@@ -112,6 +133,9 @@ class Take(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
     recorded_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("device.id"))
+    # NOTE: nullable in the table only: SQLite cannot add a NOT NULL reference to a table
+    # with rows. The migration fills it and the API always sets it
+    person_id: Mapped[int] = mapped_column(ForeignKey("person.id"), index=True, nullable=True)
     item: Mapped[str] = mapped_column(String(20))
     intent: Mapped[str] = mapped_column(String(20))
     language: Mapped[str | None] = mapped_column(String(8))

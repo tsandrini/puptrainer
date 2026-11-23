@@ -198,6 +198,22 @@ export type Passage = {
 	text: string;
 };
 
+/** Someone whose voice is recorded, to create or update. */
+export type PersonIn = {
+	name: string;
+	note?: string;
+};
+
+/** A stored person. */
+export type PersonOut = {
+	name: string;
+	note: string;
+	id: number;
+	is_default: boolean;
+	created_at: string;
+	take_count: number;
+};
+
 /** Speech judged by how much of its voiced time lies inside the target band. */
 export type PitchBandRule = {
 	kind: 'pitch_band';
@@ -358,6 +374,7 @@ export type StepsRule = {
 /** The labels of a take being uploaded. */
 export type TakeMeta = {
 	device_id: number;
+	person_id?: number | null;
 	item: Item;
 	intent: Intent;
 	language?: string | null;
@@ -378,6 +395,7 @@ export type TakeOut = {
 	recorded_at: string;
 	device_id: number;
 	device_name: string;
+	person_id: number;
 	item: Item;
 	intent: Intent;
 	language: string | null;
@@ -404,6 +422,7 @@ export type TakeOut = {
 /** Labels of a take to change; unset fields stay as they are. */
 export type TakePatch = {
 	device_id?: number | null;
+	person_id?: number | null;
 	item?: Item | null;
 	intent?: Intent | null;
 	language?: string | null;

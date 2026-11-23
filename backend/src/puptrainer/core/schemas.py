@@ -89,6 +89,35 @@ class DeviceOut(DeviceIn):
     created_at: datetime
 
 
+class PersonIn(Schema):
+    """Someone whose voice is recorded, to create or update.
+
+    Attributes:
+        name: Shown in lists; unique.
+        note: Free text: who they are, why their voice is here.
+    """
+
+    name: str = Field(min_length=1, max_length=80)
+    note: str = Field(default="", max_length=2000)
+
+
+class PersonOut(PersonIn):
+    """A stored person.
+
+    Attributes:
+        id: The person.
+        is_default: Whether this is the learner: the one person whose everyday voice
+            every take is read against, and whose practice the app follows.
+        created_at: When they were added.
+        take_count: How many takes are theirs.
+    """
+
+    id: int
+    is_default: bool
+    created_at: datetime
+    take_count: int
+
+
 class Target(Schema):
     """What a practice take was recorded against.
 
@@ -377,6 +406,7 @@ class TakeMeta(Schema):
 
     Attributes:
         device_id: The microphone setup it was recorded with.
+        person_id: Whose voice it is; the default person's when unset.
         item: What was spoken.
         intent: Which voice it was.
         language: Language spoken (`en`, `cs`, …); unset for vowels and glides.
@@ -392,6 +422,7 @@ class TakeMeta(Schema):
     """
 
     device_id: int
+    person_id: int | None = None
     item: Item
     intent: Intent
     language: str | None = Field(default=None, min_length=2, max_length=8)
@@ -409,6 +440,7 @@ class TakePatch(Schema):
     """Labels of a take to change; unset fields stay as they are."""
 
     device_id: int | None = None
+    person_id: int | None = None
     item: Item | None = None
     intent: Intent | None = None
     language: str | None = Field(default=None, min_length=2, max_length=8)
@@ -571,8 +603,9 @@ class TakeOut(Schema):
     """A stored take with its labels, its analysis state and its metrics.
 
     `metrics`, `details` and `series` come from the newest finished analysis; the
-    `evaluation` of a practice take and the `reading` of a voice against the learner's
-    everyday takes are computed from them when the take is read.
+    `evaluation` of a practice take and the `reading` of a voice against the everyday
+    takes of the default person (whoever's voice the take is) are computed from them
+    when the take is read.
     """
 
     id: str
@@ -580,6 +613,7 @@ class TakeOut(Schema):
     recorded_at: datetime
     device_id: int
     device_name: str
+    person_id: int
     item: Item
     intent: Intent
     language: str | None
