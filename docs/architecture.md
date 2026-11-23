@@ -11,7 +11,7 @@ Browser (web/, SvelteKit single-page app)
         |  HTTP, /api/v1
         v
 API (backend/src/puptrainer/api, FastAPI)
-  SQLite: devices, takes, analysis jobs, metric values,
+  SQLite: devices, people, takes, analysis jobs, metric values,
           practice sessions, the pitch band's history
   recordings as FLAC, addressed by content
   judges practice takes when serving them (puptrainer.core.evaluation)
@@ -87,9 +87,19 @@ than the API and its storage.
   is counted from its own first moments instead, with a wider gate than
   speech: it is one sound, also when a quiet part follows a loud one or
   it comes in short puffs.
-- **Every take carries its context**: the microphone setup, what was spoken,
-  the language, the text that was read (with its version), and the intent
-  (`habitual`, `attempt`, or `drill` for a sound made for an exercise).
+- **A take is somebody's, and one person is the default.** Every take
+  belongs to a person (`person`, `take.person_id`), and exactly one
+  person is the default one: the learner. The everyday voice every take
+  is read against is the default person's, whoever's voice the take is:
+  another person's take says where that voice sits on the learner's own
+  scale and never moves it, whatever it is labelled. The pitch band and
+  the practice sessions are the learner's too. The web app shows the
+  default person; anybody picked beside is drawn as series of their own,
+  and no statistic is counted over two people.
+- **Every take carries its context**: the microphone setup, whose voice it
+  is, what was spoken, the language, the text that was read (with its
+  version), and the intent (`habitual`, `attempt`, or `drill` for a sound
+  made for an exercise).
   A practice take also carries its exercise, its session, the band it was
   recorded against and its comfort rating. Numbers are only compared within
   a setup.

@@ -40,8 +40,13 @@ every rep, and a practice log. Voice exploration and lessons come next
   them and the legends say the values there. Click a moment to hear what
   you did there; drag to zoom in.
 - **Labels every take**: the microphone setup, what was spoken, the
-  language, and whether it was your everyday voice or an attempt at the
-  voice you are training.
+  language, whether it was your everyday voice or an attempt at the
+  voice you are training, and whose voice it is.
+- **Keeps other people's voices apart**: a friend's voice to compare
+  yours with is recorded under their own name. It is read against your
+  everyday voice, never counted into it, and stays out of your numbers.
+  On Progress you can pick people to see beside you, each with a mark of
+  their own.
 - **Analyses takes in the background** with [Praat](https://www.praat.org)
   (through Parselmouth): the pitch and how it moves, an estimate of
   resonance (formants, apparent vocal-tract length), voice quality, the range
@@ -204,6 +209,13 @@ is read on resonance as well (three everyday takes also give its scatter).
 Record a baseline in your everyday voice before you start training: it
 cannot be recreated later.
 
+The app follows one person's training: the **default person** (at first
+the only one, "Me"; rename them under **People**). To record somebody
+else, add them under **People** and choose them under "Whose voice" on
+the Record or Import page; a take can be moved to another person on its
+page. Every take, whoever's it is, is read against the default person's
+everyday voice. Deleting a person deletes their recordings with them.
+
 ## 5. Practise
 
 1. **Practice → Your band**: set the pitch range you practise in, or take
@@ -242,11 +254,11 @@ Everything is under one directory: `~/.local/share/puptrainer` by default
 or wherever `PUPTRAINER_DATA_DIR` points. It is outside the repository on
 purpose, so it does not depend on where the app is started from.
 
-| In it                | What                                               |
-| -------------------- | -------------------------------------------------- |
-| `puptrainer.sqlite3` | Takes, labels, microphones, measurements, sessions |
-| `audio/`             | The recordings as FLAC files, never rewritten      |
-| `backups/`           | Snapshots of the database (the newest 14 are kept) |
+| In it                | What                                                       |
+| -------------------- | ---------------------------------------------------------- |
+| `puptrainer.sqlite3` | Takes, labels, microphones, people, measurements, sessions |
+| `audio/`             | The recordings as FLAC files, never rewritten              |
+| `backups/`           | Snapshots of the database (the newest 14 are kept)         |
 
 The app snapshots its database once on each day it is started, and before
 every change of the database's layout by a new version. Recordings are not
