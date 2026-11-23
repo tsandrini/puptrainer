@@ -892,6 +892,45 @@ try {
 	await page.click('nav a[href="/"]');
 	await page.waitForSelector('[data-testid=takes] tbody tr a');
 
+	// --- one box to get anywhere, and the list of keys
+	const logoAt = async () => (await page.locator('header a').first().boundingBox()).x;
+	const logoOnTakes = await logoAt();
+	await page.keyboard.press('Control+k');
+	await page.waitForSelector('[data-testid=palette-input]');
+	await page.fill('[data-testid=palette-input]', 'PROGRESS relat');
+	check(
+		'the palette narrows as words are typed',
+		(await count(page, '[data-testid=palette] [role=option]')) === 1
+	);
+	await page.keyboard.press('Enter');
+	await page.waitForURL(/\/progress\?tab=relations/);
+	await page.waitForSelector('[data-testid=palette]', { state: 'detached' });
+	check('Enter goes there', true);
+	await page.keyboard.press('Control+k');
+	await page.fill('[data-testid=palette-input]', 'free czech');
+	await page.waitForSelector('[data-testid=palette] [data-entry^="take:"]');
+	await page.keyboard.press('Alt+Enter');
+	await page.waitForSelector('[data-testid=dock][data-playing=true]');
+	check('Alt+Enter on a take plays it without leaving the page', page.url().includes('/progress'));
+	await page.click('[data-testid=dock-close]');
+	await page.keyboard.press('?');
+	await page.waitForSelector('[data-testid=keys]');
+	check('? lists the keys', (await text(page, '[data-testid=keys]')).includes('Ctrl K'));
+	await page.keyboard.press('Escape');
+	await page.waitForSelector('[data-testid=keys]', { state: 'detached' });
+	await page.click('[data-testid=view-reset]');
+	// the shell is one width: nothing of it moves between a page of data and a page to read
+	await page.click('nav a[href="/record"]');
+	await page.waitForSelector('[data-testid=what]');
+	const logoOnRecord = await logoAt();
+	check(
+		'the shell stays where it is from page to page',
+		Math.abs(logoOnRecord - logoOnTakes) < 1,
+		`${logoOnTakes} / ${logoOnRecord}`
+	);
+	await page.click('nav a[href="/"]');
+	await page.waitForSelector('[data-testid=takes] tbody tr a');
+
 	// --- two takes side by side
 	const boxes = page.locator('[data-testid=takes] [data-testid=tick]');
 	await boxes.nth(0).click();
@@ -921,6 +960,68 @@ try {
 	);
 	check('only one player sounds at a time', sounding === 'false,true', sounding);
 	await toggles.nth(1).click();
+	// the two takes over each other, moment by moment; the other take at the same place
+	await page.waitForSelector('[data-testid=compare-traces] [data-grid=pitch_hz] .uplot canvas');
+	check(
+		'the two takes are drawn over each other, a grid per measure, each with both values',
+		(await page.getAttribute('[data-testid=compare-traces]', 'data-rows')).startsWith('pitch_hz') &&
+			(await count(page, '[data-grid=pitch_hz] [data-testid=plot-legend] li')) === 2
+	);
+	await page.click('[data-testid=compare-align]');
+	check(
+		'the second take can be lined up with the first, and moved by hand',
+		/^B [+−]?\d/.test(await text(page, '[data-testid=compare-shift]'))
+	);
+	const playheads = () =>
+		page
+			.locator('[data-testid=player-time]')
+			.evaluateAll((times) => times.map((time) => Number(time.dataset.seconds)));
+	const pitchGrid = page.locator('[data-grid=pitch_hz] .u-over');
+	const gridBox = await pitchGrid.boundingBox();
+	await pitchGrid.click({ position: { x: gridBox.width * 0.4, y: gridBox.height / 2 } });
+	const [seekA, seekB] = await playheads();
+	check(
+		'a click on the graphs moves both takes to that moment',
+		seekA > 0.3 && seekB > 0.3,
+		`${seekA} / ${seekB}`
+	);
+	await page.keyboard.press('x');
+	const went = await until(
+		() => toggles.evaluateAll((buttons) => buttons.map((button) => button.dataset.playing).join()),
+		(v) => v !== 'false,false',
+		5_000
+	);
+	check(
+		'X goes on in the other take',
+		went.split(',').filter((v) => v === 'true').length === 1,
+		went
+	);
+	await page.keyboard.press('x');
+	const back = await until(
+		() => toggles.evaluateAll((buttons) => buttons.map((button) => button.dataset.playing).join()),
+		(v) => v !== went && v !== 'false,false',
+		5_000
+	);
+	check(
+		'and back again, one at a time',
+		back !== went && back.includes('true'),
+		`${went} → ${back}`
+	);
+	await page.locator('[data-testid=player-toggle][data-playing=true]').click();
+	// one of the two without a graph: the page names it and still draws the other
+	const graphApi = `**/api/v1/takes/${new URL(page.url()).searchParams.get('b')}/trace*`;
+	await page.route(graphApi, (route) => route.fulfill({ status: 404, body: '{}' }));
+	await page.reload();
+	await page.waitForSelector('[data-testid=compare-no-graph]');
+	check(
+		'a take without a graph is named, and the other one is still drawn',
+		(await text(page, '[data-testid=compare-no-graph]')).includes('Take B') &&
+			(await count(page, '[data-grid=pitch_hz] [data-testid=plot-legend] li')) === 1
+	);
+	await page.unroute(graphApi);
+	await page.goto('/compare?a=nope&b=neither');
+	await page.waitForSelector('[data-testid=compare-failed]');
+	check('takes that cannot be loaded are said to be so', true);
 
 	// --- an older pipeline's takes can be analysed again in one go
 	await page.route('**/api/v1/health', async (route) => {
@@ -1449,6 +1550,38 @@ try {
 			),
 		JSON.stringify(hold.map((s) => [s.id, s.bars]))
 	);
+	// practice itself: the sessions day by day and one by one, and a row per exercise
+	await page.click('[data-testid=tab-practice]');
+	await page.waitForSelector('[data-chart=practice-sessions] canvas');
+	check(
+		'practice has a tab of its own: tiles, days, sessions, exercises',
+		(await count(page, '[data-testid=practice-tiles] [data-testid=stat-tile]')) === 5 &&
+			(await count(page, '[data-chart=practice-per-day] canvas')) === 1 &&
+			(await count(page, '[data-chart=practice-calendar] canvas')) >= 1 &&
+			(await count(page, '[data-testid=practice-exercises] tbody tr')) > 0
+	);
+	check(
+		'the filters that sift takes are not offered where sessions are counted',
+		(await count(page, '[data-testid=kind]')) === 0 &&
+			(await count(page, '[data-testid=voice-attempt]')) === 0
+	);
+	const sessionSpot = await chartPoint(page, '[data-chart=practice-sessions]');
+	await page
+		.locator('[data-chart=practice-sessions] [data-testid=chart]')
+		.click({ position: { x: sessionSpot.x, y: sessionSpot.y } });
+	await page.waitForURL(/\/practice\/sessions\//);
+	check('a click on a session opens it', true);
+	// the list of sessions away: the tab says so, and the rest of the page stands
+	const sessionsApi = '**/api/v1/practice';
+	await page.route(sessionsApi, (route) => route.fulfill({ status: 500, body: 'no' }));
+	await page.goto('/progress?tab=practice');
+	await page.waitForSelector('[data-testid=practice-lost]');
+	await page.click('[data-testid=tab-measures]');
+	await page.waitForSelector('[data-testid=panel-measures]');
+	check('without the list of sessions the tab says so and the page stands', true);
+	await page.unroute(sessionsApi);
+	await page.goto('/progress');
+	await page.waitForSelector('[data-testid=view-reset]');
 	await page.click('[data-testid=view-reset]');
 
 	// --- the installed app

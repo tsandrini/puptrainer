@@ -9,8 +9,9 @@
 	// as the list. Every chart opens over the whole screen and gives its
 	// numbers as a table and a file. The view is kept in the address.
 	import RotateIcon from '@lucide/svelte/icons/rotate-ccw';
-	import { fetchAllTakes } from '#lib/api/index.js';
-	import type { Item, MeasureDef, MetricDef, TakeOut, Zone } from '#lib/api/types.js';
+	import { goto } from '$app/navigation';
+	import { fetchAllTakes, fetchPracticeList } from '#lib/api/index.js';
+	import type { Item, MeasureDef, MetricDef, PracticeOut, TakeOut, Zone } from '#lib/api/types.js';
 	import { app } from '#lib/app.svelte.js';
 	import type { Voice } from '#lib/charts.js';
 	import DateRange from '#lib/components/app/DateRange.svelte';
@@ -24,10 +25,19 @@
 	import StatTile from '#lib/components/charts/StatTile.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Tabs from '#lib/components/ui/tabs/index.js';
-	import { fmtDateTime, fmtDuration, fmtMetric, fmtNumber, fmtSigned } from '#lib/format.js';
+	import {
+		fmtDate,
+		fmtDateTime,
+		fmtDuration,
+		fmtMetric,
+		fmtNumber,
+		fmtSigned
+	} from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { player } from '#lib/player.svelte.js';
 	import {
+		barsOption,
+		calendarOption,
 		matrixOption,
 		scatterOption,
 		spreadOption,
@@ -41,6 +51,8 @@
 		type ZoneBand
 	} from '#lib/progress/options.js';
 	import { colours } from '#lib/progress/palette.svelte.js';
+	import { dailyMinutes, sessionFacts } from '#lib/progress/practice.js';
+	import { PROGRESS_TABS } from '#lib/progress/tabs.js';
 	import { tipCard, type TipRow } from '#lib/progress/tip.js';
 	import { decodeRange, encodeRange, inRange } from '#lib/range.js';
 	import { median, pearson } from '#lib/stats.js';
@@ -63,7 +75,6 @@
 	};
 
 	const VOICES: Voice[] = ['attempt', 'habitual'];
-	const TABS = ['voice', 'measures', 'relations', 'exercises'] as const;
 	/** The distances from the everyday voice, with the hue each keeps on every chart. */
 	const SHIFTS = [
 		'pitch_shift_st',
@@ -92,12 +103,15 @@
 	const v = view.value;
 
 	let takes = $state.raw<TakeOut[] | null>(null);
+	let sessions = $state.raw<PracticeOut[]>([]);
+	/** The list of sessions could not be read: its tab says so instead of "none". */
+	let sessionsLost = $state(false);
 	/** The takes inside the scatter's selection rectangle. */
 	let picked = $state.raw<string[]>([]);
 	const now = Date.now();
 
 	/** The tab that is open; only its charts are drawn. */
-	const tab = $derived((TABS as readonly string[]).includes(v.tab) ? v.tab : 'voice');
+	const tab = $derived((PROGRESS_TABS as readonly string[]).includes(v.tab) ? v.tab : 'voice');
 	const palette = $derived(colours.value);
 	const hue = (key: string) => palette.series[Math.max(SHIFTS.indexOf(key), 0)];
 	const range = $derived(decodeRange(v.range));
@@ -212,6 +226,149 @@
 		}
 	]);
 	const drawn = $derived(panels.filter((panel) => panel.lines.length));
+
+	// --- practice itself: the sessions in the stretch of time, whatever the microphone or the kind
+	/** Whether the controls that sift takes (microphone, kind, voices) mean anything on the open tab. */
+	const sifted = $derived(tab !== 'practice');
+	const WEEKS = 18;
+	const facts = $derived(
+		sessionFacts(
+			sessions.filter((session) => inRange(range, Date.parse(session.started_at), now)),
+			takes ?? []
+		).filter((fact) => fact.takes > 0)
+	);
+	const routineName = (ref: string | null) =>
+		ref === null
+			? i18n.t.practice.single
+			: i18n.pick(app.routine(ref.replace('routine:', ''))?.titles) || i18n.t.practice.earlier;
+	const daily = $derived.by(() => {
+		const { days, routines } = dailyMinutes(facts);
+		// NOTE: a hue per routine in the order they first appear; past the palette they share the last
+		return {
+			days,
+			total: days.map((_, index) => routines.reduce((sum, row) => sum + row.values[index], 0)),
+			parts: Object.values(
+				routines.reduce<Record<string, { name: string; color: string; values: number[] }>>(
+					(parts, row) => {
+						const name = routineName(row.routine);
+						const part = (parts[name] ??= {
+							name,
+							color: palette.series[Math.min(Object.keys(parts).length, 5)],
+							values: days.map(() => 0)
+						});
+						row.values.forEach((value, index) => (part.values[index] += value));
+						return parts;
+					},
+					{}
+				)
+			)
+		};
+	});
+	const practised = $derived({
+		minutes: facts.reduce((sum, fact) => sum + fact.minutes, 0),
+		days: daily.total.filter((minutes) => minutes > 0).length,
+		judged: facts.reduce((sum, fact) => sum + fact.judged, 0),
+		met: facts.reduce((sum, fact) => sum + fact.met, 0),
+		comforts: facts.flatMap((fact) => fact.comfort ?? []),
+		tense: facts.filter((fact) => fact.tension === true)
+	});
+	const stamp = (moment: number) => fmtDateTime(new Date(moment).toISOString(), i18n.locale);
+	/** The sessions one by one: how they felt at the end, and how many of their takes met the bar. */
+	const sessionPanels = $derived<Panel[]>([
+		{
+			key: 'comfort',
+			title: i18n.t.progress.practiceTab.comfort,
+			unit: '1–5',
+			least: 3,
+			lines: [
+				{
+					key: 'comfort',
+					name: i18n.t.progress.practiceTab.comfort,
+					color: palette.series[0],
+					voice: 'attempt',
+					dots: facts.flatMap((fact): Dot[] =>
+						fact.comfort === null
+							? []
+							: [
+									{
+										id: fact.id,
+										at: fact.at,
+										value: fact.comfort,
+										tone: fact.tension ? 'warn' : undefined
+									}
+								]
+					)
+				}
+			]
+		},
+		{
+			key: 'met',
+			title: i18n.t.progress.practiceTab.metShare,
+			unit: '%',
+			least: 40,
+			lines: [
+				{
+					key: 'met',
+					name: i18n.t.progress.practiceTab.metShare,
+					color: palette.series[2],
+					voice: 'attempt',
+					dots: facts.flatMap((fact): Dot[] =>
+						fact.judged
+							? [{ id: fact.id, at: fact.at, value: Math.round((fact.met / fact.judged) * 100) }]
+							: []
+					)
+				}
+			]
+		}
+	]);
+	function sessionTip(datum: Datum): HTMLElement | string {
+		const fact = facts.find((f) => f.id === datum.take);
+		if (!fact) return '';
+		return tipCard({
+			title: stamp(fact.at),
+			sub: `${routineName(fact.routine)} · ${i18n.t.progress.takes(fact.takes)} · ${fmtNumber(fact.minutes, 0, i18n.locale)} min`,
+			rows: [
+				...(fact.comfort !== null
+					? [
+							{
+								label: i18n.t.progress.practiceTab.comfort,
+								value: `${fact.comfort} · ${i18n.t.practice.run.comforts[fact.comfort - 1]}`
+							}
+						]
+					: []),
+				...(fact.judged
+					? [{ label: i18n.t.progress.practiceTab.metShare, value: `${fact.met} / ${fact.judged}` }]
+					: []),
+				...(fact.tension
+					? [{ label: i18n.t.practice.session.tension, value: '!', color: palette.warning }]
+					: [])
+			],
+			foot: i18n.t.progress.practiceTab.open
+		});
+	}
+	/** Every exercise practised in the stretch of time, as a row of what became of it. */
+	const byExercise = $derived(
+		(app.content?.exercises ?? [])
+			.flatMap((exercise) => {
+				const reps = (takes ?? []).filter(
+					(t) => app.exerciseOf(t.exercise_ref)?.id === exercise.id && inRange(range, at(t), now)
+				);
+				if (!reps.length) return [];
+				const judged = reps.filter((t) => typeof t.evaluation?.met === 'boolean');
+				const comforts = reps.flatMap((t) => t.comfort ?? []);
+				return [
+					{
+						exercise,
+						takes: reps.length,
+						judged: judged.length,
+						met: judged.filter((t) => t.evaluation?.met === true).length,
+						comfort: comforts.length ? median(comforts) : null,
+						last: Math.max(...reps.map(at))
+					}
+				];
+			})
+			.sort((a, b) => b.last - a.last)
+	);
 
 	// --- what the pointer says about a take, and what a click does with it
 	function takeTip(take: TakeOut, extra: TipRow[] = []): HTMLElement {
@@ -521,6 +678,10 @@
 	) => trendOption({ panels, palette, frame, locale: i18n.locale, tip, ...extra });
 
 	$effect(() => {
+		void fetchPracticeList()
+			.then((all) => (sessions = all))
+			// NOTE: the page stands without its practice tab
+			.catch(() => (sessionsLost = true));
 		void fetchAllTakes()
 			.then((all) => (takes = all))
 			.catch(() => {
@@ -546,7 +707,7 @@
 		>{@render voiceKey()}</Help
 	>
 	<div class="ms-auto flex flex-wrap items-center gap-2">
-		{#if app.devices.length > 1}
+		{#if sifted && app.devices.length > 1}
 			<select
 				class="select h-8"
 				aria-label={i18n.t.takes.device}
@@ -558,7 +719,7 @@
 				{/each}
 			</select>
 		{/if}
-		{#if kinds.length}
+		{#if sifted && kinds.length}
 			<select
 				class="select h-8"
 				aria-label={i18n.t.progress.kind}
@@ -572,32 +733,34 @@
 			</select>
 		{/if}
 		<DateRange bind:value={() => range, (next) => (v.range = encodeRange(next))} {earliest} />
-		<div class="flex items-center gap-1" role="group" aria-label={i18n.t.intent.label}>
-			{#each VOICES as voice (voice)}
-				{@const on = v.voices.includes(voice)}
-				<Button
-					variant={on ? 'secondary' : 'outline'}
-					size="sm"
-					class={cn('h-8 gap-1.5', !on && 'text-muted-foreground line-through decoration-1')}
-					aria-pressed={on}
-					onclick={() =>
-						(v.voices = on ? v.voices.filter((x) => x !== voice) : [...v.voices, voice])}
-					data-testid="voice-{voice}"
-				>
-					<VoiceMark intent={voice} />
-					{i18n.t.intent[voice]}
-				</Button>
-			{/each}
-		</div>
-		<label class="flex h-8 items-center gap-1.5 rounded-lg border bg-card px-2.5 text-sm">
-			<input
-				type="checkbox"
-				class="accent-primary"
-				bind:checked={v.practice}
-				data-testid="with-practice"
-			/>
-			{i18n.t.progress.practice}
-		</label>
+		{#if sifted}
+			<div class="flex items-center gap-1" role="group" aria-label={i18n.t.intent.label}>
+				{#each VOICES as voice (voice)}
+					{@const on = v.voices.includes(voice)}
+					<Button
+						variant={on ? 'secondary' : 'outline'}
+						size="sm"
+						class={cn('h-8 gap-1.5', !on && 'text-muted-foreground line-through decoration-1')}
+						aria-pressed={on}
+						onclick={() =>
+							(v.voices = on ? v.voices.filter((x) => x !== voice) : [...v.voices, voice])}
+						data-testid="voice-{voice}"
+					>
+						<VoiceMark intent={voice} />
+						{i18n.t.intent[voice]}
+					</Button>
+				{/each}
+			</div>
+			<label class="flex h-8 items-center gap-1.5 rounded-lg border bg-card px-2.5 text-sm">
+				<input
+					type="checkbox"
+					class="accent-primary"
+					bind:checked={v.practice}
+					data-testid="with-practice"
+				/>
+				{i18n.t.progress.practice}
+			</label>
+		{/if}
 		{#if view.changed}
 			<Button
 				variant="ghost"
@@ -615,12 +778,12 @@
 
 {#if takes === null}
 	<p class="text-muted-foreground">{i18n.t.common.loading}</p>
-{:else if !shown.length && !drills.length}
+{:else if !shown.length && !drills.length && !facts.length}
 	<Empty text={i18n.t.progress.empty} />
 {:else}
 	<Tabs.Root value={tab} onValueChange={(next) => (v.tab = next)}>
-		<Tabs.List class="mb-3">
-			{#each TABS as tab (tab)}
+		<Tabs.List class="mb-3 max-w-full justify-start overflow-x-auto">
+			{#each PROGRESS_TABS as tab (tab)}
 				<Tabs.Trigger value={tab} data-testid="tab-{tab}">{i18n.t.progress.tabs[tab]}</Tabs.Trigger>
 			{/each}
 		</Tabs.List>
@@ -933,6 +1096,199 @@
 								/>
 							</div>
 						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+		{#if tab === 'practice'}
+			<div role="tabpanel" data-testid="panel-practice">
+				{#if sessionsLost}
+					<div data-testid="practice-lost"><Empty text={i18n.t.progress.practiceTab.lost} /></div>
+				{:else if !facts.length}
+					<Empty text={i18n.t.progress.practiceTab.none} />
+				{:else}
+					<div class="space-y-3">
+						<div
+							class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
+							data-testid="practice-tiles"
+						>
+							<StatTile
+								title={i18n.t.progress.practiceTab.sessions}
+								value={`${facts.length}`}
+								note={i18n.t.progress.practiceTab.onDays(practised.days)}
+							/>
+							<StatTile
+								title={i18n.t.progress.practiceTab.minutes}
+								value={fmtNumber(practised.minutes, 0, i18n.locale)}
+								unit="min"
+								note={i18n.t.progress.practiceTab.aSession(
+									fmtNumber(median(facts.map((f) => f.minutes)), 0, i18n.locale)
+								)}
+								trail={facts.map((f) => f.minutes)}
+								color="var(--series-2)"
+							/>
+							<StatTile
+								title={i18n.t.progress.practiceTab.metShare}
+								value={practised.judged
+									? fmtNumber((practised.met / practised.judged) * 100, 0, i18n.locale)
+									: '–'}
+								unit="%"
+								note={`${practised.met} / ${practised.judged}`}
+								trail={facts.flatMap((f) => (f.judged ? [(f.met / f.judged) * 100] : []))}
+								color="var(--series-3)"
+							/>
+							<StatTile
+								title={i18n.t.progress.practiceTab.comfort}
+								value={practised.comforts.length
+									? fmtNumber(median(practised.comforts), 1, i18n.locale)
+									: '–'}
+								unit="/ 5"
+								note={practised.comforts.length
+									? i18n.t.practice.run.comforts[Math.round(median(practised.comforts)) - 1]
+									: undefined}
+								trail={practised.comforts}
+								color="var(--series-4)"
+							/>
+							<StatTile
+								title={i18n.t.practice.session.tension}
+								value={`${practised.tense.length}`}
+								note={practised.tense.length
+									? i18n.t.progress.practiceTab.lastTense(stamp(practised.tense.at(-1)!.at))
+									: i18n.t.progress.practiceTab.noTense}
+								color="var(--warning)"
+							>
+								<Help
+									title={i18n.t.practice.session.tension}
+									text={[
+										i18n.t.progress.practiceTab.tensionHelp,
+										i18n.t.practice.run.tensionAdvice
+									]}
+								/>
+							</StatTile>
+						</div>
+						<div class="grid gap-3 xl:grid-cols-2">
+							<ChartCard
+								title={i18n.t.progress.practiceTab.perDay}
+								sub="min"
+								help={{ text: i18n.t.progress.practiceTab.perDayHelp }}
+								name="practice-per-day"
+								height={260}
+								option={() =>
+									barsOption({
+										days: daily.days,
+										parts: daily.parts,
+										unit: 'min',
+										palette,
+										locale: i18n.locale
+									})}
+								table={() => ({
+									headers: [
+										i18n.t.progress.taken,
+										...daily.parts.map((part) => `${part.name} (min)`)
+									],
+									rows: daily.days.map((day, index) => [
+										new Date(day).toLocaleDateString(i18n.locale === 'en' ? 'en-GB' : i18n.locale),
+										...daily.parts.map((part) => part.values[index])
+									])
+								})}
+							/>
+							<ChartCard
+								title={i18n.t.progress.practiceTab.calendar}
+								sub={i18n.t.progress.practiceTab.weeks(WEEKS)}
+								name="practice-calendar"
+								height={260}
+								option={() =>
+									calendarOption({
+										days: daily.days.map((day, index) => ({ day, value: daily.total[index] })),
+										from: now - WEEKS * 7 * 86_400_000,
+										to: now,
+										unit: 'min',
+										palette,
+										locale: i18n.locale
+									})}
+							/>
+						</div>
+						<ChartCard
+							title={i18n.t.progress.practiceTab.perSession}
+							sub={i18n.t.progress.practiceTab.count(facts.length)}
+							help={{ text: i18n.t.progress.practiceTab.perSessionHelp }}
+							name="practice-sessions"
+							height={330}
+							option={(frame) =>
+								trendOption({
+									panels: sessionPanels,
+									palette,
+									frame,
+									locale: i18n.locale,
+									slider: frame.full,
+									tip: sessionTip
+								})}
+							table={() => ({
+								headers: [
+									i18n.t.progress.taken,
+									i18n.t.practice.sessions,
+									i18n.t.takes.title,
+									'min',
+									i18n.t.progress.practiceTab.comfort,
+									i18n.t.progress.practiceTab.metShare,
+									i18n.t.practice.session.tension
+								],
+								rows: facts.map((fact) => [
+									stamp(fact.at),
+									routineName(fact.routine),
+									fact.takes,
+									fact.minutes,
+									fact.comfort,
+									fact.judged ? `${fact.met} / ${fact.judged}` : null,
+									fact.tension === null ? null : fact.tension ? '!' : '–'
+								])
+							})}
+							onpick={(event) => {
+								const id = (event.data as Datum | undefined)?.take;
+								if (id) void goto(`/practice/sessions/${id}`);
+							}}
+						/>
+						<section class="panel overflow-x-auto p-3" data-testid="practice-exercises">
+							<h3 class="mb-2 text-sm font-bold">{i18n.t.progress.practiceTab.byExercise}</h3>
+							<table class="w-full text-left text-sm tabular-nums">
+								<thead class="text-xs whitespace-nowrap text-muted-foreground">
+									<tr>
+										<th class="py-1 pr-3 font-medium">{i18n.t.take.exercise}</th>
+										<th class="py-1 pr-3 text-right font-medium">{i18n.t.takes.title}</th>
+										<th class="py-1 pr-3 text-right font-medium"
+											>{i18n.t.progress.practiceTab.met}</th
+										>
+										<th class="py-1 pr-3 text-right font-medium"
+											>{i18n.t.progress.practiceTab.repComfort}</th
+										>
+										<th class="py-1 text-right font-medium">{i18n.t.progress.practiceTab.last}</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each byExercise as row (row.exercise.id)}
+										<tr class="border-t" data-exercise={row.exercise.id}>
+											<td class="py-1 pr-3 font-semibold">{i18n.pick(row.exercise.titles)}</td>
+											<td class="py-1 pr-3 text-right">{row.takes}</td>
+											<td class="py-1 pr-3 text-right">
+												{#if row.judged}{row.met} / {row.judged}{:else}<span
+														class="text-muted-foreground/60">—</span
+													>{/if}
+											</td>
+											<td class="py-1 pr-3 text-right">
+												{#if row.comfort !== null}{fmtNumber(
+														row.comfort,
+														1,
+														i18n.locale
+													)}{:else}<span class="text-muted-foreground/60">—</span>{/if}
+											</td>
+											<td class="py-1 text-right whitespace-nowrap text-muted-foreground">
+												{fmtDate(new Date(row.last).toISOString(), i18n.locale)}
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</section>
 					</div>
 				{/if}
 			</div>

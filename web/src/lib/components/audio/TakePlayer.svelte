@@ -33,7 +33,8 @@
 		source,
 		name = 'take',
 		position = $bindable(0),
-		duration = $bindable(0)
+		duration = $bindable(0),
+		sounding = $bindable(false)
 	}: {
 		/** Where the recording is (a URL), or the recording itself. */
 		source: string | ArrayBuffer;
@@ -43,6 +44,8 @@
 		position?: number;
 		/** Length of the recording in seconds, 0 until it is decoded. */
 		duration?: number;
+		/** Out only: it is playing right now. */
+		sounding?: boolean;
 	} = $props();
 
 	/** The rate takes are decoded to for the picture. */
@@ -72,6 +75,9 @@
 	// NOTE: one way only: the page reads these, and moves the playback with `seek`
 	$effect(() => {
 		position = current;
+	});
+	$effect(() => {
+		sounding = playing;
 	});
 	$effect(() => {
 		duration = length;
@@ -206,15 +212,23 @@
 
 	function toggle(): void {
 		if (!audio || !url) return;
-		if (!audio.paused) {
-			audio.pause();
-			return;
-		}
+		if (!audio.paused) audio.pause();
+		else play();
+	}
+
+	/** Starts the playback where it stands (from the start when it stands at the end). */
+	export function play(): void {
+		if (!audio || !url) return;
 		// NOTE: one thing sounds at a time: another player on the page, or the dock, stops
 		const element = audio;
 		claimSound(owner, () => element.pause());
 		if (length && audio.currentTime >= length - 0.02) audio.currentTime = 0;
 		void audio.play().catch(() => (playing = false));
+	}
+
+	/** Stops the playback where it stands. */
+	export function pause(): void {
+		audio?.pause();
 	}
 
 	/**

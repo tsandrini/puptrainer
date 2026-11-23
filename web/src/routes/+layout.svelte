@@ -3,20 +3,23 @@
 	// switches, the banners that say when the API or its worker is away or
 	// takes are waiting to upload, and the player's dock along the bottom.
 	// The shared state (content, devices, queue, service worker, theme)
-	// starts here. Pages of data get the width of the screen; pages to read
-	// keep a column.
+	// starts here. The shell is one width on every page; inside it pages of
+	// data take the room and pages to read keep a column.
 	import './layout.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import AudioLinesIcon from '@lucide/svelte/icons/audio-lines';
 	import MicIcon from '@lucide/svelte/icons/mic';
+	import SearchIcon from '@lucide/svelte/icons/search';
 	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { app } from '#lib/app.svelte.js';
+	import CommandPalette from '#lib/components/app/CommandPalette.svelte';
 	import Login from '#lib/components/app/Login.svelte';
 	import PlayerDock from '#lib/components/audio/PlayerDock.svelte';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { overlays } from '#lib/overlays.svelte.js';
 	import { player } from '#lib/player.svelte.js';
 	import { isTake } from '#lib/store.js';
 	import Paw from '#lib/components/app/Paw.svelte';
@@ -56,8 +59,17 @@
 		{ href: '/devices', label: i18n.t.nav.devices, Icon: SlidersIcon, active: starts('/devices') }
 	]);
 
-	/** The pages that are tables and charts: they take the room there is. */
-	const wide = $derived(page.url.pathname === '/' || page.url.pathname.startsWith('/progress'));
+	/**
+	 * The pages that are for reading and filling in keep a column in the middle;
+	 * the ones of tables and graphs take the room there is. The shell itself (the
+	 * paw, the navigation, the banners) is the same width everywhere, so nothing
+	 * of it moves from page to page.
+	 */
+	const column = $derived(
+		['/practice', '/record', '/import', '/devices'].some((path) =>
+			page.url.pathname.startsWith(path)
+		)
+	);
 
 	onMount(() => {
 		document.documentElement.lang = i18n.locale;
@@ -72,12 +84,7 @@
 <div class="paw-trail"></div>
 
 <Tooltip.Provider delayDuration={300}>
-	<div
-		class={cn(
-			'mx-auto flex min-h-full flex-col px-4 transition-[max-width]',
-			wide ? 'max-w-[110rem]' : 'max-w-5xl'
-		)}
-	>
+	<div class="mx-auto flex min-h-full max-w-[110rem] flex-col px-4">
 		<header class="flex flex-wrap items-center gap-x-3 gap-y-2 py-4">
 			<a href="/" class="flex items-center gap-2 text-lg font-black tracking-tight">
 				<span
@@ -115,6 +122,19 @@
 				{#if app.loginRequired && !app.needLogin}
 					<Button variant="ghost" size="sm" onclick={() => app.signOut()} data-testid="sign-out">
 						{i18n.t.login.signOut}
+					</Button>
+				{/if}
+				{#if !app.needLogin}
+					<Button
+						variant="outline"
+						size="sm"
+						class="hidden gap-2 text-muted-foreground lg:inline-flex"
+						onclick={() => (overlays.palette = true)}
+						data-testid="palette-open"
+					>
+						<SearchIcon />
+						{i18n.t.palette.open}
+						<kbd class="rounded border bg-muted px-1 font-mono text-[0.65rem]">Ctrl K</kbd>
 					</Button>
 				{/if}
 				<ThemeToggle />
@@ -188,7 +208,13 @@
 			</section>
 		{/if}
 
-		<main class={cn('flex-1 pt-2', player.take ? 'pb-32' : 'pb-10')}>
+		<main
+			class={cn(
+				'w-full flex-1 pt-2',
+				column && 'mx-auto max-w-5xl',
+				player.take ? 'pb-32' : 'pb-10'
+			)}
+		>
 			{#if app.needLogin}
 				<Login />
 			{:else}
@@ -198,5 +224,6 @@
 	</div>
 	{#if !app.needLogin}
 		<PlayerDock />
+		<CommandPalette />
 	{/if}
 </Tooltip.Provider>

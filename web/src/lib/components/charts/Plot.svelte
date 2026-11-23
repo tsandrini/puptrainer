@@ -9,6 +9,8 @@
 		values: (number | null)[];
 		/** A fainter line: a reference beside the main ones. */
 		faint?: boolean;
+		/** Dashes and gaps in pixels: the line of the everyday voice, or of a drill. */
+		dash?: number[];
 		/** What the legend says for a value. */
 		format: (value: number, index: number) => string;
 		/** What the legend says where there is no value; a dash without it. */
@@ -106,7 +108,7 @@
 
 	const shape = $derived(
 		[
-			series.map((s) => `${s.key}:${s.color}:${s.faint}`).join('|'),
+			series.map((s) => `${s.key}:${s.color}:${s.faint}:${s.dash?.join(' ') ?? ''}`).join('|'),
 			axis,
 			zoomable,
 			sync ?? '',
@@ -209,6 +211,7 @@
 						stroke: colour(s.color),
 						width: 2,
 						alpha: s.faint ? 0.45 : 1,
+						dash: s.dash,
 						spanGaps: false,
 						points: { show: false }
 					}))
@@ -404,9 +407,12 @@
 		{#each series as s (s.key)}
 			{@const value = at !== null ? s.values[at] : null}
 			<li class="flex items-baseline gap-1.5" data-series={s.key}>
+				<!-- NOTE: the swatch is the line: dashed where the line is -->
 				<span
-					class="inline-block h-0.5 w-4 translate-y-[-3px] rounded-full"
-					style="background: {s.color}; opacity: {s.faint ? 0.45 : 1}"
+					class="inline-block h-0 w-5 translate-y-[-3px] border-t-2"
+					style="border-color: {s.color}; border-top-style: {s.dash
+						? 'dashed'
+						: 'solid'}; opacity: {s.faint ? 0.45 : 1}"
 				></span>
 				<span class="text-muted-foreground">{s.label}</span>
 				<span class="font-semibold tabular-nums" data-testid="plot-value">

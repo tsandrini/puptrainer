@@ -23,33 +23,36 @@
 	);
 </script>
 
-<div class="grid items-start gap-4 md:grid-cols-2" data-testid="metrics">
-	{#each groups as { group, metrics } (group)}
-		<section class="panel" data-group={group}>
-			<h2 class="mb-1 flex items-center gap-1 text-base">
-				{i18n.t.groups[group]}
-				<Help title={i18n.t.groups[group]} text={i18n.t.groupIntro[group]} />
-			</h2>
-			<dl class="divide-y text-sm">
-				{#each metrics as metric (metric.key)}
-					<div class="flex items-center justify-between gap-3 py-1">
-						<dt class="flex min-w-0 items-center gap-1">
-							<span class="truncate">{i18n.pick(metric.titles) || metric.key}</span>
-							<Help
-								title={i18n.pick(metric.titles) || metric.key}
-								text={[
-									i18n.pick(metric.descriptions),
-									i18n.pick(metric.notes),
-									i18n.pick(metric.relates)
-								]}
-							/>
-						</dt>
-						<dd class="font-extrabold whitespace-nowrap tabular-nums" data-metric={metric.key}>
-							{fmtMetric(take.metrics[metric.key], metric, i18n.locale)}
-						</dd>
-					</div>
-				{/each}
-			</dl>
-		</section>
-	{/each}
+<!-- NOTE: two columns where the place it is put in has the room, whatever the screen is -->
+<div class="@container" data-testid="metrics">
+	<div class="grid items-start gap-4 @2xl:grid-cols-2">
+		{#each groups as { group, metrics } (group)}
+			<section class="panel" data-group={group}>
+				<h2 class="mb-1 flex items-center gap-1 text-base">
+					{i18n.t.groups[group]}
+					<Help title={i18n.t.groups[group]} text={i18n.t.groupIntro[group]} />
+				</h2>
+				<dl class="divide-y text-sm">
+					{#each metrics as metric (metric.key)}
+						<div class="flex items-center justify-between gap-3 py-1">
+							<dt class="flex min-w-0 items-center gap-1">
+								<span class="truncate">{i18n.pick(metric.titles) || metric.key}</span>
+								<Help
+									title={i18n.pick(metric.titles) || metric.key}
+									text={[
+										i18n.pick(metric.descriptions),
+										i18n.pick(metric.notes),
+										i18n.pick(metric.relates)
+									]}
+								/>
+							</dt>
+							<dd class="font-extrabold whitespace-nowrap tabular-nums" data-metric={metric.key}>
+								{fmtMetric(take.metrics[metric.key], metric, i18n.locale)}
+							</dd>
+						</div>
+					{/each}
+				</dl>
+			</section>
+		{/each}
+	</div>
 </div>

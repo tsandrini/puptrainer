@@ -308,7 +308,36 @@ export const cs: Messages = {
 			voice: 'Proti běžnému hlasu',
 			measures: 'Měření',
 			relations: 'Souvislosti',
-			exercises: 'Cvičení'
+			exercises: 'Cvičení',
+			practice: 'Procvičování'
+		},
+		practiceTab: {
+			none: 'V tomto úseku času není žádné sezení s nahrávkou.',
+			lost: 'Sezení se nepodařilo načíst. Načtěte stránku znovu.',
+			sessions: 'Sezení',
+			onDays: (n) => `v ${n} ${plural(n, 'dni', 'dnech', 'dnech')}`,
+			minutes: 'Procvičeno',
+			aSession: (minutes) => `jedno sezení: ${minutes} min`,
+			metShare: 'Nahrávky, které splnily laťku',
+			comfort: 'Pohodlí na konci',
+			lastTense: (when) => `naposledy: ${when}`,
+			noTense: 'žádné v pohledu',
+			tensionHelp:
+				'Sezení, po kterých podle vás napětí v krku nebo na krku přetrvalo. V grafu níže jsou to jantarové body.',
+			perDay: 'Procvičování po dnech',
+			perDayHelp:
+				'Minuty cvičení v každém dni, podle sezení. Sezení se počítá od začátku do chvíle krátce po poslední nahrávce, takže sezení nechané otevřené se nepočítá za hodinu.',
+			calendar: 'Dny s cvičením',
+			weeks: (n) => `posledních ${n} týdnů`,
+			perSession: 'Sezení po sezení',
+			count: (n) => `${n} ${plural(n, 'sezení', 'sezení', 'sezení')}`,
+			perSessionHelp:
+				'Jaké bylo každé sezení na konci (1 s napětím až 5 bez námahy) a kolik jeho hodnocených nahrávek splnilo laťku. Jantarový bod je sezení, po kterém napětí přetrvalo. Kliknutí na bod sezení otevře.',
+			open: 'Kliknutím otevřít sezení',
+			byExercise: 'Podle cvičení',
+			met: 'Splněno',
+			repComfort: 'Pohodlí',
+			last: 'Naposledy'
 		},
 		taken: 'Nahráno',
 		takes: (n) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}`,
@@ -378,6 +407,57 @@ export const cs: Messages = {
 	help: {
 		about: (title) => `O čem je: ${title}`
 	},
+	palette: {
+		open: 'Hledat',
+		title: 'Hledání a příkazy',
+		hint: 'Přejít na stránku, najít nahrávku, spustit cvičení…',
+		session: 'sezení',
+		exercise: 'cvičení',
+		nothing: 'Nic neodpovídá.',
+		lost: 'Nahrávky se nepodařilo načíst, v tomto seznamu proto nejsou.',
+		foot: 'Enter vybere · u nahrávky ji Alt + Enter místo toho přehraje · Esc zavře',
+		keys: 'Klávesy',
+		groups: {
+			pages: 'Stránky',
+			start: 'Spustit',
+			takes: 'Nahrávky',
+			settings: 'Nastavení'
+		},
+		sections: [
+			{
+				title: 'Všude',
+				keys: [
+					['Ctrl K', 'hledání a příkazy'],
+					['?', 'tento seznam'],
+					['/', 'hledat v tabulce na stránce']
+				]
+			},
+			{
+				title: 'Přehrávač dole',
+				keys: [
+					['K', 'přehrát nebo pozastavit (i mezerník, když nic nemá fokus)'],
+					['J / L', 'pět sekund zpět / vpřed'],
+					['P / N', 'předchozí / další nahrávka seznamu']
+				]
+			},
+			{
+				title: 'Nahrávka a dvě nahrávky',
+				keys: [
+					['[ / ]', 'nahrávka před ní / po ní v tabulce'],
+					['X', 'porovnání: pokračovat v té druhé nahrávce na stejném místě']
+				]
+			},
+			{
+				title: 'Grafy a tabulky',
+				keys: [
+					['Kliknutí', 'na bod: poslechnout jeho nahrávku'],
+					['Ctrl + kolečko', 'přiblížit graf na stránce Pokrok; tažení ho posouvá'],
+					['Tažení', 'v grafech nahrávky: přiblížit; dvojklik oddálí'],
+					['Shift + kliknutí', 'na záhlaví: druhý klíč řazení']
+				]
+			}
+		]
+	},
 	chart: {
 		full: 'Přes celou obrazovku',
 		more: 'Další: čísla, soubory',
@@ -435,7 +515,29 @@ export const cs: Messages = {
 	compare: {
 		title: 'Porovnání dvou nahrávek',
 		pick: 'Zaškrtněte v seznamu dvě nahrávky a zvolte Porovnat.',
+		failed: 'Tyto nahrávky se nepodařilo načíst: jedna z nich mohla být smazána.',
 		back: 'Zpět na nahrávky',
+		flip: 'Prohodit A a B',
+		moment: 'Okamžik po okamžiku',
+		swap: (to) => `Pokračovat v ${to}`,
+		swapHint: 'Zastaví tuto nahrávku a pokračuje v té druhé na stejném místě ( X )',
+		align: 'Srovnat na sebe',
+		moved: 'O kolik je B posunuté',
+		noGraph: (side) =>
+			`Nahrávka ${side} nemá graf okamžik po okamžiku: nechte ji na její stránce rozebrat znovu.`,
+		noGraphs:
+			'Ani jedna nahrávka nemá graf okamžik po okamžiku: nechte je na jejich stránkách rozebrat znovu.',
+		earlier: 'Posunout B o desetinu sekundy dřív',
+		later: 'Posunout B o desetinu sekundy později',
+		together: 'Začít společně',
+		help: [
+			'Dvě nahrávky proti sobě: jejich grafy přes sebe, obě nahrávky k poslechu a každé měření, které mají společné, s rozdílem mezi nimi.',
+			'Běžný hlas je čárkovaně, jako všude. Kde by obě nahrávky vypadaly stejně, je B ta bledší.'
+		],
+		momentHelp: [
+			'Mřížka pro každou veličinu na jedné časové ose, každá nahrávka se svými vlastními hodnotami: dají se číst přímo proti sobě. Legenda říká obě hodnoty u ukazatele nebo tam, kde stojí přehrávání.',
+			'Dvě nahrávky málokdy začínají ve stejný okamžik: „Srovnat na sebe“ posune B tak, aby jeho první zvuk začal s prvním zvukem A, a − a + ho posouvají o desetinu sekundy. Kliknutí přejde na ten okamžik v obou nahrávkách; „Pokračovat v B“ zastaví A a přehraje B od stejného místa. Tažením se přibližuje, dvojklik oddálí.'
+		],
 		metric: 'Měření',
 		difference: 'B − A',
 		setups:

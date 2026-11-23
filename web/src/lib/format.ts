@@ -11,6 +11,10 @@ export const fmtDateTime = (iso: string, locale: string) =>
 		new Date(iso)
 	);
 
+/** A date without its time: `16 Nov 2026`. */
+export const fmtDate = (iso: string, locale: string) =>
+	new Intl.DateTimeFormat(formatLocale(locale), { dateStyle: 'medium' }).format(new Date(iso));
+
 /** A length in seconds as `m:ss`. */
 export function fmtDuration(seconds: number): string {
 	const whole = Math.round(seconds);

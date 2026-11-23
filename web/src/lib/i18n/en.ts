@@ -308,8 +308,37 @@ export const en = {
 			voice: 'Against everyday',
 			measures: 'Measures',
 			relations: 'Relations',
-			exercises: 'Exercises'
+			exercises: 'Exercises',
+			practice: 'Practice'
 		} as Record<string, string>,
+		practiceTab: {
+			none: 'No practice session with a take in this stretch of time.',
+			lost: 'The practice sessions could not be loaded. Reload the page to try again.',
+			sessions: 'Sessions',
+			onDays: (n: number) => (n === 1 ? 'on 1 day' : `on ${n} days`),
+			minutes: 'Practised',
+			aSession: (minutes: string) => `a session: ${minutes} min`,
+			metShare: 'Takes that met their bar',
+			comfort: 'Comfort at the end',
+			lastTense: (when: string) => `last: ${when}`,
+			noTense: 'none in view',
+			tensionHelp:
+				'The sessions after which you said tension in your throat or neck lasted. On the chart below they are the amber points.',
+			perDay: 'Practice per day',
+			perDayHelp:
+				'Minutes of practice on each day, by session. A session counts from its start to a little after its last take, so one left open does not count for an hour.',
+			calendar: 'Practice days',
+			weeks: (n: number) => `the last ${n} weeks`,
+			perSession: 'Session by session',
+			count: (n: number) => (n === 1 ? '1 session' : `${n} sessions`),
+			perSessionHelp:
+				'How each session felt at its end (1 strained to 5 effortless) and how many of its judged takes met their bar. An amber point is a session after which tension lasted. Click a point to open the session.',
+			open: 'Click to open the session',
+			byExercise: 'By exercise',
+			met: 'Met',
+			repComfort: 'Comfort',
+			last: 'Last practised'
+		},
 		taken: 'Recorded',
 		takes: (n: number) => (n === 1 ? '1 take' : `${n} takes`),
 		trend: 'Over time',
@@ -375,6 +404,57 @@ export const en = {
 	help: {
 		about: (title: string) => `About: ${title}`
 	},
+	palette: {
+		open: 'Search',
+		title: 'Search and commands',
+		hint: 'Go to a page, find a take, start an exercise…',
+		session: 'session',
+		exercise: 'exercise',
+		nothing: 'Nothing matches.',
+		lost: 'The takes could not be loaded, so they are not in this list.',
+		foot: 'Enter chooses · on a take, Alt + Enter plays it instead · Esc closes',
+		keys: 'Keys',
+		groups: {
+			pages: 'Pages',
+			start: 'Start',
+			takes: 'Takes',
+			settings: 'Settings'
+		} as Record<string, string>,
+		sections: [
+			{
+				title: 'Everywhere',
+				keys: [
+					['Ctrl K', 'search and commands'],
+					['?', 'this list'],
+					['/', 'search the table of the page']
+				]
+			},
+			{
+				title: 'The player at the bottom',
+				keys: [
+					['K', 'play or pause (Space too, when nothing has the focus)'],
+					['J / L', 'five seconds back / on'],
+					['P / N', 'the previous / the next take of the list']
+				]
+			},
+			{
+				title: 'A take, and two takes',
+				keys: [
+					['[ / ]', 'the take before / after it in the table'],
+					['X', 'compare: go on in the other take at the same place']
+				]
+			},
+			{
+				title: 'Charts and tables',
+				keys: [
+					['Click', 'a point: listen to its take'],
+					['Ctrl + wheel', 'zoom a Progress chart; drag moves it'],
+					['Drag', 'on a take’s graphs: zoom in; double-click zooms out'],
+					['Shift + click', 'a header: a second sort key']
+				]
+			}
+		] as { title: string; keys: [string, string][] }[]
+	},
 	chart: {
 		full: 'Over the whole screen',
 		more: 'More: the numbers, files',
@@ -432,9 +512,30 @@ export const en = {
 	compare: {
 		title: 'Compare two takes',
 		pick: 'Tick two takes in the list, then choose Compare.',
+		failed: 'These takes could not be loaded: one of them may have been deleted.',
 		back: 'Back to the takes',
 		metric: 'Measurement',
 		difference: 'B − A',
+		flip: 'Swap A and B',
+		moment: 'Moment by moment',
+		swap: (to: string) => `Go on in ${to}`,
+		swapHint: 'Stops this take and goes on in the other one at the same place ( X )',
+		align: 'Line them up',
+		moved: 'How far B is moved',
+		noGraph: (side: string) =>
+			`Take ${side} has no graph moment by moment: analyse it again on its page.`,
+		noGraphs: 'Neither take has a graph moment by moment: analyse them again on their pages.',
+		earlier: 'Move B a tenth of a second earlier',
+		later: 'Move B a tenth of a second later',
+		together: 'Start together',
+		help: [
+			'Two takes against each other: their graphs overlaid, both recordings, and every measurement they share with the difference between them.',
+			'The everyday voice is a dashed line, as everywhere. Where both takes would be drawn alike, B is the fainter one.'
+		],
+		momentHelp: [
+			'A grid per measure on one time axis, with each take’s own values: the two can be read against each other directly. The legend says both values at the pointer or where the playback stands.',
+			'Two takes rarely start at the same moment: “Line them up” moves B so that its first sound starts with A’s, and − and + move it by a tenth of a second. A click goes to that moment in both takes; “Go on in B” stops A and plays B from the same place. Drag to zoom, double-click to zoom out.'
+		],
 		setups:
 			'These takes come from different microphone setups: differences in resonance, slope and level may be the setup, not the voice.',
 		kinds: 'These takes are of different kinds: only some measurements can be compared.'

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+	barsOption,
+	calendarOption,
 	matrixOption,
 	scatterOption,
 	spreadOption,
@@ -236,5 +238,73 @@ describe('how each voice spreads', () => {
 		expect(series.find((s) => s.id === 'box')!.data).toEqual([[0, 2, 3, 4, 5]]);
 		expect(series.filter((s) => s.id === 'habitual' || s.id === 'attempt')).toHaveLength(1);
 		expect((option.yAxis as Series).max).toBe(0.5);
+	});
+});
+
+describe('practice per day', () => {
+	const days = [T0, T0 + DAY, T0 + 2 * DAY];
+	const parts = [
+		{ name: 'Pitch', color: palette.series[0], values: [5, 0, 7] },
+		{ name: 'Resonance', color: palette.series[2], values: [0, 9, 3] }
+	];
+
+	it('stacks the parts of a day into one bar, each part in its own colour', () => {
+		const option = barsOption({ days, parts, unit: 'min', palette, locale: 'en' });
+		expect(
+			seriesOf(option).map((s) => [s.name, s.type, s.stack, s.itemStyle.color, s.data])
+		).toEqual([
+			['Pitch', 'bar', 'day', '#01', [5, 0, 7]],
+			['Resonance', 'bar', 'day', '#03', [0, 9, 3]]
+		]);
+		expect((option.xAxis as Series).data).toEqual(['20 Nov', '21 Nov', '22 Nov']);
+		expect(option.legend).toBeDefined();
+	});
+
+	it('names nothing in a legend when there is one part', () => {
+		const option = barsOption({
+			days,
+			parts: parts.slice(0, 1),
+			unit: 'min',
+			palette,
+			locale: 'en'
+		});
+		expect(option.legend).toBeUndefined();
+	});
+});
+
+describe('practice days as a calendar', () => {
+	const option = calendarOption({
+		days: [
+			{ day: T0, value: 12 },
+			{ day: T0 + DAY, value: 0 },
+			{ day: T0 + 2 * DAY, value: 30 }
+		],
+		from: T0 - 7 * DAY,
+		to: T0 + 2 * DAY,
+		unit: 'min',
+		palette,
+		locale: 'en'
+	});
+
+	it('shades only the days with practice, on one hue up to the most of them', () => {
+		expect(seriesOf(option)[0].data).toEqual([
+			['2026-11-20', 12],
+			['2026-11-22', 30]
+		]);
+		const map = option.visualMap as Series;
+		expect([map.min, map.max]).toEqual([0, 30]);
+		expect(map.inRange.color).toEqual([palette.soft, palette.primary]);
+	});
+
+	it('spans the stretch it is given, weeks from Monday', () => {
+		const calendar = option.calendar as Series;
+		expect(calendar.range).toEqual(['2026-11-13', '2026-11-22']);
+		expect(calendar.dayLabel.firstDay).toBe(1);
+	});
+
+	it('says the day and the amount at the pointer', () => {
+		const said = (option.tooltip as Series).formatter({ value: ['2026-11-20', 12] });
+		expect(said).toContain('20 November 2026');
+		expect(said).toContain('12 min');
 	});
 });

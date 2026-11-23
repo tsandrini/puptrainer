@@ -30,8 +30,11 @@ export type Palette = {
 };
 
 export type Style = Voice | 'drill';
-/** One take on a chart. */
-export type Dot = { id: string; at: number; value: number; tone?: 'met' | 'missed' };
+/**
+ * One take (or one session) on a chart; a tone marks it: a bar met or missed, or a
+ * warning that goes with it.
+ */
+export type Dot = { id: string; at: number; value: number; tone?: 'met' | 'missed' | 'warn' };
 /** One line of a panel: a measure in one voice. */
 export type Line = { key: string; name: string; color: string; voice: Style; dots: Dot[] };
 /** A reference range on a value axis; an open end reaches to the axis's. */
@@ -309,7 +312,9 @@ export function trendOption(input: {
 									itemStyle:
 										dot.tone === 'met'
 											? { color: palette.good, borderColor: palette.card, borderWidth: 1 }
-											: { color: palette.card, borderColor: palette.muted, borderWidth: 2 }
+											: dot.tone === 'warn'
+												? { color: palette.warning, borderColor: palette.card, borderWidth: 1 }
+												: { color: palette.card, borderColor: palette.muted, borderWidth: 2 }
 								}
 							: {})
 					}))
@@ -641,6 +646,9 @@ export function scatterOption(input: {
 	};
 }
 
+/** A grid whose edges are where its axis labels end, not where its plot does. */
+const LABELS_INSIDE = { outerBoundsMode: 'same', outerBoundsContain: 'axisLabel' } as const;
+
 /** How every measure goes with every other one, as a grid of r: blue with, orange against. */
 export function matrixOption(input: {
 	names: string[];
@@ -657,7 +665,7 @@ export function matrixOption(input: {
 		animationDuration: 200,
 		textStyle: { fontFamily: palette.font },
 		tooltip: tooltip(palette, input.tip),
-		grid: { left: 8, right: 8, top: 8, bottom: 8, containLabel: true },
+		grid: { left: 8, right: 8, top: 8, bottom: 8, ...LABELS_INSIDE },
 		xAxis: {
 			type: 'category',
 			data: names,
@@ -737,7 +745,7 @@ export function spreadOption(input: {
 		animationDuration: 200,
 		textStyle: { fontFamily: palette.font },
 		tooltip: tooltip(palette, input.tip),
-		grid: { left: 8, right: 14, top: 18, bottom: 6, containLabel: true },
+		grid: { left: 8, right: 14, top: 18, bottom: 6, ...LABELS_INSIDE },
 		xAxis: {
 			type: 'value',
 			min: ends[0],
@@ -852,5 +860,148 @@ export function spreadOption(input: {
 					}) as SeriesOption
 			)
 		] as SeriesOption[]
+	};
+}
+
+/**
+ * Amounts per day as bars, stacked from parts that each keep a hue.
+ *
+ * @param input.days The days, as local midnights in ms, without gaps.
+ * @param input.parts What a day's bar is made of; a value per day.
+ */
+export function barsOption(input: {
+	days: number[];
+	parts: { name: string; color: string; values: number[] }[];
+	unit: string;
+	palette: Palette;
+	locale: string;
+}): EChartsOption {
+	const { palette, locale, days, parts, unit } = input;
+	const text = { color: palette.muted, fontSize: 11, fontFamily: palette.font };
+	const day = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, {
+		day: 'numeric',
+		month: 'short'
+	});
+	const amount = number(locale);
+	return {
+		animationDuration: 250,
+		textStyle: { fontFamily: palette.font },
+		tooltip: {
+			trigger: 'axis',
+			axisPointer: { type: 'shadow', shadowStyle: { color: palette.soft } },
+			confine: true,
+			backgroundColor: palette.popover,
+			borderColor: palette.border,
+			textStyle: { color: palette.text, fontSize: 12, fontFamily: palette.font },
+			valueFormatter: (value) => `${amount(Number(value))} ${unit}`
+		},
+		legend:
+			parts.length > 1
+				? {
+						type: 'scroll',
+						top: 0,
+						left: 0,
+						itemWidth: 12,
+						itemHeight: 8,
+						icon: 'roundRect',
+						textStyle: text,
+						inactiveColor: palette.border
+					}
+				: undefined,
+		grid: { left: 44, right: 14, top: parts.length > 1 ? 32 : 12, bottom: 26 },
+		xAxis: {
+			type: 'category',
+			data: days.map((moment) => day.format(new Date(moment))),
+			axisLine: { lineStyle: { color: palette.border } },
+			axisTick: { show: false },
+			axisLabel: { ...text, hideOverlap: true }
+		},
+		yAxis: {
+			type: 'value',
+			axisLine: { show: false },
+			axisTick: { show: false },
+			splitLine: { lineStyle: { color: palette.grid } },
+			axisLabel: { ...text, formatter: amount }
+		},
+		series: parts.map((part) => ({
+			id: part.name,
+			name: part.name,
+			type: 'bar' as const,
+			stack: 'day',
+			barMaxWidth: 28,
+			// NOTE: a gap of the surface between the parts of a bar, and a rounded end
+			itemStyle: { color: part.color, borderColor: palette.card, borderWidth: 1, borderRadius: 3 },
+			emphasis: { focus: 'series' as const },
+			data: part.values
+		}))
+	};
+}
+
+/**
+ * Days as a calendar, each shaded by how much there was of something: one hue, more is darker.
+ *
+ * @param input.from The first day shown, and `to` the last, as local dates.
+ */
+export function calendarOption(input: {
+	days: { day: number; value: number }[];
+	from: number;
+	to: number;
+	unit: string;
+	palette: Palette;
+	locale: string;
+}): EChartsOption {
+	const { palette, locale, unit } = input;
+	const text = { color: palette.muted, fontSize: 10, fontFamily: palette.font };
+	const iso = (moment: number) => {
+		const date = new Date(moment);
+		const pad = (value: number) => `${value}`.padStart(2, '0');
+		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+	};
+	const most = Math.max(...input.days.map((d) => d.value), 1);
+	const amount = number(locale);
+	const long = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { dateStyle: 'full' });
+	return {
+		animationDuration: 200,
+		textStyle: { fontFamily: palette.font },
+		tooltip: {
+			confine: true,
+			backgroundColor: palette.popover,
+			borderColor: palette.border,
+			textStyle: { color: palette.text, fontSize: 12, fontFamily: palette.font },
+			formatter: (params) => {
+				const [date, value] = (Array.isArray(params) ? params[0] : params).value as [
+					string,
+					number
+				];
+				return `${long.format(new Date(`${date}T12:00:00`))}: ${amount(value)} ${unit}`;
+			}
+		},
+		visualMap: {
+			show: false,
+			min: 0,
+			max: most,
+			// NOTE: one hue from faint to full: an amount, not a kind
+			inRange: { color: [palette.soft, palette.primary] }
+		},
+		calendar: {
+			range: [iso(input.from), iso(input.to)],
+			top: 22,
+			left: 34,
+			right: 8,
+			bottom: 4,
+			cellSize: ['auto', 15],
+			splitLine: { show: false },
+			itemStyle: { color: palette.grid, borderColor: palette.card, borderWidth: 2 },
+			dayLabel: { ...text, firstDay: 1 },
+			monthLabel: { ...text },
+			yearLabel: { show: false }
+		},
+		series: [
+			{
+				type: 'heatmap',
+				coordinateSystem: 'calendar',
+				data: input.days.filter((d) => d.value > 0).map((d) => [iso(d.day), d.value])
+			}
+		]
 	};
 }

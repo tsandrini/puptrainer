@@ -2,10 +2,11 @@
 // charts of statistics over takes (the Progress page); a signal over one
 // take is drawn by `Plot` (uPlot). Nothing outside this directory imports
 // ECharts' code: charts are made through `Chart` and `ChartCard`.
-import { CustomChart, HeatmapChart, LineChart, ScatterChart } from 'echarts/charts';
+import { BarChart, CustomChart, HeatmapChart, LineChart, ScatterChart } from 'echarts/charts';
 import {
 	AxisPointerComponent,
 	BrushComponent,
+	CalendarComponent,
 	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
@@ -20,12 +21,14 @@ import langCS from 'echarts/lib/i18n/langCS.js';
 import { CanvasRenderer } from 'echarts/renderers';
 
 echarts.use([
+	BarChart,
 	CustomChart,
 	HeatmapChart,
 	LineChart,
 	ScatterChart,
 	AxisPointerComponent,
 	BrushComponent,
+	CalendarComponent,
 	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
