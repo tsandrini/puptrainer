@@ -130,6 +130,7 @@ const chartSeries = (page, selector) =>
 		.evaluate((element) =>
 			element.chart.getOption().series.map((series) => ({
 				id: series.id,
+				symbol: series.symbol ?? null,
 				dash: series.lineStyle?.type ?? null,
 				zones: (series.markArea?.data ?? []).map((area) => area[0].name),
 				bars: (series.markLine?.data ?? []).map((line) => line.label?.formatter ?? ''),
@@ -1583,6 +1584,177 @@ try {
 	await page.goto('/progress');
 	await page.waitForSelector('[data-testid=view-reset]');
 	await page.click('[data-testid=view-reset]');
+
+	// --- people: somebody else's voice is kept apart, and read against the default person's
+	const agree = (dialog) => void dialog.accept();
+	page.on('dialog', agree);
+	const asked = (path) => page.evaluate(async (at) => (await fetch(`/api/v1/${at}`)).json(), path);
+	await page.goto('/people');
+	await page.waitForSelector('[data-testid=people] li');
+	check(
+		'at first there is one person: the default one, who cannot be deleted',
+		(await count(page, '[data-testid=people] li')) === 1 &&
+			(await count(page, '[data-testid=person-default]')) === 1 &&
+			(await count(page, '[data-testid=person-delete]')) === 0
+	);
+	await page.goto('/record');
+	await page.waitForSelector('[data-testid=what]');
+	check(
+		'with one person nobody is asked whose voice it is',
+		(await count(page, '[data-testid=whose]')) === 0
+	);
+	await page.goto('/people');
+	await page.click('[data-testid=person-add]');
+	await page.fill('[data-testid=person-form] input', 'A friend');
+	await page.click('[data-testid=person-form] button[type=submit]');
+	await page.waitForSelector('[data-testid=people] li:nth-child(2)');
+	const friend = await page.getAttribute('[data-testid=people] li:nth-child(2)', 'data-person');
+	await page.click('[data-testid=person-add]');
+	await page.fill('[data-testid=person-form] input', 'A friend');
+	await page.click('[data-testid=person-form] button[type=submit]');
+	await page.waitForSelector('[data-testid=people-problem]');
+	check('a name that is taken is refused, and said', true);
+	// what the default person's numbers stand at before the friend says anything: the
+	// anchor phrases have an everyday take of theirs to read against
+	const [mine] = await asked('takes?item=phrase&intent=habitual&language=en&limit=1');
+	const baseline = () =>
+		asked(
+			`reference?device_id=${mine.device_id}&item=phrase&language=en&content_ref=${mine.content_ref}`
+		).then((reference) => reference.take_ids.join());
+	const baselineBefore = await baseline();
+	await page.goto('/progress?tab=voice&kind=phrase:en');
+	await page.waitForSelector('[data-testid=tiles]');
+	const tilesBefore = await text(page, '[data-testid=tiles]');
+	check(
+		'Progress shows the default person, and offers the people once there are two',
+		(await page.getAttribute('[data-testid=people]', 'data-chosen')) === `${mine.person_id}` &&
+			(await count(page, '[data-testid=one-only]')) === 0
+	);
+	// the friend reads the same phrases, in their own everyday voice
+	await page.goto('/record');
+	await page.selectOption('[data-testid=device]', `${mine.device_id}`);
+	await page.selectOption('[data-testid=what]', 'text:anchors-en');
+	await page.selectOption('[data-testid=intent]', 'habitual');
+	await page.selectOption('[data-testid=whose]', friend);
+	check(
+		'recording somebody else is said loudly, and their day starts empty',
+		(await text(page, '[data-testid=taking]')).includes('A friend') &&
+			/\b0 of \d/.test(await text(page, '[data-testid=baseline]'))
+	);
+	await record(page, 2.5);
+	await page.click('[data-testid=stop]');
+	await page.waitForSelector('[data-testid=review]');
+	await page.click('[data-testid=save]');
+	await page.waitForSelector('[data-testid=outcome]');
+	const theirs = await until(
+		() => asked(`takes?person_id=${friend}`),
+		(list) => list.length === 1 && list[0].analysis?.status === 'done',
+		60_000
+	);
+	check(
+		'the take is the friend’s, and is read against the default person’s everyday voice',
+		theirs.length === 1 && theirs[0].reading !== null,
+		JSON.stringify(theirs.map((take) => [take.person_id, take.reading?.takes]))
+	);
+	check(
+		'an everyday take of somebody else never joins the baseline',
+		(await baseline()) === baselineBefore
+	);
+	await page.click('[data-testid=taking-back]');
+	check(
+		'one click goes back to the default person',
+		(await count(page, '[data-testid=taking]')) === 0
+	);
+	// the friend's take on its page: whose it is, its numbers, none of the training's advice
+	await page.goto(`/takes/${theirs[0].id}`);
+	await page.waitForSelector('[data-testid=take-person]');
+	await page.waitForSelector('[data-testid=reading]');
+	check(
+		'a take says whose voice it is, and keeps the advice for the one who trains',
+		(await text(page, '[data-testid=take-person]')).includes('A friend') &&
+			(await count(page, '[data-testid=reading-notes] li:not([data-note=r1-unreadable])')) === 0
+	);
+	// the table: a column and a filter for people
+	await page.goto('/');
+	await page.waitForSelector('[data-testid=filter-who]');
+	const everyone = await text(page, '[data-testid=table-range]');
+	await page.click('[data-testid=filter-who]');
+	await page.click(`[data-option="${friend}"]`);
+	await page.keyboard.press('Escape');
+	await page.waitForFunction(
+		() => document.querySelectorAll('[data-testid=takes] tbody tr').length === 1
+	);
+	check(
+		'the table says whose each take is and filters by person',
+		(await text(page, '[data-testid=takes] tbody tr [data-person]')).includes('A friend') &&
+			new URL(page.url()).searchParams.get('who') === friend &&
+			(await text(page, '[data-testid=table-range]')) !== everyone
+	);
+	await page.click('[data-testid=view-reset]');
+	// Progress: the default person's numbers have not moved; the friend can be shown beside
+	await page.goto('/progress?tab=voice&kind=phrase:en');
+	await page.waitForSelector('[data-chart=against-everyday] canvas');
+	check(
+		'the default person’s tiles do not move when somebody else records',
+		(await text(page, '[data-testid=tiles]')) === tilesBefore
+	);
+	const alone = await chartSeries(page, '[data-chart=against-everyday]');
+	check(
+		'by default the charts hold the default person only',
+		alone.every((series) => !series.takes.includes(theirs[0].id))
+	);
+	await page.click('[data-testid=people]');
+	await page.click(`[data-option="${friend}"]`);
+	await page.keyboard.press('Escape');
+	const beside = await until(
+		() => chartSeries(page, '[data-chart=against-everyday]'),
+		(list) => list.some((series) => series.takes.includes(theirs[0].id)),
+		10_000
+	);
+	const guest = beside.filter((series) => series.takes.includes(theirs[0].id));
+	check(
+		'somebody picked beside is drawn as series of their own, with their own mark',
+		guest.length > 0 &&
+			guest.every((series) => series.id.endsWith(`@${friend}`) && series.symbol === 'triangle') &&
+			beside.some((series) => series.symbol === 'circle'),
+		JSON.stringify(guest.map((series) => [series.id, series.symbol]))
+	);
+	check(
+		'what is one person’s says so, and stays the default person’s',
+		(await text(page, '[data-testid=one-only]')).length > 0 &&
+			(await text(page, '[data-testid=tiles]')) === tilesBefore
+	);
+	await page.click('[data-testid=view-reset]');
+	// the default person can be somebody else: the baseline follows
+	await page.goto('/people');
+	await page.waitForSelector('[data-testid=people] li:nth-child(2)');
+	await page.click(`[data-person="${friend}"] [data-testid=person-make-default]`);
+	await page.waitForSelector(`[data-person="${friend}"] [data-testid=person-default]`);
+	check(
+		'another person can be made the default one, and the baseline is then theirs',
+		(await baseline()) === theirs[0].id
+	);
+	await page.click(`[data-person="${mine.person_id}"] [data-testid=person-make-default]`);
+	await page.waitForSelector(`[data-person="${mine.person_id}"] [data-testid=person-default]`);
+	check('and back again', (await baseline()) === baselineBefore);
+	// deleting a person takes their recordings along
+	await page.click(`[data-person="${friend}"] [data-testid=person-delete]`);
+	await page.waitForSelector(`[data-person="${friend}"]`, { state: 'detached' });
+	const gone = await page.evaluate(
+		async (id) => (await fetch(`/api/v1/takes/${id}`)).status,
+		theirs[0].id
+	);
+	check(
+		'deleting a person deletes their takes with them',
+		gone === 404 && (await count(page, '[data-testid=people] li')) === 1
+	);
+	page.off('dialog', agree);
+	await page.goto('/');
+	await page.waitForSelector('[data-testid=takes] tbody tr a');
+	check(
+		'with one person left the table has no people filter',
+		(await count(page, '[data-testid=filter-who]')) === 0
+	);
 
 	// --- the installed app
 	check(

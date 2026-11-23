@@ -22,6 +22,8 @@
 	import EvaluationView from '#lib/components/app/EvaluationView.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
 	import MetricGroups from '#lib/components/app/MetricGroups.svelte';
+	import PersonMark from '#lib/components/app/PersonMark.svelte';
+	import PersonSelect from '#lib/components/app/PersonSelect.svelte';
 	import ReadingView from '#lib/components/app/ReadingView.svelte';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -30,6 +32,7 @@
 	import { fmtDateTime, fmtDuration, fmtNumber } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { passageFor, passageRef } from '#lib/labels.js';
+	import { shapeOf } from '#lib/people.js';
 	import { trailAround } from '#lib/trail.js';
 
 	const POLL_MS = 2_000;
@@ -46,6 +49,7 @@
 	let item = $state<Item>('other');
 	let language = $state<string | null>(null);
 	let intent = $state<Intent>('habitual');
+	let personId = $state<number | null>(null);
 	let note = $state('');
 
 	const waiting = $derived(
@@ -56,7 +60,12 @@
 			(item !== take.item ||
 				language !== take.language ||
 				intent !== take.intent ||
+				personId !== take.person_id ||
 				note !== take.note)
+	);
+	/** Whose voice it is, when it is not the default person's: then the page says so. */
+	const other = $derived(
+		take !== null && take.person_id !== app.me?.id ? app.person(take.person_id) : null
 	);
 	const passage = $derived(app.passage(take?.content_ref));
 	const exercise = $derived(app.exerciseOf(take?.exercise_ref));
@@ -91,6 +100,7 @@
 		item = next.item;
 		language = next.language;
 		intent = next.intent;
+		personId = next.person_id;
 		note = next.note;
 	}
 
@@ -138,7 +148,20 @@
 					: text
 						? passageRef(text)
 						: null;
-			show(await updateTake(id, { item, language, intent, note, content_ref }), true);
+			const moved = personId !== null && personId !== take?.person_id;
+			show(
+				await updateTake(id, {
+					item,
+					language,
+					intent,
+					note,
+					content_ref,
+					...(moved ? { person_id: personId } : {})
+				}),
+				true
+			);
+			// NOTE: the people's take counts moved with it
+			if (moved) void app.refreshPeople();
 			saved = true;
 		});
 
@@ -204,6 +227,15 @@
 					<ChevronRightIcon />
 				</Button>
 			</div>
+		{/if}
+		{#if other}
+			<span
+				class="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/8 px-2.5 py-0.5 text-sm font-bold"
+				data-testid="take-person"
+			>
+				<PersonMark shape={shapeOf(app.people, other.id)} class="text-primary" />
+				{other.name}
+			</span>
 		{/if}
 		<span class="ml-auto text-sm text-muted-foreground">
 			{fmtDateTime(take.recorded_at, i18n.locale)} · {i18n.t.intent[take.intent]} · {take.device_name}
@@ -284,6 +316,7 @@
 					reading={take.reading}
 					metrics={take.metrics}
 					text={take.content_ref !== null}
+					advice={other === null}
 				/>
 			{:else if unread}
 				<p class="panel text-sm text-muted-foreground" data-testid="unread">
@@ -358,6 +391,12 @@
 				<section class="panel">
 					<h2 class="mb-2 text-base">{i18n.t.take.labels}</h2>
 					<LabelFields bind:item bind:language bind:intent />
+					{#if app.people.length > 1}
+						<label class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+							<span class="text-muted-foreground">{i18n.t.people.whose}</span>
+							<PersonSelect bind:value={personId} testid="take-whose" />
+						</label>
+					{/if}
 					<label class="mt-3 block text-sm">
 						<span class="mb-1 block text-muted-foreground">{i18n.t.take.note}</span>
 						<Textarea bind:value={note} rows={3} />

@@ -6,6 +6,7 @@
 	// One filter of a table's toolbar: several of a few choices, each with
 	// how many rows it has. The button says what is chosen; the list opens on
 	// a click, searches itself when it is long, and clears itself.
+	import type { Snippet } from 'svelte';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -22,6 +23,7 @@
 		options,
 		value = $bindable([]),
 		onchange,
+		mark,
 		testid
 	}: {
 		label: string;
@@ -29,6 +31,8 @@
 		/** The chosen values; none is "any". */
 		value?: string[];
 		onchange?: (value: string[]) => void;
+		/** Something drawn before a choice's label: the mark it has on a chart. */
+		mark?: Snippet<[Facet]>;
 		testid?: string;
 	} = $props();
 
@@ -105,6 +109,7 @@
 						>
 							{#if on}<CheckIcon class="size-3" />{/if}
 						</span>
+						{@render mark?.(option)}
 						<span class="min-w-0 flex-1 truncate">{option.label}</span>
 						{#if option.count !== undefined}
 							<span class="text-xs text-muted-foreground tabular-nums">{option.count}</span>

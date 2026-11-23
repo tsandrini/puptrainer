@@ -11,6 +11,7 @@
 	import AudioLinesIcon from '@lucide/svelte/icons/audio-lines';
 	import MicIcon from '@lucide/svelte/icons/mic';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import UsersIcon from '@lucide/svelte/icons/users';
 	import SlidersIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import UploadIcon from '@lucide/svelte/icons/upload';
@@ -56,7 +57,8 @@
 			active: starts('/progress')
 		},
 		{ href: '/import', label: i18n.t.nav.import, Icon: UploadIcon, active: starts('/import') },
-		{ href: '/devices', label: i18n.t.nav.devices, Icon: SlidersIcon, active: starts('/devices') }
+		{ href: '/devices', label: i18n.t.nav.devices, Icon: SlidersIcon, active: starts('/devices') },
+		{ href: '/people', label: i18n.t.nav.people, Icon: UsersIcon, active: starts('/people') }
 	]);
 
 	/**
@@ -66,7 +68,7 @@
 	 * of it moves from page to page.
 	 */
 	const column = $derived(
-		['/practice', '/record', '/import', '/devices'].some((path) =>
+		['/practice', '/record', '/import', '/devices', '/people'].some((path) =>
 			page.url.pathname.startsWith(path)
 		)
 	);

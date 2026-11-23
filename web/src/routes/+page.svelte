@@ -23,6 +23,7 @@
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Help from '#lib/components/app/Help.svelte';
 	import Highlight from '#lib/components/app/Highlight.svelte';
+	import PersonMark from '#lib/components/app/PersonMark.svelte';
 	import VoiceMark from '#lib/components/app/VoiceMark.svelte';
 	import DataTable from '#lib/components/data-table/DataTable.svelte';
 	import FacetFilter, { type Facet } from '#lib/components/data-table/FacetFilter.svelte';
@@ -34,11 +35,13 @@
 	import { searchWords } from '#lib/highlight.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { Kept } from '#lib/kept.svelte.js';
+	import { shapeOf } from '#lib/people.js';
 	import { player } from '#lib/player.svelte.js';
 	import { queue } from '#lib/queue.svelte.js';
 	import { decodeRange, encodeRange, inRange } from '#lib/range.js';
 	import { shiftOf } from '#lib/targets.js';
 	import { saveTrail } from '#lib/trail.js';
+	import { cn } from '#lib/utils.js';
 	import { ViewState } from '#lib/view.svelte.js';
 
 	const POLL_MS = 2_000;
@@ -57,6 +60,7 @@
 
 	const view = new ViewState('takes', {
 		q: '',
+		who: [] as string[],
 		voice: [] as string[],
 		kind: [] as string[],
 		lang: [] as string[],
@@ -108,6 +112,7 @@
 		return app.passage(take.content_ref)?.title ?? '';
 	}
 	const fromKey = (take: TakeOut) => (take.exercise_ref || take.session_id ? 'practice' : 'lab');
+	const personName = (take: TakeOut) => app.person(take.person_id)?.name ?? '';
 
 	/** The choices of a filter: every value the takes have, with how many takes. */
 	function facets(key: (take: TakeOut) => string, label: (take: TakeOut) => string): Facet[] {
@@ -120,6 +125,12 @@
 		}
 		return Object.values(found).sort((a, b) => b.count - a.count);
 	}
+	/** The people who have a take, the default person first. */
+	const persons = $derived(
+		facets((t) => `${t.person_id}`, personName).sort(
+			(a, b) => Number(b.value === `${app.me?.id}`) - Number(a.value === `${app.me?.id}`)
+		)
+	);
 	const voices = $derived(
 		facets(
 			(t) => t.intent,
@@ -143,9 +154,12 @@
 	);
 
 	const pass = (chosen: string[], value: string) => !chosen.length || chosen.includes(value);
+	/** The people filtered by who are still there: somebody deleted since filters nothing. */
+	const who = $derived(v.who.filter((id) => app.people.some((person) => `${person.id}` === id)));
 	const rows = $derived(
 		(takes ?? []).filter(
 			(t) =>
+				pass(who, `${t.person_id}`) &&
 				pass(v.voice, t.intent) &&
 				pass(v.kind, kindKey(t)) &&
 				pass(v.lang, t.language ?? '') &&
@@ -160,6 +174,7 @@
 	const searchText = (take: TakeOut) =>
 		[
 			fmtDateTime(take.recorded_at, i18n.locale),
+			personName(take),
 			kindLabel(take),
 			i18n.t.intent[take.intent],
 			whatLabel(take),
@@ -198,6 +213,18 @@
 			cell: ({ row }) => renderSnippet(recordedCell, { take: row.original }),
 			meta: { label: i18n.t.takes.recorded }
 		},
+		// NOTE: whose take it is only needs saying once there is somebody else
+		...(app.people.length > 1
+			? [
+					{
+						id: 'person',
+						accessorFn: personName,
+						header: i18n.t.people.person,
+						cell: ({ row }) => renderSnippet(personCell, { take: row.original }),
+						meta: { label: i18n.t.people.person }
+					} satisfies ColumnDef<TakeOut>
+				]
+			: []),
 		{
 			id: 'voice',
 			accessorFn: (t) => INTENTS.indexOf(t.intent),
@@ -320,6 +347,7 @@
 	function exportCsv(list: TakeOut[]): void {
 		const header = [
 			i18n.t.takes.recorded,
+			i18n.t.people.person,
 			i18n.t.intent.label,
 			i18n.t.takes.what,
 			i18n.t.common.language,
@@ -337,6 +365,7 @@
 		];
 		const lines = list.map((take) => [
 			take.recorded_at,
+			personName(take),
 			i18n.t.intent[take.intent],
 			i18n.t.item[take.item],
 			take.language,
@@ -389,6 +418,19 @@
 	<a class="font-bold underline-offset-4 hover:underline" href="/takes/{take.id}">
 		<Highlight text={fmtDateTime(take.recorded_at, i18n.locale)} {words} />
 	</a>
+{/snippet}
+
+{#snippet personCell({ take }: { take: TakeOut })}
+	<span
+		class={cn(
+			'inline-flex items-center gap-1.5',
+			take.person_id !== app.me?.id && 'font-bold text-primary'
+		)}
+		data-person={take.person_id}
+	>
+		<PersonMark shape={shapeOf(app.people, take.person_id)} />
+		<Highlight text={personName(take)} {words} />
+	</span>
 {/snippet}
 
 {#snippet voiceCell({ take }: { take: TakeOut })}
@@ -502,6 +544,15 @@
 			rowClass={(take) => player.holds(take.id) && 'bg-primary/8 hover:bg-primary/12'}
 		>
 			{#snippet filters()}
+				{#if app.people.length > 1}
+					<FacetFilter
+						label={i18n.t.people.person}
+						options={persons}
+						bind:value={v.who}
+						onchange={() => (v.page = 1)}
+						testid="filter-who"
+					/>
+				{/if}
 				<FacetFilter
 					label={i18n.t.intent.label}
 					options={voices}

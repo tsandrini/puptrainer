@@ -22,12 +22,14 @@
 	import LiveTraces from '#lib/components/audio/LiveTraces.svelte';
 	import TakeReview from '#lib/components/audio/TakeReview.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
+	import PersonSelect from '#lib/components/app/PersonSelect.svelte';
 	import Meter from '#lib/components/app/Meter.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { fmtDuration, fmtNumber } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { passageRef } from '#lib/labels.js';
+	import { taking } from '#lib/people.svelte.js';
 	import { queue, type Outcome } from '#lib/queue.svelte.js';
 	import { cn } from '#lib/utils.js';
 
@@ -136,6 +138,8 @@
 	const choice = $derived(choices.find((c) => c.key === choiceKey) ?? choices[0] ?? null);
 	const passage = $derived(app.passage(choice?.contentRef));
 	const device = $derived(app.devices.find((d) => d.id === deviceId) ?? app.devices[0] ?? null);
+	/** Whose voice is being recorded: the default person unless someone else was picked. */
+	const person = $derived(app.person(taking.id) ?? app.me);
 	/** Sustained vowels are read against their own start; speech against the everyday takes. */
 	const zero = $derived<Zero | null>(
 		!choice || !RESONANT.includes(choice.item)
@@ -172,6 +176,7 @@
 					today.some(
 						(t) =>
 							t.device_id === device?.id &&
+							t.person_id === person?.id &&
 							t.intent === intent &&
 							t.item === step.item &&
 							(t.language ?? null) === (step.language ?? null)
@@ -196,10 +201,14 @@
 		}
 	}
 
-	/** How many everyday lab takes of a text there are on this setup. */
+	/** How many everyday lab takes of a text the default person has on this setup: its baseline. */
 	const everydayTakes = (ref: string) =>
 		phrases.filter(
-			(t) => t.device_id === device?.id && t.exercise_ref === null && t.content_ref === ref
+			(t) =>
+				t.device_id === device?.id &&
+				t.person_id === app.me?.id &&
+				t.exercise_ref === null &&
+				t.content_ref === ref
 		).length;
 
 	onMount(() => {
@@ -266,6 +275,7 @@
 		const name = `${stamp.toISOString().slice(0, 19).replace(/[:T]/g, '-')}_${choice.step?.key ?? choice.item}_${intent}.wav`;
 		outcome = await queue.add(recording.wav, 'audio/wav', name, {
 			device_id: device.id,
+			person_id: person?.id,
 			item: choice.item,
 			intent,
 			language: choice.language,
@@ -300,6 +310,27 @@
 		<Button href="/devices">{i18n.t.record.addDevice}</Button>
 	</Empty>
 {:else}
+	{#if person && !person.is_default}
+		<!-- NOTE: said loudly: a take saved for the wrong person is the mix-up people exist to prevent -->
+		<div
+			class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
+			role="status"
+			data-testid="taking"
+		>
+			<span class="mr-auto font-semibold">{i18n.t.people.taking(person.name)}</span>
+			{#if app.me}
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={phase !== 'idle'}
+					onclick={() => (taking.id = null)}
+					data-testid="taking-back"
+				>
+					{i18n.t.people.back(app.me.name)}
+				</Button>
+			{/if}
+		</div>
+	{/if}
 	{#if baseline}
 		<section class="panel mb-4" data-testid="baseline">
 			<div class="mb-2 flex items-baseline justify-between gap-2">
@@ -416,6 +447,17 @@
 				{intent === 'habitual' ? i18n.t.intent.habitualHint : i18n.t.intent.attemptHint}
 			</span>
 		</label>
+		{#if app.people.length > 1}
+			<label class="text-sm">
+				<span class="mb-1 block text-muted-foreground">{i18n.t.people.whose}</span>
+				<PersonSelect
+					class="w-full"
+					disabled={phase !== 'idle'}
+					bind:value={taking.id}
+					testid="whose"
+				/>
+			</label>
+		{/if}
 	</div>
 
 	{#if choice?.step}

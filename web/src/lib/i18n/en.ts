@@ -8,7 +8,8 @@ export const en = {
 		record: 'Record',
 		progress: 'Progress',
 		import: 'Import',
-		devices: 'Microphones'
+		devices: 'Microphones',
+		people: 'People'
 	},
 	theme: { label: 'Theme', system: 'Follow the system', light: 'Light', dark: 'Dark' },
 	groups: {
@@ -605,6 +606,39 @@ export const en = {
 			phone: 'Phone',
 			other: 'Other'
 		}
+	},
+	people: {
+		title: 'People',
+		intro:
+			'Whose voice a take is. One person is the default: the app follows their training, every take is read against their everyday voice, and the charts show them unless you pick others.',
+		help: [
+			'Every take belongs to one person. To record or import somebody else, choose them under “Whose voice”; a take can be moved to another person on its page.',
+			'The default person is the one who trains with the app. Every take, whoever’s voice it is, is read against the default person’s everyday takes: “+10 % brighter” always means brighter than the default person’s everyday voice. Nobody else’s take becomes part of that baseline, whatever it is labelled. The pitch band and the practice sessions are the default person’s too.',
+			'Progress shows the default person. Pick more people there to see their takes beside, each with a mark of their own; people are never mixed into one number.',
+			'Deleting a person deletes their recordings with them. The default person stays: make someone else the default first.'
+		],
+		add: 'Add a person',
+		name: 'Name',
+		note: 'Note',
+		notePlaceholder: 'Who they are, why their voice is here',
+		default: 'default',
+		defaultHint: 'Every take is read against this person’s everyday voice',
+		makeDefault: 'Make default',
+		confirmDefault: (name: string) =>
+			`Make ${name} the default person? Every take will then be read against the everyday voice of ${name}, and the charts will show ${name} first.`,
+		confirmDelete: (name: string, takes: number) =>
+			takes
+				? `Delete ${name} together with ${takes === 1 ? '1 recording' : `${takes} recordings`}? This cannot be undone.`
+				: `Delete ${name}?`,
+		takes: (n: number) => (n === 1 ? '1 take' : `${n} takes`),
+		whose: 'Whose voice',
+		person: 'Person',
+		taking: (name: string) => `Recording the voice of ${name}.`,
+		back: (name: string) => `Back to ${name}`,
+		shown: 'People',
+		only: (name: string) => `${name} only`,
+		onlyHint:
+			'People are never mixed into one number: the tiles, the grid, the fitted line and the exercises are one person’s.'
 	},
 	practice: {
 		title: 'Practice',

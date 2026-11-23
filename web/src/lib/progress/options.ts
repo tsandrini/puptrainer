@@ -5,10 +5,13 @@
 // - a hue says which measure; where one chart has one measure it is the first hue;
 // - the voice is the line and the mark: an attempt solid and filled, the
 //   everyday voice dashed and hollow, a drill dotted;
+// - a person is the shape of the mark: the default person a circle, the others a
+//   shape each; people are separate series and never share a statistic;
 // - a reference range is drawn and named wherever the measure has one;
 // - a point is a take: its `take` goes with the datum, for the tooltip and the click.
 import type { EChartsOption, SeriesOption } from 'echarts';
 import type { Voice } from '#lib/charts.js';
+import type { Shape } from '#lib/people.js';
 import { byDay, extent, fitLine, median, quantile } from '#lib/stats.js';
 
 /** The theme's colours, resolved to something a canvas reads. */
@@ -35,8 +38,15 @@ export type Style = Voice | 'drill';
  * warning that goes with it.
  */
 export type Dot = { id: string; at: number; value: number; tone?: 'met' | 'missed' | 'warn' };
-/** One line of a panel: a measure in one voice. */
-export type Line = { key: string; name: string; color: string; voice: Style; dots: Dot[] };
+/** One line of a panel: a measure in one voice of one person (`shape`: whose; a circle unsaid). */
+export type Line = {
+	key: string;
+	name: string;
+	color: string;
+	voice: Style;
+	dots: Dot[];
+	shape?: Shape;
+};
 /** A reference range on a value axis; an open end reaches to the axis's. */
 export type ZoneBand = {
 	low: number | null;
@@ -86,6 +96,9 @@ const number = (locale: string, signed = false) => {
 	});
 	return (value: number) => format.format(value);
 };
+
+/** A mark that is not a circle is drawn this much larger, to weigh the same to the eye. */
+const SHAPED = 2;
 
 /** The mark of a voice: filled for an attempt, hollow for the everyday voice. */
 function mark(palette: Palette, color: string, voice: Style) {
@@ -292,8 +305,8 @@ export function trendOption(input: {
 				type: 'line' as const,
 				xAxisIndex: index,
 				yAxisIndex: index,
-				symbol: line.voice === 'drill' ? 'diamond' : 'circle',
-				symbolSize: 9,
+				symbol: line.shape ?? (line.voice === 'drill' ? 'diamond' : 'circle'),
+				symbolSize: 9 + (line.shape && line.shape !== 'circle' ? SHAPED : 0),
 				showSymbol: true,
 				connectNulls: true,
 				z: line.voice === 'attempt' ? 4 : 3,
@@ -503,10 +516,22 @@ export function trendOption(input: {
 
 /** One axis of a chart of two measures. */
 export type Scale = { title: string; unit: string; signed?: boolean; zones?: ZoneBand[] };
-export type Pair = { id: string; x: number; y: number; voice: Voice };
+/**
+ * One take on two measures. `shape` says whose it is (a circle unsaid); `fit: false`
+ * keeps it out of the straight-line fit: the fit is one person's.
+ */
+export type Pair = {
+	id: string;
+	x: number;
+	y: number;
+	voice: Voice;
+	shape?: Shape;
+	fit?: boolean;
+};
 
 /**
- * Two measures against each other, a point per take, with their straight-line fit.
+ * Two measures against each other, a point per take, with the straight-line fit of
+ * the takes that are not kept out of it.
  *
  * @param input.mark The take in the player: drawn larger.
  * @param input.select Offer a rectangle to select takes with.
@@ -532,9 +557,10 @@ export function scatterOption(input: {
 		points.map((p) => p.y),
 		{ include: y.signed ? [0] : [], pad: 0.1 }
 	);
-	const fit = fitLine(points.map((p) => [p.x, p.y] as const));
-	const within = points.length
-		? [Math.min(...points.map((p) => p.x)), Math.max(...points.map((p) => p.x))]
+	const fitted = points.filter((p) => p.fit !== false);
+	const fit = fitLine(fitted.map((p) => [p.x, p.y] as const));
+	const within = fitted.length
+		? [Math.min(...fitted.map((p) => p.x)), Math.max(...fitted.map((p) => p.x))]
 		: [0, 0];
 	const axis = (scale: Scale, ends: [number, number]) => ({
 		type: 'value' as const,
@@ -638,7 +664,9 @@ export function scatterOption(input: {
 							.map((p) => ({
 								value: [p.x, p.y],
 								take: p.id,
-								symbolSize: p.id === input.mark ? 17 : 11
+								symbol: p.shape ?? 'circle',
+								symbolSize:
+									(p.id === input.mark ? 17 : 11) + (p.shape && p.shape !== 'circle' ? SHAPED : 0)
 							}))
 					}) as SeriesOption
 			)
@@ -717,12 +745,15 @@ export function matrixOption(input: {
 }
 
 /**
- * How the takes of each voice spread on one measure: a point per take in a row per voice,
- * the middle half as a bar, the median as a tick.
+ * How takes spread on one measure: a point per take in a row per voice (and per person,
+ * when there are several), the middle half as a bar, the median as a tick.
+ *
+ * @param input.rows A row's `key` is its series' id (its voice, unsaid); `shape` says
+ *     whose takes it holds (a circle unsaid).
  */
 export function spreadOption(input: {
 	scale: Scale;
-	rows: { name: string; voice: Voice; dots: Dot[] }[];
+	rows: { key?: string; name: string; voice: Voice; dots: Dot[]; shape?: Shape }[];
 	palette: Palette;
 	locale: string;
 	mark?: string | null;
@@ -739,8 +770,12 @@ export function spreadOption(input: {
 		rows.flatMap((row) => row.dots.map((d) => d.value)),
 		{ include: [...(scale.signed ? [0] : []), ...reach], pad: 0.1 }
 	);
-	/** A steady scatter across a row's height, so that equal values do not hide each other. */
-	const jitter = (index: number) => (((index * 0.618_034) % 1) - 0.5) * 0.5;
+	/**
+	 * A steady scatter across a row's height, so that equal values do not hide each
+	 * other; a row's only take sits on its line.
+	 */
+	const jitter = (index: number, of: number) =>
+		of < 2 ? 0 : (((index * 0.618_034) % 1) - 0.5) * 0.5;
 	return {
 		animationDuration: 200,
 		textStyle: { fontFamily: palette.font },
@@ -834,11 +869,16 @@ export function spreadOption(input: {
 										}
 									]
 								: []),
-							{
-								type: 'line' as const,
-								shape: { x1: middle, y1: y - half - 2, x2: middle, y2: y + half + 2 },
-								style: { stroke: color, lineWidth: 2.5, lineCap: 'round' as const }
-							}
+							// NOTE: one take is its own median: a tick through it would only hide it
+							...(Number(api.value(4)) >= 2
+								? [
+										{
+											type: 'line' as const,
+											shape: { x1: middle, y1: y - half - 2, x2: middle, y2: y + half + 2 },
+											style: { stroke: color, lineWidth: 2.5, lineCap: 'round' as const }
+										}
+									]
+								: [])
 						]
 					};
 				}
@@ -846,16 +886,19 @@ export function spreadOption(input: {
 			...rows.map(
 				(row, index) =>
 					({
-						id: row.voice,
+						id: row.key ?? row.voice,
 						name: row.name,
 						type: 'scatter',
+						symbol: row.shape ?? 'circle',
 						z: 4,
 						itemStyle: mark(palette, color, row.voice),
 						emphasis: { scale: 1.5 },
 						data: row.dots.map((dot, at) => ({
-							value: [dot.value, index + jitter(at)],
+							value: [dot.value, index + jitter(at, row.dots.length)],
 							take: dot.id,
-							symbolSize: dot.id === input.mark ? 15 : 9
+							symbolSize:
+								(dot.id === input.mark ? 15 : 9) +
+								(row.shape && row.shape !== 'circle' ? SHAPED : 0)
 						}))
 					}) as SeriesOption
 			)

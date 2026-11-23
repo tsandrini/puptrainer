@@ -14,14 +14,26 @@
 	let {
 		reading,
 		metrics,
-		text = false
+		text = false,
+		advice = true
 	}: {
 		reading: Reading;
 		/** The take's own metrics, for the values behind the shifts. */
 		metrics: Record<string, number>;
 		/** The take reads a text, which could be recorded in the everyday voice too. */
 		text?: boolean;
+		/**
+		 * Whether to say what the reading means for the training. Off for a take of
+		 * somebody who is not training: the numbers stand, the advice is not theirs.
+		 */
+		advice?: boolean;
 	} = $props();
+
+	/** What says how the take was measured, not what to do about it. */
+	const FACTS = ['r1-unreadable'];
+	const notes = $derived(
+		advice ? reading.notes : reading.notes.filter((note) => FACTS.includes(note))
+	);
 
 	const pitch = $derived(shiftOf(reading, 'pitch_shift_st'));
 	const bright = $derived(shiftOf(reading, 'brightness_pct'));
@@ -185,9 +197,9 @@
 	{#if metrics.clipped_samples > 0}
 		<p class="text-sm text-warning" data-testid="reading-clipped">{i18n.t.reading.clipped}</p>
 	{/if}
-	{#if reading.notes.length}
+	{#if notes.length}
 		<ul class="space-y-1 text-sm" data-testid="reading-notes">
-			{#each reading.notes as note (note)}
+			{#each notes as note (note)}
 				<li data-note={note}>{i18n.t.reading.notes[note] ?? note}</li>
 			{/each}
 		</ul>

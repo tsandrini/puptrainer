@@ -61,6 +61,7 @@
 		})),
 		{ key: 'page:import', group: 'pages', label: i18n.t.nav.import, run: to('/import') },
 		{ key: 'page:devices', group: 'pages', label: i18n.t.nav.devices, run: to('/devices') },
+		{ key: 'page:people', group: 'pages', label: i18n.t.nav.people, run: to('/people') },
 		...(app.content?.routines ?? []).map((routine) => ({
 			key: `routine:${routine.id}`,
 			group: 'start' as const,
@@ -79,7 +80,12 @@
 			key: `take:${take.id}`,
 			group: 'takes' as const,
 			label: `${fmtDateTime(take.recorded_at, i18n.locale)} · ${whatOf(take)}`,
-			hint: [i18n.t.intent[take.intent], app.passage(take.content_ref)?.title, take.note]
+			hint: [
+				take.person_id === app.me?.id ? null : app.person(take.person_id)?.name,
+				i18n.t.intent[take.intent],
+				app.passage(take.content_ref)?.title,
+				take.note
+			]
 				.filter(Boolean)
 				.join(' · '),
 			run: (other: boolean) => (other ? player.play(take) : void goto(`/takes/${take.id}`))

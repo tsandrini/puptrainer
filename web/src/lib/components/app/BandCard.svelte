@@ -22,11 +22,13 @@
 	let takes = $state.raw<TakeOut[]>([]);
 
 	const hz = (value: number) => `${fmtNumber(value, 0, i18n.locale)} Hz (${noteName(value)})`;
+	/** The band is the default person's: so are the takes it is placed by. */
+	const mine = $derived(takes.filter((t) => t.person_id === app.me?.id));
 	const glide = $derived(
-		takes.find((t) => t.item === 'glide' && t.metrics.glide_low_hz && t.metrics.glide_high_hz)
+		mine.find((t) => t.item === 'glide' && t.metrics.glide_low_hz && t.metrics.glide_high_hz)
 	);
 	const everyday = $derived.by(() => {
-		const values = takes
+		const values = mine
 			.filter((t) => (t.item === 'passage' || t.item === 'free') && t.metrics.pitch_median_hz)
 			.map((t) => t.metrics.pitch_median_hz)
 			.sort((a, b) => a - b);

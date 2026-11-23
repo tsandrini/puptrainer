@@ -12,11 +12,13 @@
 	import TakePlayer from '#lib/components/audio/TakePlayer.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Help from '#lib/components/app/Help.svelte';
+	import PersonMark from '#lib/components/app/PersonMark.svelte';
 	import VoiceMark from '#lib/components/app/VoiceMark.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { alignSteps } from '#lib/compare.js';
 	import { fmtDateTime, fmtMetric, fmtNumber, fmtSigned } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
+	import { shapeOf } from '#lib/people.js';
 
 	type Side = 'a' | 'b';
 	const NUDGE_S = 0.1;
@@ -183,6 +185,15 @@
 					{name}
 				</span>
 				<VoiceMark intent={take.intent} />
+				{#if a.person_id !== b.person_id || take.person_id !== app.me?.id}
+					<span
+						class="flex shrink-0 items-center gap-1 font-bold text-primary"
+						data-testid="compare-person"
+					>
+						<PersonMark shape={shapeOf(app.people, take.person_id)} />
+						{app.person(take.person_id)?.name}
+					</span>
+				{/if}
 				<span class="truncate">
 					<span class="font-bold">{title(take)}</span>
 					<span class="text-muted-foreground">

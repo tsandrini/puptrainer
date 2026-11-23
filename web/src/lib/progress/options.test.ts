@@ -308,3 +308,84 @@ describe('practice days as a calendar', () => {
 		expect(said).toContain('12 min');
 	});
 });
+
+describe('several people on one chart', () => {
+	const friend: Line = {
+		...line('habitual', [11]),
+		key: 'b:habitual@2',
+		shape: 'triangle'
+	};
+
+	it('draws a person as a series of their own, with their mark', () => {
+		const option = trendOption({
+			panels: [{ ...brightness, lines: [...brightness.lines, friend] }],
+			palette,
+			frame,
+			locale: 'en'
+		});
+		const drawn = seriesOf(option).filter((s) => !`${s.id}`.endsWith(':ground'));
+		expect(drawn.map((s) => [s.id, s.symbol])).toEqual([
+			['brightness:b:attempt', 'circle'],
+			['brightness:b:habitual', 'circle'],
+			['brightness:b:habitual@2', 'triangle']
+		]);
+		expect(drawn[2].symbolSize).toBeGreaterThan(drawn[0].symbolSize);
+	});
+
+	it('fits the line through one person and still plots the others', () => {
+		const mine = [
+			{ id: 'a', x: 0, y: 0, voice: 'attempt' as const },
+			{ id: 'b', x: 1, y: 1, voice: 'attempt' as const },
+			{ id: 'c', x: 2, y: 2, voice: 'attempt' as const }
+		];
+		const theirs = { id: 'z', x: 9, y: -9, voice: 'attempt' as const, shape: 'rect', fit: false };
+		const option = scatterOption({
+			x: { title: 'x', unit: '' },
+			y: { title: 'y', unit: '' },
+			points: [...mine, theirs as (typeof mine)[number]],
+			palette,
+			locale: 'en'
+		});
+		const fit = seriesOf(option).find((s) => s.id === 'fit')!;
+		expect(fit.data).toEqual([
+			[0, 0],
+			[2, 2]
+		]);
+		const points = seriesOf(option).find((s) => s.id === 'attempt')!.data as Series[];
+		expect(points.map((p) => [p.take, p.symbol])).toEqual([
+			['a', 'circle'],
+			['b', 'circle'],
+			['c', 'circle'],
+			['z', 'rect']
+		]);
+	});
+
+	it('gives each person a row of their own in a spread', () => {
+		const dots = [{ id: 't', at: T0, value: 5 }];
+		const option = spreadOption({
+			scale: { title: 'Brightness', unit: '%' },
+			rows: [
+				{
+					key: 'habitual@2',
+					name: 'A friend · Everyday voice',
+					voice: 'habitual',
+					dots,
+					shape: 'pin'
+				},
+				{ name: 'Attempt', voice: 'attempt', dots }
+			],
+			palette,
+			locale: 'en'
+		});
+		const rows = seriesOf(option).filter((s) => s.type === 'scatter' && s.id !== 'ground');
+		expect(rows.map((s) => [s.id, s.symbol])).toEqual([
+			['habitual@2', 'pin'],
+			['attempt', 'circle']
+		]);
+		// a row's only take sits on the row's line
+		expect(rows.map((s) => s.data[0].value)).toEqual([
+			[5, 0],
+			[5, 1]
+		]);
+	});
+});

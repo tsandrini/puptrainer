@@ -14,7 +14,8 @@ export const cs: Messages = {
 		record: 'Nahrát',
 		progress: 'Pokrok',
 		import: 'Import',
-		devices: 'Mikrofony'
+		devices: 'Mikrofony',
+		people: 'Lidé'
 	},
 	theme: { label: 'Vzhled', system: 'Podle systému', light: 'Světlý', dark: 'Tmavý' },
 	groups: {
@@ -610,6 +611,39 @@ export const cs: Messages = {
 			phone: 'Telefon',
 			other: 'Jiný'
 		}
+	},
+	people: {
+		title: 'Lidé',
+		intro:
+			'Čí hlas na nahrávce je. Jedna osoba je výchozí: aplikace sleduje její trénink, každá nahrávka se čte proti jejímu běžnému hlasu a grafy ukazují ji, dokud nevyberete další.',
+		help: [
+			'Každá nahrávka patří jedné osobě. Když nahráváte nebo importujete někoho jiného, vyberte tu osobu u „Čí hlas“; nahrávku lze na její stránce přesunout k jiné osobě.',
+			'Výchozí osoba je ta, která s aplikací trénuje. Každá nahrávka, ať je to hlas kohokoli, se čte proti běžným nahrávkám výchozí osoby: „o 10 % jasnější“ vždy znamená jasnější než běžný hlas výchozí osoby. Nahrávka nikoho jiného se součástí tohoto základu nestane, ať má jakýkoli štítek. Pásmo výšky a sezení cvičení patří také výchozí osobě.',
+			'Pokrok ukazuje výchozí osobu. Vyberte tam další lidi a uvidíte jejich nahrávky vedle, každého s vlastní značkou; lidé se nikdy nemíchají do jednoho čísla.',
+			'Smazáním osoby se smažou i její nahrávky. Výchozí osoba zůstává: nejdřív nastavte jako výchozí někoho jiného.'
+		],
+		add: 'Přidat osobu',
+		name: 'Jméno',
+		note: 'Poznámka',
+		notePlaceholder: 'Kdo to je, proč je tu ten hlas',
+		default: 'výchozí',
+		defaultHint: 'Každá nahrávka se čte proti běžnému hlasu této osoby',
+		makeDefault: 'Nastavit jako výchozí',
+		confirmDefault: (name) =>
+			`Nastavit osobu ${name} jako výchozí? Každá nahrávka se pak bude číst proti běžnému hlasu této osoby a grafy ji ukážou jako první.`,
+		confirmDelete: (name, takes) =>
+			takes
+				? `Smazat osobu ${name} i s nahrávkami (${takes})? Nelze to vrátit.`
+				: `Smazat osobu ${name}?`,
+		takes: (n) => `${n} ${plural(n, 'nahrávka', 'nahrávky', 'nahrávek')}`,
+		whose: 'Čí hlas',
+		person: 'Osoba',
+		taking: (name) => `Nahrává se hlas: ${name}.`,
+		back: (name) => `Zpět na: ${name}`,
+		shown: 'Lidé',
+		only: (name) => `Jen: ${name}`,
+		onlyHint:
+			'Lidé se nikdy nemíchají do jednoho čísla: dlaždice, mřížka, proložená přímka a cvičení patří jedné osobě.'
 	},
 	practice: {
 		title: 'Cvičení',

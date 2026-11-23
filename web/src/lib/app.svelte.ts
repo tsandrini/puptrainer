@@ -1,7 +1,7 @@
 // What every page needs from the API: the content (passages, protocols,
 // the exercise catalogue), the metric registry and the evaluation's
-// measures, the microphone setups, the pitch band, and whether the API and
-// its analysis worker are there.
+// measures, the microphone setups, the people, the pitch band, and whether
+// the API and its analysis worker are there.
 
 import { ApiError, Offline, Unauthorized, auth } from './api/client.js';
 import {
@@ -12,6 +12,7 @@ import {
 	fetchHealth,
 	fetchMeasures,
 	fetchMetrics,
+	fetchPeople,
 	fetchSession,
 	login,
 	logout
@@ -27,6 +28,7 @@ import type {
 	MetricDef,
 	MetricGroup,
 	Passage,
+	PersonOut,
 	Routine
 } from './api/types.js';
 import { passageRef } from './labels.js';
@@ -40,6 +42,8 @@ class AppData {
 	metrics = $state.raw<MetricDef[]>([]);
 	measures = $state.raw<MeasureDef[]>([]);
 	devices = $state.raw<DeviceOut[]>([]);
+	/** Everyone whose voice is here; the default person first. */
+	people = $state.raw<PersonOut[]>([]);
 	/** The current pitch band; `null` until one is set. */
 	band = $state.raw<BandOut | null>(null);
 	health = $state.raw<Health | null>(null);
@@ -70,13 +74,15 @@ class AppData {
 	async load(): Promise<void> {
 		try {
 			let bands: BandOut[];
-			[this.content, this.metrics, this.measures, this.devices, bands] = await Promise.all([
-				fetchContent(),
-				fetchMetrics(),
-				fetchMeasures(),
-				fetchDevices(),
-				fetchBands()
-			]);
+			[this.content, this.metrics, this.measures, this.devices, this.people, bands] =
+				await Promise.all([
+					fetchContent(),
+					fetchMetrics(),
+					fetchMeasures(),
+					fetchDevices(),
+					fetchPeople(),
+					fetchBands()
+				]);
 			this.band = bands[0] ?? null;
 			this.loaded = true;
 			this.reachable = true;
@@ -114,6 +120,22 @@ class AppData {
 
 	async refreshDevices(): Promise<void> {
 		this.devices = await fetchDevices();
+	}
+
+	async refreshPeople(): Promise<void> {
+		this.people = await fetchPeople();
+	}
+
+	/**
+	 * The default person: the one who trains with the app. Every take is read against
+	 * their everyday voice, and the analyses show them unless others are picked.
+	 */
+	get me(): PersonOut | null {
+		return this.people.find((person) => person.is_default) ?? null;
+	}
+
+	person(id: number | null | undefined): PersonOut | null {
+		return this.people.find((person) => person.id === id) ?? null;
 	}
 
 	/** Sets a new pitch band; the old ones stay in the history. */

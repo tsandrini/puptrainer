@@ -11,6 +11,8 @@ import type {
 	Health,
 	MeasureDef,
 	MetricDef,
+	PersonIn,
+	PersonOut,
 	PracticeIn,
 	PracticeOut,
 	Reference,
@@ -67,11 +69,23 @@ export const createDevice = (body: DeviceIn) => postJson<DeviceOut>('devices', b
 export const updateDevice = (id: number, body: DeviceIn) =>
 	putJson<DeviceOut>(`devices/${id}`, body);
 
+/** Everyone whose voice is here, the default person first. */
+export const fetchPeople = () => getJson<PersonOut[]>('people');
+export const createPerson = (body: PersonIn) => postJson<PersonOut>('people', body);
+export const updatePerson = (id: number, body: PersonIn) =>
+	putJson<PersonOut>(`people/${id}`, body);
+/** Makes a person the default one: from then on the baseline is their everyday voice. */
+export const makeDefaultPerson = (id: number) => postJson<PersonOut[]>(`people/${id}/default`, {});
+/** Deletes a person; one with takes only together with them and their recordings. */
+export const deletePerson = (id: number, withTakes: boolean) =>
+	api(`people/${id}${query({ takes: withTakes ? 'true' : undefined })}`, { method: 'DELETE' });
+
 export type TakeFilter = {
 	item?: string;
 	intent?: string;
 	language?: string;
 	device_id?: number;
+	person_id?: number;
 	session_id?: string;
 	/** Recorded at or after this moment (ISO). */
 	since?: string;

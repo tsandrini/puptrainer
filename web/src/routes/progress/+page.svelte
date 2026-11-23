@@ -1,13 +1,19 @@
 <script lang="ts">
 	// Progress: the takes as statistics, for one microphone setup and one
 	// kind of take (or all kinds, as distances from the everyday voice) over
-	// a chosen stretch of time. Four tabs: the takes against the everyday
-	// voice (the numbers that matter as tiles, over time, and how each voice
+	// a chosen stretch of time. Tabs: the takes against the everyday voice
+	// (the numbers that matter as tiles, over time, and how each voice
 	// spreads), every measurement by itself, the measures against each
-	// other, and what each exercise was judged on. A point is a take: the
-	// pointer names it, a click plays it in the dock with the chart's takes
-	// as the list. Every chart opens over the whole screen and gives its
-	// numbers as a table and a file. The view is kept in the address.
+	// other, what each exercise was judged on, and practice itself. A point
+	// is a take: the pointer names it, a click plays it in the dock with the
+	// chart's takes as the list. Every chart opens over the whole screen and
+	// gives its numbers as a table and a file. The view is kept in the
+	// address.
+	//
+	// It shows the default person; others can be picked beside. A person is a
+	// mark's shape and has lines and rows of their own: nothing here pools
+	// two people into one number. The tiles, the grid of correlations, the
+	// fitted line and the exercises are one person's (`focus`).
 	import RotateIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { goto } from '$app/navigation';
 	import { fetchAllTakes, fetchPracticeList } from '#lib/api/index.js';
@@ -17,12 +23,14 @@
 	import DateRange from '#lib/components/app/DateRange.svelte';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import Help from '#lib/components/app/Help.svelte';
+	import PersonMark from '#lib/components/app/PersonMark.svelte';
 	import VoiceMark from '#lib/components/app/VoiceMark.svelte';
 	import ChartCard, {
 		type ChartFrame,
 		type ChartTable
 	} from '#lib/components/charts/ChartCard.svelte';
 	import StatTile from '#lib/components/charts/StatTile.svelte';
+	import FacetFilter from '#lib/components/data-table/FacetFilter.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Tabs from '#lib/components/ui/tabs/index.js';
 	import {
@@ -34,6 +42,7 @@
 		fmtSigned
 	} from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
+	import { chosenPeople, keptPeople, shapeOf } from '#lib/people.js';
 	import { player } from '#lib/player.svelte.js';
 	import {
 		barsOption,
@@ -91,6 +100,7 @@
 
 	const view = new ViewState('progress', {
 		tab: 'voice',
+		who: [] as string[],
 		mic: '',
 		kind: '',
 		range: 'all',
@@ -118,12 +128,23 @@
 	const device = $derived(app.devices.find((d) => `${d.id}` === v.mic) ?? app.devices[0] ?? null);
 	const at = (take: TakeOut) => Date.parse(take.recorded_at);
 
-	/** Everything on this setup in the chosen stretch of time, oldest first. */
-	const scope = $derived(
+	/** The people shown: the default person, unless others are picked. */
+	const who = $derived(chosenPeople(app.people, v.who));
+	const several = $derived(who.length > 1);
+	/** The person every single-person number is about: the default one when shown, else the first. */
+	const focus = $derived(who.find((person) => person.is_default) ?? who[0] ?? null);
+	const shape = (id: number) => shapeOf(app.people, id);
+	/** A series' or a row's key: the focus person's is plain, another person's carries their id. */
+	const keyed = (key: string, id: number) => (id === focus?.id ? key : `${key}@${id}`);
+
+	/** Everything on this setup in the chosen stretch of time, whoever's, oldest first. */
+	const around = $derived(
 		(takes ?? [])
 			.filter((t) => t.device_id === device?.id && inRange(range, at(t), now))
 			.sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
 	);
+	/** The same, of the people shown. */
+	const scope = $derived(around.filter((t) => who.some((person) => person.id === t.person_id)));
 	/** The takes that speak for a voice: from the Record page, and practice attempts when asked for. */
 	const voiced = $derived(
 		scope.filter((t) => t.intent !== 'drill' && (v.practice || !t.exercise_ref))
@@ -166,6 +187,8 @@
 				Object.keys(t.metrics).length > 0
 		)
 	);
+	/** The focus person's part of it: what a number about one person is counted from. */
+	const own = $derived(shown.filter((t) => t.person_id === focus?.id));
 	const byId = $derived(Object.fromEntries((takes ?? []).map((t) => [t.id, t])));
 	const earliest = $derived(takes?.length ? Math.min(...takes.map(at)) : null);
 	/** The take in the dock, as a moment to mark on the charts that hold it. */
@@ -185,19 +208,54 @@
 		}));
 	const voiceOf = (take: TakeOut): Voice => (take.intent === 'attempt' ? 'attempt' : 'habitual');
 
-	/** One distance over the takes, a line per voice. */
-	function lines(key: string, list: TakeOut[] = shown): Line[] {
-		return VOICES.map((voice) => ({
-			key: `${key}:${voice}`,
-			name: title(key),
-			color: hue(key),
-			voice,
-			dots: list.flatMap((take): Dot[] => {
-				const shift = take.intent === voice ? shiftOf(take.reading, key) : null;
-				return shift ? [{ id: take.id, at: at(take), value: shift.value }] : [];
-			})
-		})).filter((line) => line.dots.length);
+	/** A value of each take as lines: one per person and voice, the person as the mark's shape. */
+	function perPerson(
+		key: string,
+		name: (voice: Voice) => string,
+		color: string,
+		of: (take: TakeOut) => number | null | undefined
+	): Line[] {
+		return who
+			.flatMap((person) =>
+				VOICES.map((voice) => ({
+					key: keyed(`${key}${voice}`, person.id),
+					name: name(voice),
+					color,
+					voice,
+					shape: shape(person.id),
+					dots: shown.flatMap((take): Dot[] => {
+						const value = take.person_id === person.id && take.intent === voice ? of(take) : null;
+						return value == null ? [] : [{ id: take.id, at: at(take), value }];
+					})
+				}))
+			)
+			.filter((line) => line.dots.length);
 	}
+	/** One distance over the takes. */
+	const lines = (key: string): Line[] =>
+		perPerson(
+			`${key}:`,
+			() => title(key),
+			hue(key),
+			(take) => shiftOf(take.reading, key)?.value
+		);
+	/** A distance's takes as the rows of a spread: a row per person and voice, the focus person first. */
+	const spreadRows = (key: string) =>
+		[...(focus ? [focus] : []), ...who.filter((person) => person !== focus)].flatMap((person) =>
+			VOICES.toReversed().map((voice) => ({
+				key: keyed(voice, person.id),
+				name: several ? `${person.name} · ${i18n.t.intent[voice]}` : i18n.t.intent[voice],
+				voice,
+				shape: shape(person.id),
+				dots: shown.flatMap((take): Dot[] => {
+					const shift =
+						take.person_id === person.id && take.intent === voice
+							? shiftOf(take.reading, key)
+							: null;
+					return shift ? [{ id: take.id, at: at(take), value: shift.value }] : [];
+				})
+			}))
+		);
 	const shiftPanel = (key: string, weight = 1): Panel => ({
 		key,
 		title: title(key),
@@ -350,8 +408,12 @@
 	const byExercise = $derived(
 		(app.content?.exercises ?? [])
 			.flatMap((exercise) => {
+				// NOTE: practice is the default person's
 				const reps = (takes ?? []).filter(
-					(t) => app.exerciseOf(t.exercise_ref)?.id === exercise.id && inRange(range, at(t), now)
+					(t) =>
+						t.person_id === app.me?.id &&
+						app.exerciseOf(t.exercise_ref)?.id === exercise.id &&
+						inRange(range, at(t), now)
 				);
 				if (!reps.length) return [];
 				const judged = reps.filter((t) => typeof t.evaluation?.met === 'boolean');
@@ -393,7 +455,13 @@
 		});
 		return tipCard({
 			title: fmtDateTime(take.recorded_at, i18n.locale),
-			sub: [i18n.t.intent[take.intent], what, passage, fmtDuration(take.duration_s)]
+			sub: [
+				several || take.person_id !== app.me?.id ? app.person(take.person_id)?.name : null,
+				i18n.t.intent[take.intent],
+				what,
+				passage,
+				fmtDuration(take.duration_s)
+			]
 				.filter(Boolean)
 				.join(' · '),
 			rows: [
@@ -448,11 +516,17 @@
 		columns: { header: string; of: (take: TakeOut) => number | null }[]
 	) {
 		return (): ChartTable => ({
-			headers: [i18n.t.progress.taken, i18n.t.intent.label, ...columns.map((c) => c.header)],
+			headers: [
+				i18n.t.progress.taken,
+				...(several ? [i18n.t.people.person] : []),
+				i18n.t.intent.label,
+				...columns.map((c) => c.header)
+			],
 			rows: list
 				.filter((take) => columns.some((c) => c.of(take) !== null))
 				.map((take) => [
 					fmtDateTime(take.recorded_at, i18n.locale),
+					...(several ? [app.person(take.person_id)?.name ?? ''] : []),
 					i18n.t.intent[take.intent],
 					...columns.map((c) => round(c.of(take)))
 				])
@@ -463,10 +537,10 @@
 		of: (take: TakeOut) => shiftOf(take.reading, key)?.value ?? null
 	});
 
-	// --- the numbers that matter, as tiles: the attempts' distances
+	// --- the numbers that matter, as tiles: the distances of one person's attempts
 	const tiles = $derived(
 		SHIFTS.map((key) => {
-			const values = shown.flatMap((take) =>
+			const values = own.flatMap((take) =>
 				take.intent === 'attempt' ? (shiftOf(take.reading, key)?.value ?? []) : []
 			);
 			const latest = values.at(-1);
@@ -475,7 +549,7 @@
 			/** There are attempts, but none whose first resonance can be read. */
 			const unread =
 				key === 'r1_shift_pct' &&
-				shown.some((t) => t.intent === 'attempt' && t.reading?.notes.includes('r1-unreadable'));
+				own.some((t) => t.intent === 'attempt' && t.reading?.notes.includes('r1-unreadable'));
 			return {
 				key,
 				values,
@@ -536,17 +610,12 @@
 							}
 						]
 					: [],
-			lines: VOICES.map((voice) => ({
-				key: voice,
-				name: i18n.t.intent[voice],
-				color: palette.series[0],
-				voice,
-				dots: shown.flatMap((take): Dot[] =>
-					take.intent === voice && take.metrics[metric.key] !== undefined
-						? [{ id: take.id, at: at(take), value: take.metrics[metric.key] }]
-						: []
-				)
-			})).filter((line) => line.dots.length)
+			lines: perPerson(
+				'',
+				(voice) => i18n.t.intent[voice],
+				palette.series[0],
+				(take) => take.metrics[metric.key]
+			)
 		};
 	}
 
@@ -577,11 +646,24 @@
 		across && upwards
 			? shown.flatMap((take): Pair[] => {
 					const [x, y] = [across.of(take), upwards.of(take)];
-					return x === null || y === null ? [] : [{ id: take.id, x, y, voice: voiceOf(take) }];
+					return x === null || y === null
+						? []
+						: [
+								{
+									id: take.id,
+									x,
+									y,
+									voice: voiceOf(take),
+									shape: shape(take.person_id),
+									fit: take.person_id === focus?.id
+								}
+							];
 				})
 			: []
 	);
-	const together = $derived(pearson(cloud.map((p) => [p.x, p.y] as const)));
+	/** The focus person's points: what the fitted line and its r are counted from. */
+	const fitted = $derived(cloud.filter((p) => p.fit));
+	const together = $derived(pearson(fitted.map((p) => [p.x, p.y] as const)));
 	/** The distances against each other: r and the number of takes for every pair. */
 	const grid = $derived.by(() => {
 		const list = choices.filter((c) => SHIFTS.includes(c.key));
@@ -589,7 +671,7 @@
 			list,
 			cells: list.flatMap((a, x) =>
 				list.map((b, y) => {
-					const pairs = shown.flatMap((take): [number, number][] => {
+					const pairs = own.flatMap((take): [number, number][] => {
 						const [p, q] = [a.of(take), b.of(take)];
 						return p === null || q === null ? [] : [[p, q]];
 					});
@@ -604,7 +686,10 @@
 	const drills = $derived(
 		(app.content?.exercises ?? []).flatMap((exercise) => {
 			const reps = scope.filter(
-				(t) => app.exerciseOf(t.exercise_ref)?.id === exercise.id && t.evaluation?.measures.length
+				(t) =>
+					t.person_id === focus?.id &&
+					app.exerciseOf(t.exercise_ref)?.id === exercise.id &&
+					t.evaluation?.measures.length
 			);
 			if (!reps.length) return [];
 			const keys = [...new Set(reps.flatMap((t) => t.evaluation!.measures.map((m) => m.key)))];
@@ -690,6 +775,26 @@
 	});
 </script>
 
+{#snippet personKey(option: { value: string })}
+	<PersonMark shape={shape(Number(option.value))} class="text-muted-foreground" />
+{/snippet}
+
+<!-- Said beside what is one person's, once it could be taken for everyone's -->
+{#snippet oneOnly(spacing: string)}
+	{#if focus && (several || !focus.is_default)}
+		<p class={spacing}>
+			<span
+				class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+				title={i18n.t.people.onlyHint}
+				data-testid="one-only"
+			>
+				<PersonMark shape={shape(focus.id)} />
+				{i18n.t.people.only(focus.name)}
+			</span>
+		</p>
+	{/if}
+{/snippet}
+
 {#snippet voiceKey()}
 	<ul class="space-y-1 text-sm text-muted-foreground">
 		{#each VOICES as voice (voice)}
@@ -698,6 +803,16 @@
 				{i18n.t.intent[voice]}
 			</li>
 		{/each}
+		{#if several}
+			{#each who as person (person.id)}
+				<li class="flex items-center gap-2">
+					<span class="grid w-5.5 place-items-center">
+						<PersonMark shape={shape(person.id)} class="text-foreground" />
+					</span>
+					{person.name}
+				</li>
+			{/each}
+		{/if}
 	</ul>
 {/snippet}
 
@@ -707,6 +822,22 @@
 		>{@render voiceKey()}</Help
 	>
 	<div class="ms-auto flex flex-wrap items-center gap-2">
+		{#if sifted && app.people.length > 1}
+			<FacetFilter
+				label={i18n.t.people.shown}
+				options={app.people.map((person) => ({
+					value: `${person.id}`,
+					label: person.name,
+					count: around.filter((t) => t.person_id === person.id).length
+				}))}
+				bind:value={
+					() => who.map((person) => `${person.id}`),
+					(next) => (v.who = keptPeople(app.people, next))
+				}
+				mark={personKey}
+				testid="people"
+			/>
+		{/if}
 		{#if sifted && app.devices.length > 1}
 			<select
 				class="select h-8"
@@ -794,6 +925,7 @@
 					<Empty text={i18n.t.progress.noReading} />
 				{:else}
 					<div class="space-y-3" data-testid="against-everyday">
+						{@render oneOnly('')}
 						<div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" data-testid="tiles">
 							{#each tiles as tile (tile.key)}
 								<StatTile
@@ -865,7 +997,8 @@
 										title={title(key)}
 										sub={def(key)?.unit}
 										name="spread-{key}"
-										height={130}
+										height={70 +
+											30 * Math.max(spreadRows(key).filter((row) => row.dots.length).length, 2)}
 										option={() =>
 											spreadOption({
 												scale: {
@@ -874,14 +1007,7 @@
 													signed: true,
 													zones: zonesOf(def(key)?.zones)
 												},
-												rows: VOICES.toReversed().map((voice) => ({
-													name: i18n.t.intent[voice],
-													voice,
-													dots: shown.flatMap((take): Dot[] => {
-														const shift = take.intent === voice ? shiftOf(take.reading, key) : null;
-														return shift ? [{ id: take.id, at: at(take), value: shift.value }] : [];
-													})
-												})),
+												rows: spreadRows(key),
 												palette,
 												locale: i18n.locale,
 												mark: playing?.id,
@@ -952,10 +1078,11 @@
 				{#if !across || !upwards}
 					<Empty text={i18n.t.progress.noReading} />
 				{:else}
+					{@render oneOnly('mb-2')}
 					<div class="grid gap-3 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" data-testid="cross">
 						<ChartCard
 							title={i18n.t.progress.matrix}
-							sub={i18n.t.progress.takes(shown.length)}
+							sub={i18n.t.progress.takes(own.length)}
 							help={{ text: i18n.t.progress.help.matrix }}
 							name="relations"
 							height={Math.max(260, 56 * grid.list.length + 60)}
@@ -998,7 +1125,7 @@
 							title={i18n.t.progress.scatter}
 							sub={together === null
 								? i18n.t.progress.few
-								: i18n.t.progress.stat(fmtSigned(together, 2, i18n.locale), cloud.length)}
+								: i18n.t.progress.stat(fmtSigned(together, 2, i18n.locale), fitted.length)}
 							help={{ text: i18n.t.progress.help.scatter, children: voiceKey }}
 							name="scatter"
 							height={420}
@@ -1071,6 +1198,7 @@
 
 		{#if tab === 'exercises'}
 			<div role="tabpanel" data-testid="panel-exercises">
+				{@render oneOnly('mb-2')}
 				{#if !drills.length}
 					<Empty text={i18n.t.progress.noDrills} />
 				{:else}

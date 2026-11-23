@@ -6,12 +6,14 @@
 	import { app } from '#lib/app.svelte.js';
 	import Empty from '#lib/components/app/Empty.svelte';
 	import LabelFields from '#lib/components/app/LabelFields.svelte';
+	import PersonSelect from '#lib/components/app/PersonSelect.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import * as Table from '#lib/components/ui/table/index.js';
 	import { toLocalInput } from '#lib/format.js';
 	import { i18n } from '#lib/i18n/index.svelte.js';
 	import { guessLabels, passageFor, passageRef } from '#lib/labels.js';
+	import { taking } from '#lib/people.svelte.js';
 	import { queue } from '#lib/queue.svelte.js';
 
 	type Row = {
@@ -28,6 +30,8 @@
 	let done = $state<number | null>(null);
 
 	const device = $derived(app.devices.find((d) => d.id === deviceId) ?? app.devices[0] ?? null);
+	/** Whose voice the files are: the default person unless someone else is picked. */
+	const person = $derived(app.person(taking.id) ?? app.me);
 
 	/** The file's own time, unless its name carries another day: then noon of that day. */
 	function recordedAt(file: File, date: string | null): string {
@@ -63,6 +67,7 @@
 					row.item === 'passage' ? passageFor(app.content?.passages ?? [], row.language) : null;
 				await queue.add(await row.file.arrayBuffer(), row.file.type || 'audio/wav', row.file.name, {
 					device_id: device.id,
+					person_id: person?.id,
 					item: row.item,
 					intent: row.intent,
 					language: row.language,
@@ -102,6 +107,12 @@
 				{/each}
 			</select>
 		</label>
+		{#if app.people.length > 1}
+			<label class="text-sm">
+				<span class="mb-1 block text-muted-foreground">{i18n.t.people.whose}</span>
+				<PersonSelect bind:value={taking.id} testid="whose" />
+			</label>
+		{/if}
 		<label class="text-sm">
 			<span class="mb-1 block text-muted-foreground">{i18n.t.import.choose}</span>
 			<input

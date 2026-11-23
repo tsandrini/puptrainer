@@ -222,6 +222,11 @@
 				<p class="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
 					<VoiceMark intent={take.intent} class="text-foreground" />
 					<span class="truncate">
+						{#if take.person_id !== app.me?.id}
+							<span class="font-bold text-primary" data-testid="dock-person">
+								{app.person(take.person_id)?.name} ·
+							</span>
+						{/if}
 						{i18n.t.intent[take.intent]} · {what}{#if passage}
 							· {passage.title}{/if}
 					</span>
