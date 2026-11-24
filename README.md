@@ -27,6 +27,11 @@ every rep, and a practice log. Voice exploration and lessons come next
 
 ## 1. What it does
 
+![The Progress page](docs/assets/images/showcase_progress.png)
+![A take's page](docs/assets/images/showcase_take.png)
+
+The pictures show demo data: synthetic voices, no recording of anybody.
+
 - **Records losslessly in the browser.** Echo cancellation, noise
   suppression and automatic gain are switched off; a level meter shows the
   target zone and warns about clipping, and a live spectrogram shows what
@@ -189,6 +194,9 @@ listening does not. `services.puptrainer.api.enable` and
    (−12 to −6 dBFS). The resonance meter, the graph of the last seconds and
    the spectrogram under it are guides, not measurements. Listen back (the
    take is drawn under the player as the live guide saw it), then save.
+
+   ![Recording a take](docs/assets/images/showcase_record.png)
+
 4. **Takes** is a table of everything: search with `/`, filter, sort, and
    press play on a row to hear it in the dock (`K` pauses, `J` and `L`
    move five seconds, `P` and `N` step through the table). A take's page
@@ -197,10 +205,16 @@ listening does not. `services.puptrainer.api.enable` and
    step to its neighbours in the table. Tick two takes to compare them:
    their graphs lie over each other, and `X` goes on in the other take
    at the same place.
+
+   ![The takes table](docs/assets/images/showcase_takes.png)
+   ![Two takes compared](docs/assets/images/showcase_compare.png)
+
 5. **Progress** has five tabs: the takes against your everyday voice, the
    measurements one by one, the measures against each other, the
    exercises, and practice itself. Point at a take to see what it is,
    click it to hear it.
+
+   ![How the measures go together](docs/assets/images/showcase_relations.png)
 
 The texts of the exercises ("Anchor phrases") have buttons of their own
 under the baseline: read one in your everyday voice, and every take of it

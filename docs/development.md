@@ -68,6 +68,26 @@ PUPTRAINER_DATA_DIR=$(mktemp -d) PUPTRAINER_WEB_DIR=web/build PUPTRAINER_BIND=12
 node web/scripts/e2e.mjs --base http://127.0.0.1:8438 --worker "python -m puptrainer.analysis.worker"
 ```
 
+## The README's screenshots
+
+`web/scripts/screenshots.mjs` takes the pictures in `docs/assets/images`
+from a demo dataset it makes itself: a week of takes of two made-up
+people, whose voices it synthesises (vowels on a pitch line; no recording
+of anybody is involved, and none may ever be). It needs what the
+end-to-end run needs, and an API with an **empty** data directory; it
+refuses one that already holds takes:
+
+```sh
+node web/scripts/screenshots.mjs --base http://127.0.0.1:8438 \
+  --worker "python -m puptrainer.analysis.worker" --out docs/assets/images
+```
+
+Run it again when a page it shows has changed. The demo week has fixed
+dates and seeds, so a page that did not change gives the same picture
+(the Record page is photographed while it records, and differs a little
+each time). A picture has to stay under 500 kB: the hook against large
+files.
+
 ## The NixOS module
 
 `flake-parts/modules/nixos/puptrainer.nix`; `checks.vm` boots a machine with
